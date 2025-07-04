@@ -13,7 +13,7 @@
 <%@ include file="../modules/sidebar.jsp" %>
 <%@ include file="../modules/modal.jsp" %>
 <link rel="stylesheet" href="/css/main.css">
-<script type="text/javascript" src="https://map.vworld.kr/js/webglMapInit.js.do?version=3.0&apiKey=B8521EDE-A4E1-33B0-8029-530100FD4344"></script>
+<script type="text/javascript" src="https://map.vworld.kr/js/webglMapInit.js.do?version=3.0&apiKey="></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
