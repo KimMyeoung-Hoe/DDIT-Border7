@@ -20,12 +20,12 @@ public class SendMessageController {
 	public String sendMessage(String  receiver, String text) {
 		log.info("receiver {} ",receiver);
 		log.info("text {} ",text);
-		String api_key = "NCSAFWQ6HAS3J9UY";
-	    String api_secret = "MQAGADBJGGWMGY3BXJZWCXCGI3DBUHB5";
+		String api_key = "xxx";
+	    String api_secret = "xxx";
 	    String domain = "https://api.coolsms.co.kr";
 		DefaultMessageService messageService = NurigoApp.INSTANCE.initialize(api_key, api_secret, domain);
 		Message message = new Message();
-		message.setFrom("01052803731");
+		message.setFrom("xxx");
 		message.setTo(receiver);//받는사람 번호 : 010******** << 이런식으로 '-' 없애야함
 		message.setText(text); //입력할 정보
 		
