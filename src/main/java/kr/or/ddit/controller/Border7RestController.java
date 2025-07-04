@@ -77,7 +77,7 @@ public class Border7RestController {
 	private static final String UNIPASS_API_PATH = "/ext/rest/lcaLstInfoQry/retrieveLcaBrkd";
 
 	// Unipass API에 필요한 고정 쿼리 파라미터 (실제 API 문서 확인 후 정확히 입력)
-	private static final String CRKY_CN = "i270k215p025c287e010a080n5"; // 예시, 실제 키로 변경
+	private static final String CRKY_CN = "xxxx"; // 예시, 실제 키로 변경
 
 	private final RestClient restClient; // RestClient 주입
 
