@@ -26,7 +26,7 @@ import reactor.core.publisher.Mono;
 public class NewsServiceImpl implements INewsService{
 
     private final WebClient webClient;
-    private static final String SERVICE_KEY = "ievUDOJy0Nn34KkVqrPvtS6gmKZoIC1vY4HhWPPnIIV+5+BWTLQEa0Lm9YbDbXiha72Rb59PUhodLjGzasReng=="; // API 키
+    private static final String SERVICE_KEY = "xxx"; // API 키
     private static final String BASE_URL = "https://apis.data.go.kr/B410001/kotra_overseasMarketNews/ovseaMrktNews/ovseaMrktNews"; // KOTRA API 기본 URL
    
     
