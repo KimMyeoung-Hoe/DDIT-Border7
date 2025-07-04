@@ -57,7 +57,7 @@ $(function(){
 				"b_no" : [regnum],				
 		};
 		$.ajax({
-	 		url: "https://api.odcloud.kr/api/nts-businessman/v1/status?serviceKey=ievUDOJy0Nn34KkVqrPvtS6gmKZoIC1vY4HhWPPnIIV%2B5%2BBWTLQEa0Lm9YbDbXiha72Rb59PUhodLjGzasReng%3D%3D",  // serviceKey 값을 xxxxxx에 입력
+	 		url: "https://api.odcloud.kr/api/nts-businessman/v1/status?serviceKey=xxx",  // serviceKey 값을 xxxxxx에 입력
 		   type: "POST",
     	   data: JSON.stringify(reg), // json 을 string으로 변환하여 전송
  	   dataType: "JSON",
