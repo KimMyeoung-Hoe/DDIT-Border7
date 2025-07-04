@@ -1,0 +1,526 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.or.ddit.mapper.IMyMailMapper">
+
+	<resultMap type="kr.or.ddit.vo.MyMailVO" id="mailResultMap">
+		<result property="emailNo" column="EMAIL_NO" />
+		<result property="userNo" column="USER_NO" />
+		<result property="emailCategory" column="EMAIL_CATEGORY" />
+		
+		<result property="emailTitle" column="EMAIL_TITLE" />
+		<result property="emailContent" column="EMAIL_CONTENT" />
+		<result property="emailSender" column="EMAIL_SENDER" />
+		<result property="emailDate" column="EMAIL_DATE" />
+		<result property="emailType" column="EMAIL_TYPE" />
+		<result property="recipEmails" column="RECIP_EMAILS" />
+		<result property="delYn" column="DEL_YN" />
+		<result property="comFileNo" column="COM_FILE_NO" />
+
+		<result property="emailTempNo" column="EMAIL_TEMP_NO" />
+		<result property="emailTempName" column="EMAIL_TEMP_NAME" />
+		<result property="emailTempTitle" column="EMAIL_TEMP_TITLE" />
+		<result property="emailTempContent" column="EMAIL_TEMP_CONTENT" />
+		<result property="emailTempRegDate" column="EMAIL_TEMP_REG_DATE" />
+		<result property="emailTempCnt" column="EMAIL_TEMP_CNT" />
+		
+		<collection property="recipList" resultMap="recipMailResultMap" />
+	</resultMap>
+	
+	<resultMap type="kr.or.ddit.vo.MyMailVO" id="recipMailResultMap">
+	    <result property="recipNo" column="RECIP_NO" />
+		<result property="recipEmailNo" column="RECIP_EMAIL_NO" />
+		<result property="recipUserNo" column="RECIP_USER_NO" />
+		<result property="recipEmail" column="RECIP_EMAIL" />
+		<result property="recipType" column="RECIP_TYPE" />
+		<result property="readYn" column="READ_YN" />
+		<result property="recipDelYn" column="RECIP_DEL_YN" />
+	</resultMap>
+	
+	<!-- 메일 검색조건 -->
+	<sql id="mailListDynamic">		
+	    <if test="searchWord != null and searchWord != ''">
+	        <choose>
+	            <when test="searchType == 'emailTitle'">
+	                AND EMAIL_TITLE LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'emailAddress'">
+	                AND (
+	                    EMAIL_SENDER LIKE '%' || #{searchWord} || '%'
+	                    OR RECIP_EMAILS LIKE '%' || #{searchWord} || '%'
+	                )
+	            </when>
+	        </choose>
+	    </if>
+	</sql>
+
+
+	<!-- 메일 row 카운트 -->
+	<select id="selectMailAllCount" parameterType="int" resultType="kr.or.ddit.vo.MyMailVO">
+		/** 검색조건 반영안된 (모든) 메일함 row COUNT **/
+		select 
+			(
+				select count(*) 
+        		from RECIP 
+        		where USER_NO = #{userNo}
+        		and RECIP_TYPE = 'recip'
+        		and RECIP_DEL_YN = 0
+        		and READ_YN = 0
+    		) as unreadCount,
+
+    		(
+        		select COUNT(*) 
+		        from RECIP 
+		        where USER_NO = #{userNo}
+		        and RECIP_TYPE = 'recip'
+		        and RECIP_DEL_YN = 0
+		    ) as recipCount,
+
+		    (
+		        select COUNT(*) 
+		        from EMAILS 
+		        where USER_NO = #{userNo}
+		        and EMAIL_TYPE = 'send'
+		        and EMAIL_DEL_YN = 0
+		    ) as sendCount,
+
+		    (
+		        select COUNT(*) 
+		        from EMAILS 
+		        where USER_NO = #{userNo}
+		        and EMAIL_TYPE = 'temp'
+		        and EMAIL_DEL_YN = 0
+		    ) as tempCount,
+
+		    (
+		        select COUNT(*) 
+		        from (
+		            select EMAIL_NO FROM RECIP 
+		            where USER_NO = #{userNo}
+		            and RECIP_TYPE = 'recip'
+		            and RECIP_DEL_YN = 1
+		            
+		            union all
+		            
+		            select EMAIL_NO FROM EMAILS 
+		            where USER_NO = #{userNo}
+		            and EMAIL_TYPE = 'send'
+		            and EMAIL_DEL_YN = 1
+		        )
+		    ) as trashCount
+		from DUAL
+	</select>
+	
+	<select id="selectSearchMailCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+		/** 검색조건 반영된 (현재) 메일함 row COUNT **/
+		select
+		    COUNT(*)
+		from(
+			select
+			    e.EMAIL_NO
+			    , e.EMAIL_TYPE as EMAIL_CATEGORY
+			from EMAILS e
+			where e.USER_NO = #{userNo}
+			and e.EMAIL_TYPE = #{searchCategory}
+			and e.EMAIL_DEL_YN = 0
+			    
+			union all
+			
+			select
+			    r.EMAIL_NO,
+			    , r.RECIP_TYPE as EMAIL_CATEGORY
+			from
+			    RECIP r
+			where r.USER_NO = #{userNo}
+			
+		)
+		<include refid="mailListDynamic"/>
+	</select>
+	
+	
+	<!-- 메일 목록 출력 -->
+	<select id="selectMailList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="Map">
+		/** 전체, 보낸, 받은 메일함 메일 출력 **/
+		SELECT
+		    *
+		FROM (
+		    SELECT
+		        AEL.*
+		        , ROWNUM AS RN
+		    FROM (
+		        SELECT
+		            e.EMAIL_NO
+		            , e.EMAIL_TITLE
+		            , e.EMAIL_CONTENT
+		            , e.EMAIL_DATE
+		            , e.COM_FILE_NO
+		            , e.EMAIL_SENDER
+		            , LISTAGG(r.RECIP_EMAIL, ', ') WITHIN GROUP (ORDER BY r.RECIP_EMAIL) AS RECIP_EMAILS
+		            , 'send' AS EMAIL_CATEGORY
+		            , e.EMAIL_DEL_YN AS DEL_YN
+		            , NULL AS READ_YN
+		            , NULL AS RECIP_NO
+		        FROM EMAILS e
+		        LEFT OUTER JOIN RECIP r ON e.EMAIL_NO = r.EMAIL_NO
+		        WHERE e.USER_NO = #{userNo}
+		        AND e.EMAIL_DEL_YN = 0
+		        AND e.EMAIL_TYPE = 'send'
+		        <include refid="mailListDynamic"/>
+		        GROUP BY
+		            e.EMAIL_NO
+		            , e.EMAIL_TITLE
+		            , e.EMAIL_CONTENT
+		            , e.EMAIL_DATE
+		            , e.COM_FILE_NO
+		            , e.EMAIL_SENDER
+		            , e.EMAIL_DEL_YN
+		
+		        UNION ALL
+		
+		        SELECT
+		            e.EMAIL_NO
+		            , e.EMAIL_TITLE
+		            , e.EMAIL_CONTENT
+		            , e.EMAIL_DATE
+		            , e.COM_FILE_NO
+		            , e.EMAIL_SENDER
+		            , r.RECIP_EMAIL AS RECIP_EMAILS
+		            , 'recip' AS EMAIL_CATEGORY
+		            , r.RECIP_DEL_YN AS DEL_YN
+		            , r.READ_YN AS READ_YN
+		            , r.RECIP_NO AS RECIP_NO
+		        FROM EMAILS e
+		        INNER JOIN RECIP r ON e.EMAIL_NO = r.EMAIL_NO
+		        WHERE r.USER_NO = #{userNo}
+		        AND r.RECIP_DEL_YN = 0
+		        AND r.RECIP_TYPE = 'recip'
+		        <include refid="mailListDynamic"/>
+		    ) AEL
+		    <if test="searchCategory != null and searchCategory eq 'send'">
+		        WHERE AEL.EMAIL_CATEGORY = 'send'
+		    </if>
+		    <if test="searchCategory != null and searchCategory eq 'recip'">
+		        WHERE AEL.EMAIL_CATEGORY = 'recip'
+		    </if>
+		    ORDER BY
+		        AEL.EMAIL_DATE DESC
+		)
+		WHERE RN BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="selectTrashMailList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="Map">
+		/** 휴지통 메일 출력 **/
+		SELECT
+		    *
+		FROM (
+		    SELECT
+		        AEL.*
+		        , ROWNUM AS RN
+		    FROM (
+		        SELECT
+		            e.EMAIL_NO
+		            , e.EMAIL_TITLE
+		            , e.EMAIL_CONTENT
+		            , e.EMAIL_DATE
+		            , e.COM_FILE_NO
+		            , e.EMAIL_SENDER
+		            , LISTAGG(r.RECIP_EMAIL, ', ') WITHIN GROUP (ORDER BY r.RECIP_EMAIL) AS RECIP_EMAILS
+		            , 'send' AS EMAIL_CATEGORY
+		            , e.EMAIL_DEL_YN AS DEL_YN
+		            , NULL AS READ_YN
+		            , NULL AS RECIP_NO
+		        FROM EMAILS e
+		        LEFT OUTER JOIN RECIP r ON e.EMAIL_NO = r.EMAIL_NO
+		        WHERE e.USER_NO = #{userNo}
+		        AND e.EMAIL_DEL_YN = 1
+		        GROUP BY
+		            e.EMAIL_NO
+		            , e.EMAIL_TITLE
+		            , e.EMAIL_CONTENT
+		            , e.EMAIL_DATE
+		            , e.COM_FILE_NO
+		            , e.EMAIL_SENDER
+		            , e.EMAIL_DEL_YN
+		
+		        UNION ALL
+		
+		        SELECT
+		            e.EMAIL_NO
+		            , e.EMAIL_TITLE
+		            , e.EMAIL_CONTENT
+		            , e.EMAIL_DATE
+		            , e.COM_FILE_NO
+		            , e.EMAIL_SENDER
+		            , r.RECIP_EMAIL AS RECIP_EMAILS
+		            , 'recip' AS EMAIL_CATEGORY
+		            , r.RECIP_DEL_YN AS DEL_YN
+		            , r.READ_YN AS READ_YN
+		            , r.RECIP_NO AS RECIP_NO
+		        FROM EMAILS e
+		        INNER JOIN RECIP r ON e.EMAIL_NO = r.EMAIL_NO
+		        WHERE r.USER_NO = #{userNo}
+		        AND r.RECIP_DEL_YN = 1
+		    ) AEL
+		    ORDER BY
+		        AEL.EMAIL_DATE DESC
+		)
+		WHERE RN BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="selectTempMailList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="Map">
+		/** 임시보관함 목록 **/
+		select
+			*
+		from(
+			select
+				AEL.*, ROWNUM RN
+			from(
+				select
+		            e.EMAIL_NO
+		            , e.EMAIL_TITLE
+		            , e.EMAIL_CONTENT
+		            , e.EMAIL_DATE
+		            , e.COM_FILE_NO
+		            , LISTAGG(r.RECIP_EMAIL, ', ') WITHIN GROUP (ORDER BY r.RECIP_EMAIL) AS RECIP_EMAILS
+		        FROM
+		            EMAILS e
+		        LEFT OUTER JOIN
+		            RECIP r ON e.EMAIL_NO = r.EMAIL_NO
+		        WHERE e.USER_NO = #{userNo}
+		        AND e.EMAIL_TYPE = 'temp'
+		        AND e.EMAIL_DEL_YN = 0
+		        <include refid="mailListDynamic"/>
+		        GROUP BY
+		            e.EMAIL_NO
+		            , e.EMAIL_TITLE
+		            , e.EMAIL_CONTENT
+		            , e.EMAIL_DATE
+		            , e.COM_FILE_NO
+		        ORDER BY e.EMAIL_DATE DESC
+			) AEL
+		)
+		where RN between #{startRow} and #{endRow}
+	</select>
+
+
+	<!-- 메일 상세내용 -->
+	<select id="mailDetail" parameterType="int" resultMap="mailResultMap">
+		/** 메일 상세보기 기능 **/
+		select
+            e.EMAIL_NO
+            , e.EMAIL_TITLE
+            , e.EMAIL_CONTENT
+            , e.USER_NO
+            , e.EMAIL_SENDER
+			, e.EMAIL_DATE
+            , e.EMAIL_TYPE
+			, e.EMAIL_EXPORT_CNT
+			, e.EMAIL_DEL_YN
+			, e.COM_FILE_NO
+            , LISTAGG(r.RECIP_EMAIL, ', ') WITHIN GROUP (ORDER BY r.RECIP_EMAIL) AS RECIP_EMAILS
+        FROM
+            EMAILS e
+        LEFT OUTER JOIN
+            RECIP r ON e.EMAIL_NO = r.EMAIL_NO
+        WHERE e.EMAIL_NO = #{emailNo}
+        GROUP BY
+            e.EMAIL_NO
+            , e.EMAIL_TITLE
+            , e.EMAIL_CONTENT
+            , e.USER_NO
+            , e.EMAIL_SENDER
+			, e.EMAIL_DATE
+            , e.EMAIL_TYPE
+			, e.EMAIL_EXPORT_CNT
+			, e.EMAIL_DEL_YN
+			, e.COM_FILE_NO
+	</select>
+
+
+	<!-- 메일 발송 기능 - 수신자목록 처리 -->
+	<insert id="mailRecipListInsert" parameterType="kr.or.ddit.vo.MyMailVO" useGeneratedKeys="true" keyColumn="specialty_no" keyProperty="recipNo">
+		/** 메일 수신자목록 저장 기능 **/
+		<selectKey keyProperty="recipNo" resultType="int" order="BEFORE">
+			select
+				SEQ_RECIP_NO.nextval
+			from dual
+		</selectKey>
+		insert into RECIP (
+			RECIP_NO
+			, EMAIL_NO
+			, RECIP_EMAIL
+			, RECIP_TYPE
+			, READ_YN
+			, RECIP_DEL_YN
+			, USER_NO
+		) values (
+			#{recipNo}
+			, #{emailNo}
+			, #{recipEmail}
+			, #{recipType} /* null이면 임시보관 */
+			, 0
+			, 0
+			, #{recipUserNo}
+		)
+	</insert>
+
+	<delete id="mailRecipListDelete" parameterType="int">
+		/** 메일 수신자목록 삭제 기능(임시저장되어있는 메일을 이어 작성하며 수정하는 경우, 수정 전에 일단 전부 삭제) **/
+		delete from RECIP
+		where EMAIL_NO = #{emailNo}
+	</delete>
+
+
+	<!-- 메일 발송 기능 -->
+	<insert id="mailSendInsert" parameterType="kr.or.ddit.vo.MyMailVO" useGeneratedKeys="true" keyColumn="EMAIL_NO" keyProperty="emailNo">
+		<selectKey keyProperty="emailNo" resultType="int" order="BEFORE">
+			select
+				SEQ_EMAIL_NO.nextval
+			from dual
+		</selectKey>
+		/** 신규작성메일 발송 **/
+		insert into EMAILS (
+			EMAIL_NO
+			, EMAIL_TITLE
+			, EMAIL_CONTENT
+			, USER_NO
+			, EMAIL_SENDER
+			, EMAIL_TYPE
+			, EMAIL_DEL_YN
+			, COM_FILE_NO
+			, EMAIL_DATE
+		) values (
+			#{emailNo}
+			, #{emailTitle}
+			, #{emailContent}
+			, #{userNo}
+			, #{emailSender}
+			, 'send'
+			, 0
+			, ''
+			, sysdate
+		) 
+	</insert>
+
+	<insert id="mailTempInsert" parameterType="kr.or.ddit.vo.MyMailVO" useGeneratedKeys="true" keyColumn="EMAIL_NO" keyProperty="emailNo">
+		<selectKey keyProperty="emailNo" resultType="int" order="BEFORE">
+			select
+				SEQ_EMAIL_NO.nextval
+			from dual
+		</selectKey>
+		/** 신규작성메일 임시보관함 저장 **/
+		insert into EMAILS (
+			EMAIL_NO
+			, EMAIL_TITLE
+			, EMAIL_CONTENT
+			, USER_NO
+			, EMAIL_SENDER
+			, EMAIL_TYPE
+			, EMAIL_DEL_YN
+			, COM_FILE_NO
+			, EMAIL_DATE
+		) values (
+			#{emailNo}
+			, #{emailTitle}
+			, #{emailContent}
+			, #{userNo}
+			, #{emailSender}
+			, 'temp'
+			, 0
+			, ''
+			, sysdate
+		) 
+	</insert>
+
+	<update id="mailSendUpdate" parameterType="kr.or.ddit.vo.MyMailVO">
+		/** 임시저장메일 발송 **/
+		update EMAILS set
+			EMAIL_TITLE = #{emailTitle}
+			, EMAIL_CONTENT = #{emailContent}
+			, EMAIL_DATE = sysdate
+			, EMAIL_TYPE = 'send'
+		where email_no = #{emailNo}
+	</update>
+
+	<update id="mailTempUpdate" parameterType="kr.or.ddit.vo.MyMailVO">
+		/** 메일 임시저장 기능(처음이 아닐 경우) **/
+		update EMAILS set
+			EMAIL_TITLE = #{emailTitle}
+			, EMAIL_CONTENT = #{emailContent}
+			, EMAIL_DATE = sysdate
+		where email_no = #{emailNo}
+	</update>
+
+	<!-- 메일 관리 -->
+	<update id="mailRead" parameterType="int">
+		/** 메일 읽음 기능 **/
+		update RECIP set
+			READ_YN = 1
+		where RECIP_NO = #{recipNo}
+	</update>
+	
+	<update id="mailTrashRecip" parameterType="int">
+		/** 받은 메일 휴지통 이동 기능 **/
+		update RECIP set
+			RECIP_DEL_YN = 1
+		where RECIP_NO = #{recipNo}
+	</update>
+	
+	<update id="mailTrashSend" parameterType="Object">
+		/** 본인이 작성한 메일 휴지통 이동 기능 **/
+		update EMAILS set
+			EMAIL_DEL_YN = 1
+		where EMAIL_NO = #{emailNoObj}
+	</update>
+	
+	<delete id="mailDeleteRecip" parameterType="int">
+		/** 받은 메일 삭제 기능 **/
+		delete from RECIP
+		where RECIP_NO = #{recipNo}
+	</delete>
+	
+	<delete id="mailDeleteSend" parameterType="int">
+		/** 본인이 작성한 메일 삭제 기능 **/
+		delete from EMAILS
+		where EMAIL_NO = #{emailNo}
+	</delete>
+	
+	<!-- 템플릿 기능 -->
+	<!-- 템플릿 목록 조회 -->
+	
+	<delete id="mailTDelete" parameterType="int">
+		/** 템플릿 삭제 **/
+		delete from EMAIL_TEMP
+		where EMAIL_TEMP_NO = #{emailTempNo}
+	</delete>
+	
+	<insert id="mailTInsert" parameterType="map" useGeneratedKeys="true" keyColumn="EMAIL_TEMP_NO" keyProperty="emailTempNo">
+		<selectKey keyProperty="emailTempNo" resultType="int" order="BEFORE">
+			select
+				SEQ_EMAIL_TEMP_NO.nextval
+			from dual
+		</selectKey>
+		/** 템플릿 저장 **/
+		insert into EMAIL_TEMP (
+			EMAIL_TEMP_NO
+			, USER_NO
+			, EMAIL_TEMP_NAME
+			, EMAIL_TEMP_CONTENT
+			, EMAIL_TEMP_REG_DATE
+			, EMAIL_TEMP_CNT
+			, EMAIL_TEMP_TITLE
+		) values (
+			#{emailTempNo}
+			, #{userNo}
+			, #{emailTempName}
+			, #{emailTempContent}
+			, sysdate
+			, 0
+			, #{emailTempTitle}
+		) 
+	</insert>
+
+	
+</mapper>

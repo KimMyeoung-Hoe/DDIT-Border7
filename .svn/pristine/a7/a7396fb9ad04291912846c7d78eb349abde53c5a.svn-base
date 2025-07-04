@@ -1,0 +1,522 @@
+<%@page import="java.util.ArrayList"%>
+<%@page import="java.util.List"%>
+<%@page import="kr.or.ddit.vo.UserVO"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.fmt" prefix="fmt" %>
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec" %>
+<link rel="stylesheet" href="/css/sidebar.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+/* 선택된 메뉴 항목 스타일 */
+.nav-item.selected {
+    background-color: #e3f2fd !important;
+    font-weight: bold !important;
+}
+
+.nav-item.selected .nav-item-icon {
+    color: #2196f3 !important;
+}
+
+/* 서브메뉴 선택된 항목 스타일 */
+.sub-menu .nav-item.selected {
+    background-color: #f5f5f5 !important;
+    border-left: 4px solid #2196f3 !important;
+    margin-left: 10px !important;
+}
+</style>
+
+<sec:authentication property="principal" var="princ"/>
+<c:if test="${princ ne 'anonymousUser'}">
+	<sec:authentication property="principal.user" var="user" />
+	<sec:authentication property="authorities" var="auth"/>
+</c:if>
+<input type="hidden" id="springUserId" value="${user.userId == null ? '' : user.userId}">
+<input type="hidden" id="springUserNo" value="${user.userNo == null ? '' : user.userNo}">
+<input type="hidden" id="springAuth" value="${auth == null ? '' : auth}">
+
+<div class="sidebar">
+    <nav class="nav-menu">
+    	<!-- 비로그인 -->
+		<sec:authorize access="isAnonymous()">
+	       <div class="nav-item" data-menu-id="support-main">
+	            <span class="nav-item-icon">💬</span> 고객지원
+	            <span style="margin-left: auto; font-size: 12px;">🔽</span>
+	        </div>
+	        <div class="sub-menu">
+	            <div class="nav-item" data-menu-id="notice" onclick="goNotice()">
+	                <span class="nav-item-icon">📌</span> 공지사항
+	            </div>
+	            <div class="nav-item" data-menu-id="faq" onclick="goFAQ()">
+	                <span class="nav-item-icon">⁉️</span> 자주 묻는 질문
+	            </div>
+	        </div>
+		</sec:authorize>
+		<!-- 비로그인 -->
+		
+		<!-- 화주 -->
+		<sec:authorize access="hasRole('ROLE_CONSIGNOR')">
+	        <div class="nav-item" data-menu-id="consignor-main">
+	            <span class="nav-item-icon">📂</span> 내 의뢰 관리
+	            <span style="margin-left: auto; font-size: 12px;">🔽</span>
+	        </div>
+	        <div class="sub-menu">
+	             <div class="nav-item" data-menu-id="my-contract" onclick="goMyContract()">
+	                <span class="nav-item-icon">📋</span> 내 의뢰 현황
+	            </div>
+	            <div class="nav-item" data-menu-id="cca-list" onclick="goCcaList()">
+	                <span class="nav-item-icon">👨‍💼</span> 의뢰 신청
+	            </div>
+	        </div>
+		</sec:authorize>
+		
+		<!-- 관세사 -->
+		<sec:authorize access="hasRole('ROLE_CCA')">
+			<div class="nav-item" data-menu-id="cca-main">
+	            <span class="nav-item-icon">📂</span> 내 의뢰 관리
+	            <span style="margin-left: auto; font-size: 12px;">🔽</span>
+	        </div>
+			<div class="sub-menu">
+				<div class="nav-item" data-menu-id="my-contract-list" onclick="goMyContractList()">
+		            <span class="nav-item-icon">📋</span> 내 접수내역
+		        </div>
+				<div class="nav-item" data-menu-id="stowage" onclick="goStowage()">
+	                <span class="nav-item-icon">📝</span> 적재 신청
+	            </div>
+	        </div>
+		</sec:authorize>
+			
+		<!-- 물류관리자 -->
+		<sec:authorize access="hasRole('ROLE_LOGISTICS')">
+			<div class="nav-item" data-menu-id="logistics-main">
+	            <span class="nav-item-icon">📂</span> 내 메뉴
+	            <span style="margin-left: auto; font-size: 12px;">🔽</span>
+	        </div>
+	        <div class="sub-menu">
+	            <div class="nav-item" onclick="goMyOrder()">
+	                <span class="nav-item-icon">📋</span> 내 적재신청 관리
+	            </div>
+	            <div class="nav-item" data-menu-id="my-warehouse" onclick="goMyWarehouse()">
+ 					<span class="nav-item-icon">📝</span> 내 물류창고 관리
+	            </div>
+	            <div class="nav-item" data-menu-id="my-container" onclick="goMyContainer()">
+	                <span class="nav-item-icon">👨‍💼</span> 내 컨테이너 관리
+	            </div>
+	        </div>
+		</sec:authorize>
+ 	
+		<!-- 행정 공무원 -->
+		<sec:authorize access="hasRole('ROLE_SVT_ADMIN')">
+	        <div class="nav-item" data-menu-id="admin-work-main">
+	            <span class="nav-item-icon">👤</span> 나의 업무
+	            <span style="margin-left: auto; font-size: 12px;">🔽</span>
+	        </div>
+	        <div class="sub-menu">
+	            <div class="nav-item" data-menu-id="admin-work" onclick="goAdminWork()">
+	                <span class="nav-item-icon">📋</span> 나의 업무(행정)
+	            </div>
+	            <div class="nav-item" data-menu-id="quarant-work" onclick="goQuarantWork()">
+	                <span class="nav-item-icon">🔍</span> 나의 업무(현장)
+	            </div>
+	        </div>
+	        <div class="nav-item" data-menu-id="customs-support-main">
+	            <span class="nav-item-icon">🏢</span> 통관지원 업무
+	            <span style="margin-left: auto; font-size: 12px;">🔽</span>
+	        </div>
+	        <div class="sub-menu">
+	            <div class="nav-item" data-menu-id="customs-declaration" onclick="goCustomsDeclaration()">
+	                <span class="nav-item-icon">📥</span> 수출입통관신고
+	            </div>
+	            <div class="nav-item" data-menu-id="customs-history" onclick="goCustomsHistory()">
+	                <span class="nav-item-icon">📋</span> 수출입 통관이력
+	            </div>
+	            <div class="nav-item" data-menu-id="wh-inventory" onclick="goWHInventoryy()">
+	                <span class="nav-item-icon">🏪</span> 보세창고 화물내역
+	            </div>
+	        </div>
+	        
+	        <div class="nav-item" data-menu-id="inspect-main">
+	            <span class="nav-item-icon">🔍</span> 검사·검역 업무
+	            <span style="margin-left: auto; font-size: 12px;">🔽</span>
+	        </div>
+	        <div class="sub-menu">
+	            <div class="nav-item" data-menu-id="inspect-review" onclick="goInspectReview()">
+	                <span class="nav-item-icon">✅</span> 검사·검역 심사
+	            </div>
+	            <div class="nav-item" data-menu-id="inspect-history" onclick="goInspectHistory()">
+	                <span class="nav-item-icon">📊</span> 검사·검역 심사이력
+	            </div>
+	        </div>
+	        
+	        <div class="nav-item" data-menu-id="user-mgmt-main">
+	            <span class="nav-item-icon">👥</span> 이용자 관리
+	            <span style="margin-left: auto; font-size: 12px;">🔽</span>
+	        </div>
+	        <div class="sub-menu">
+	            <div class="nav-item" data-menu-id="user-mng" onclick="goUserMng()">
+	                <span class="nav-item-icon">👤</span> 일반이용자 관리
+	            </div>
+	            <div class="nav-item" data-menu-id="broker-sanction" onclick="goBrokerSanction()">
+	                <span class="nav-item-icon">⚠️</span> 제재이력
+	            </div>
+	        </div>
+		</sec:authorize>
+		
+		<!-- 현장 공무원 -->		
+		<sec:authorize access="hasRole('ROLE_SVT_QUARANTINE')">
+			<div class="nav-item" data-menu-id="quarantine-work-main">
+	            <span class="nav-item-icon">👤</span> 나의 업무
+	            <span style="margin-left: auto; font-size: 12px;">🔽</span>
+	        </div>
+	        <div class="sub-menu">
+	            <div class="nav-item" data-menu-id="admin-work-q" onclick="goAdminWork()">
+	                <span class="nav-item-icon">📋</span> 나의 업무(행정)
+	            </div>
+	            <div class="nav-item" data-menu-id="quarant-work-q" onclick="goQuarantWork()">
+	                <span class="nav-item-icon">🔍</span> 나의 업무(현장)
+	            </div>
+	        </div>
+	        <!-- 나머지 메뉴들도 동일하게 data-menu-id 추가 -->
+		</sec:authorize>
+		
+		<!-- 상위 공무원 -->
+		<sec:authorize access="hasRole('ROLE_SVT_MANDARIN')">
+	        <div class="nav-item" data-menu-id="mandarin-customs-main">
+	            <span class="nav-item-icon">🏢</span> 통관지원 업무
+	            <span style="margin-left: auto; font-size: 12px;">🔽</span>
+	        </div>
+	        <!-- 나머지 메뉴들 -->
+	       	
+	        <div class="nav-item" data-menu-id="statistics" onclick="goStatistics()">
+	            <span class="nav-item-icon">📊</span> 통계
+	        </div>
+     	</sec:authorize>
+     	
+     	<!-- 마이페이지(공무원 외) -->
+        <sec:authorize access="hasAnyRole('ROLE_CONSIGNOR', 'ROLE_CCA', 'ROLE_LOGISTICS')">
+        	<div class="nav-item" data-menu-id="mypage-main">
+				<span class="nav-item-icon">💬</span> 마이페이지
+				<span style="margin-left: auto; font-size: 12px;">🔽</span>
+			</div>
+			<div class="sub-menu">
+				<div class="nav-item" data-menu-id="my-info" onclick="goMyInfo()">
+					<span class="nav-item-icon">👨‍💼</span> 내 정보
+				</div>
+				<div class="nav-item" data-menu-id="my-calendar" onclick="goMyCalendar()">
+					<span class="nav-item-icon">📝</span> 내 일정
+				</div>
+				<div class="nav-item" data-menu-id="my-mail" onclick="goMyMail()">
+					<span class="nav-item-icon">📝</span> 내 메일
+				</div>
+			</div>
+        </sec:authorize>
+     	
+     	<!-- 마이페이지(공무원) -->
+        <sec:authorize access="hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_MANDARIN')">
+        	<div class="nav-item" data-menu-id="mypage-main">
+				<span class="nav-item-icon">💬</span> 마이페이지
+				<span style="margin-left: auto; font-size: 12px;">🔽</span>
+			</div>
+			<div class="sub-menu">
+				<div class="nav-item" data-menu-id="my-info" onclick="goMyInfoSvt()">
+					<span class="nav-item-icon">👨‍💼</span> 내 정보
+				</div>
+				<div class="nav-item" data-menu-id="my-calendar" onclick="goMyCalendar()">
+					<span class="nav-item-icon">📝</span> 내 일정
+				</div>
+				<div class="nav-item" data-menu-id="my-mail" onclick="goMyMail()">
+					<span class="nav-item-icon">📝</span> 내 메일
+				</div>
+			</div>
+        </sec:authorize>
+        
+     	<!-- 고객지원 -->
+        <sec:authorize access="isAuthenticated()">
+			<div class="nav-item" data-menu-id="support-main">
+	            <span class="nav-item-icon">💬</span> 고객지원
+	            <span style="margin-left: auto; font-size: 12px;">🔽</span>
+	        </div>
+	        <div class="sub-menu">
+	            <div class="nav-item" data-menu-id="notice" onclick="goNotice()">
+	                <span class="nav-item-icon">📌</span> 공지사항
+	            </div>
+	            <div class="nav-item" data-menu-id="faq" onclick="goFAQ()">
+	                <span class="nav-item-icon">⁉️</span> 자주 묻는 질문
+	            </div>
+	           	<div class="nav-item" data-menu-id="my-appeal" onclick="goMyAppeal()">
+					<span class="nav-item-icon">🤔</span> 민원
+				</div>
+	        </div>
+        </sec:authorize>
+        
+
+    </nav>
+</div>
+
+<!-- 모달들 -->
+<div class="modal fade" id="newsModal" tabindex="-1" aria-labelledby="exChanModalLabel">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+		</div>
+	</div>
+</div>
+<div class="modal fade" id="weatModal" tabindex="-1" aria-labelledby="exChanModalLabel">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+// 메뉴 선택 상태 관리 함수들
+function setSelectedMenu(menuId) {
+    // localStorage에 선택된 메뉴 ID 저장
+    localStorage.setItem('selectedMenuId', menuId);
+    
+    // 현재 페이지의 모든 메뉴에서 selected 클래스 제거
+    document.querySelectorAll('.nav-item').forEach(function(item) {
+        item.classList.remove('selected');
+    });
+    
+    // 선택된 메뉴에 selected 클래스 추가
+    var selectedItem = document.querySelector('[data-menu-id="' + menuId + '"]');
+    if (selectedItem) {
+        selectedItem.classList.add('selected');
+        
+        // 서브메뉴인 경우 부모 메뉴도 열어주기
+        var parentSubMenu = selectedItem.closest('.sub-menu');
+        if (parentSubMenu) {
+            parentSubMenu.style.display = 'block';
+        }
+    }
+}
+
+function getSelectedMenu() {
+    return localStorage.getItem('selectedMenuId');
+}
+
+// 페이지 로드시 선택된 메뉴 복원
+function restoreSelectedMenu() {
+    var selectedMenuId = getSelectedMenu();
+    if (selectedMenuId) {
+        setSelectedMenu(selectedMenuId);
+    }
+}
+
+// 기존 함수들 수정 - 메뉴 클릭시 선택 상태 저장
+function openExchan(){
+    setSelectedMenu('exchange');
+    var excModal = new bootstrap.Modal(document.getElementById('excModal'));
+    excModal.show();
+}
+
+function openNews(){
+    setSelectedMenu('news');
+    var newsModal = new bootstrap.Modal(document.getElementById('newsModal'));
+    newsModal.show();
+}
+
+function openWeather(){
+    setSelectedMenu('weather');
+    var weatModal = new bootstrap.Modal(document.getElementById('weatModal'));
+    weatModal.show();
+}
+
+function goMyWarehouse(){
+    setSelectedMenu('my-warehouse');
+    var springUserId = document.getElementById("springUserId").value;
+    window.location.href="<%=request.getContextPath()%>/logistics/myWarehouse.do?userId=" + springUserId;
+}
+
+function goMyContainer(){
+    setSelectedMenu('my-container');
+    var springUserNo = document.getElementById("springUserNo").value;
+    window.location.href="<%=request.getContextPath()%>/logistics/myContainer.do?userNo=" + springUserNo;
+}
+
+function goMyOrder(){
+    setSelectedMenu('my-order');
+    window.location.href="<%=request.getContextPath()%>/logistics/myOrder.do";
+}
+
+function goStatistics(){
+    setSelectedMenu('statistics');
+    var springAuth = document.getElementById("springAuth").value;
+    var userAuth = springAuth.replace(/^\[?role_?/i, '') 
+                             .replace(/\]?$/, '')        
+                             .toLowerCase();
+    if(userAuth=="svt_admin"||userAuth=="svt_quarantine"){
+        userAuth = "servant"
+    }
+    if(userAuth==''||userAuth==null){
+        userAuth = "consignor"
+    }
+   <%--  window.location.href="<%=request.getContextPath()%>/statistics/" + userAuth + ".do"; --%>
+    window.location.href="<%=request.getContextPath()%>/statistics/servant.do"; 
+   
+}
+
+// CCA 관련 함수들
+function goCcaList(){
+    setSelectedMenu('cca-list');
+    window.location.href="<%=request.getContextPath()%>/consignor/ccaList.do";
+}
+
+function goMyContract(){
+    setSelectedMenu('my-contract');
+    window.location.href="<%=request.getContextPath()%>/consignor/myContract.do";
+}
+
+function goMyContractList(){
+    setSelectedMenu('my-contract-list');
+    window.location.href="<%=request.getContextPath()%>/cca/ccaContract";
+}
+
+function goStowage(){
+    setSelectedMenu('stowage');
+    window.location.href="<%=request.getContextPath()%>/cca/stowageList.do";
+} 
+
+// 공무원 관련 함수들
+function goAdminWork(){
+    setSelectedMenu('admin-work');
+    window.location.href="<%=request.getContextPath()%>/servant/adminWork.do";
+}
+
+function goQuarantWork(){
+    setSelectedMenu('quarant-work');
+    window.location.href="<%=request.getContextPath()%>/servant/quaranWork.do";
+}
+
+function goCustomsDeclaration() {
+    setSelectedMenu('customs-declaration');
+    window.location.href = "<%=request.getContextPath()%>/servant/customsDeclaration.do";
+}
+
+function goCustomsHistory() {
+    setSelectedMenu('customs-history');
+    window.location.href = "<%=request.getContextPath()%>/servant/customsHistory.do";
+}
+
+function goWHInventory() {
+    setSelectedMenu('wh-inventory');
+    window.location.href = "<%=request.getContextPath()%>/servant/whInventory.do";
+}
+
+function goWHInventoryy() {
+    setSelectedMenu('wh-inventory');
+    window.location.href = "<%=request.getContextPath()%>/servant/currentBwList.do";
+}
+
+function goInspectReview() {
+    setSelectedMenu('inspect-review');
+    window.location.href = "<%=request.getContextPath()%>/servant/inspectReview.do";
+}
+
+function goInspectHistory() {
+    setSelectedMenu('inspect-history');
+    window.location.href = "<%=request.getContextPath()%>/servant/inspectHistory.do";
+}
+
+function goUserMng() {
+    setSelectedMenu('user-mng');
+    window.location.href = "<%=request.getContextPath()%>/servant/userMng.do";
+}
+
+function goServantMng() {
+    setSelectedMenu('servant-mng');
+    window.location.href = "<%=request.getContextPath()%>/servant/servantMng.do";
+}
+
+function goDepartMng() {
+    setSelectedMenu('depart-mng');
+    window.location.href = "<%=request.getContextPath()%>/servant/departMng.do";
+}
+
+function goContractList() {
+    setSelectedMenu('contract-list');
+    window.location.href = "<%=request.getContextPath()%>/servant/contractList.do";
+}
+
+function goBrokerSanction() {
+    setSelectedMenu('broker-sanction');
+    window.location.href = "<%=request.getContextPath()%>/servant/sanctionList.do";
+}
+
+function goMandarinMyWork() {
+    setSelectedMenu('mandarin-work');
+    window.location.href = "<%=request.getContextPath()%>/servant/mandarinWork.do";
+}
+
+function goNotice() {
+    setSelectedMenu('notice');
+    window.location.href = "<%=request.getContextPath()%>/board/noticeList.do";
+}
+
+function goFAQ() {
+    setSelectedMenu('faq');
+    window.location.href = "<%=request.getContextPath()%>/board/faqList.do";
+}
+
+// 마이페이지 관련 함수들
+function goMyInfoSvt() {
+    setSelectedMenu('my-info');
+    window.location.href = "<%=request.getContextPath()%>/myPage/myInfoSvt.do";
+}
+
+function goMyInfo() {
+    setSelectedMenu('my-info');
+    window.location.href = "<%=request.getContextPath()%>/myPage/myInfo.do";
+}
+
+function goMyCalendar() {
+    setSelectedMenu('my-calendar');
+    window.location.href = "<%=request.getContextPath()%>/myPage/myCalendar.do";
+}
+
+function goMyMail() {
+    setSelectedMenu('my-mail');
+    window.location.href = "<%=request.getContextPath()%>/myPage/myMail.do";
+}
+
+function goMyAppeal() {
+    setSelectedMenu('my-appeal');
+    window.location.href = "<%=request.getContextPath()%>/board/appealList.do";
+}
+
+// DOM 로드 완료시 실행
+document.addEventListener("DOMContentLoaded", function () {
+    // 메뉴 접기/펼치기 기능
+    const navItems = document.querySelectorAll(".nav-item");
+    navItems.forEach(function (item) {
+        item.addEventListener("click", function (e) {
+            const nextElem = item.nextElementSibling;
+
+            // 서브메뉴가 있는 경우에만 토글
+            if (nextElem && nextElem.classList.contains("sub-menu")) {
+                e.preventDefault(); // 기본 클릭 이벤트 방지
+                nextElem.style.display = (nextElem.style.display === "none" || nextElem.style.display === "") ? "block" : "none";
+            }
+        });
+    });
+    
+    // 클릭 가능한 메뉴 항목들에 클릭 이벤트 추가
+    document.querySelectorAll('.nav-item[data-menu-id]').forEach(function(item) {
+        // onclick 속성이 없는 메뉴 항목들에만 클릭 이벤트 추가
+        if (!item.getAttribute('onclick')) {
+            item.addEventListener('click', function() {
+                var menuId = this.getAttribute('data-menu-id');
+                setSelectedMenu(menuId);
+            });
+        }
+    });
+    
+    // 메인 페이지가 아닐 경우에만 localStorage의 값으로 현재 메뉴 표시
+    let currentPath = window.location.pathname;
+    if (currentPath !== '/') {
+        restoreSelectedMenu();
+    }
+});
+</script>

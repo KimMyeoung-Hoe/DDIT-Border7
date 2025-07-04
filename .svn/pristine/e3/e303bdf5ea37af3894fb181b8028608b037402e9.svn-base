@@ -1,0 +1,1332 @@
+package kr.or.ddit.servant.controller;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import jakarta.servlet.http.HttpSession;
+import kr.or.ddit.contract.service.IContractService;
+import kr.or.ddit.servant.service.IServantService;
+import kr.or.ddit.service.IMyInfoService;
+import kr.or.ddit.util.MediaUtils;
+import kr.or.ddit.util.service.UtilService;
+import kr.or.ddit.vo.BwVO;
+import kr.or.ddit.vo.BwhVO;
+import kr.or.ddit.vo.CCAVO;
+import kr.or.ddit.vo.CDVO;
+import kr.or.ddit.vo.ContractVO;
+import kr.or.ddit.vo.CustomUser;
+import kr.or.ddit.vo.HCVO;
+import kr.or.ddit.vo.PaginationInfoVO;
+import kr.or.ddit.vo.SanctionVO;
+import kr.or.ddit.vo.SpecialtyVO;
+import kr.or.ddit.vo.UserVO;
+import kr.or.ddit.vo.WhSetionVO;
+import lombok.extern.slf4j.Slf4j;
+
+
+@Slf4j
+@Controller
+@RequestMapping("/servant")
+public class ServantController {
+	
+	@Autowired
+	private IServantService servantService;
+	
+	@Autowired
+	public IContractService contractService;
+	
+	@Autowired 
+	private IMyInfoService myInfoService;
+	
+	@Autowired
+	private UtilService userUtilService; 
+	
+	// ResourceLoader 필드 주입 추가
+    @Autowired
+    private ResourceLoader resourceLoader;
+    
+    @Value("${kr.or.ddit.upload.path}")
+    private String uploadPath;
+
+	// 공무원의 캘린더 기능 . 웹메일기능은 mypage로 연결
+	@GetMapping("/myCalendar.do")
+	public String servantMyCalendar() {
+		return "mypage/myCalendar";
+	}
+	@GetMapping("/myMail.do")
+	public String servantMyMail() {
+		return "mypage/myMail";
+	}
+
+	// 상위공무원 업무 페이지
+	@PreAuthorize("hasRole('ROLE_SVT_MANDARIN')")
+	@GetMapping("/mandarinWork.do")
+	public String servantMandarinWork() {
+		return "servant/mandarinWork";
+	}
+	
+	// 공무원 업무 페이지
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE')")
+	@GetMapping("/adminWork.do")
+	public String servantAdminWork(
+			@RequestParam(name="page", required = false, defaultValue = "1") int currentPage,
+			@RequestParam(required = false, defaultValue = "mediumCategory") String searchType,
+			@RequestParam(required = false) String searchWord,
+			@RequestParam(required = false, defaultValue = "DECLRECEPTDATE") String sortColumn,
+	        @RequestParam(required = false, defaultValue = "ASC") String sortDirection,
+			Model model) {
+		
+		PaginationInfoVO<Map<String, Object>> pagingVO = new PaginationInfoVO<>();
+		
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserVO user = userSec.getUser();
+        
+		int userNo = user.getUserNo();
+		
+		pagingVO.setUserNo(userNo);
+		if(StringUtils.isNotBlank(searchWord)) {
+	        pagingVO.setSearchType(searchType);
+	        pagingVO.setSearchWord(searchWord);
+	        
+	        // 검색 후 목록 페이지로 이동 할 때 검색된 내용들 적용시키기 위한 데이터 전달
+	        model.addAttribute("searchType", searchType);
+	        model.addAttribute("searchWord", searchWord);
+	    }
+		
+		if (StringUtils.isBlank(sortColumn)) {
+		    sortColumn = "DECLRECEPTDATE";
+		}
+		if (StringUtils.isBlank(sortDirection)) {
+			sortDirection = "ASC";
+		}
+		
+		pagingVO.setCurrentPage(currentPage);
+		
+		pagingVO.setSortColumn(sortColumn);
+		pagingVO.setSortDirection(sortDirection);
+		
+		pagingVO.setTotalRecord(servantService.selectCustomsCount(pagingVO)); // 총 업무 개수 조회
+		pagingVO.setDataList(servantService.selectCustomsList(pagingVO)); // 조회된 목록 데이터 설정
+		
+		log.info("servantAdminWork() -> pagingVO : {}", pagingVO);
+		model.addAttribute("sortColumn", sortColumn);
+        model.addAttribute("sortDirection", sortDirection);
+		model.addAttribute("pagingVO", pagingVO);
+
+		return "servant/adminWork";
+	}
+	
+	// 공무원 업무 페이지
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/quaranWork.do")
+	public String servantQuaranWork(@RequestParam(name="page", required = false, defaultValue = "1") int currentPage,
+			@RequestParam(required = false, defaultValue = "") String searchType,       // 검색 조건 추가 (기본값 빈 문자열로 모든 항목 검색)
+			@RequestParam(required = false) String searchWord,          // 검색어
+			@RequestParam(required = false) String sortColumn,
+	        @RequestParam(required = false) String sortDirection,
+			HttpSession session,
+			Model model) {
+		
+		log.info("inspectReview 실행 -> 검사검역 목록 보기 (페이징 및 검색)");
+		
+		PaginationInfoVO<Map<String, Object>> pagingVO = new PaginationInfoVO<>(); 
+		
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserVO user = userSec.getUser();
+        
+		int userNo = user.getUserNo();
+		
+		pagingVO.setUserNo(userNo);
+		
+		// 검색 조건 설정
+		if(StringUtils.isNotBlank(searchWord)) {
+	        pagingVO.setSearchType(searchType);
+	        pagingVO.setSearchWord(searchWord);
+	        model.addAttribute("searchType", searchType);
+	        model.addAttribute("searchWord", searchWord);
+	    }
+		
+		// 현재 페이지 설정 (startRow, endRow, startPage, endPage 계산)
+		pagingVO.setSortColumn(sortColumn);
+		pagingVO.setSortDirection(sortDirection);
+		
+		// 현재 페이지 설정
+		pagingVO.setCurrentPage(currentPage);
+		
+		// 총 레코드 수 및 데이터 목록 조회
+		int totalRecord = servantService.selectInspectReviewCount(pagingVO);
+		pagingVO.setTotalRecord(totalRecord);
+		pagingVO.setDataList(servantService.selectInspectReviewList(pagingVO));
+		
+		log.info("inspectReview() -> pagingVO : {}", pagingVO);
+
+		// 정렬 상태를 다시 모델에 담아 JSP로 전달
+		model.addAttribute("sortColumn", sortColumn);
+        model.addAttribute("sortDirection", sortDirection);
+		model.addAttribute("pagingVO", pagingVO);
+		
+		return "servant/quaranWork";
+	}
+	
+	
+	// 수출입 신고 업무 페이지
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/customsDeclaration.do")
+	public String customsDeclaration(
+			@RequestParam(name = "page", required = false, defaultValue = "1") int currentPage,
+	        @RequestParam(required = false, defaultValue = "mediumCategory") String searchType,
+	        @RequestParam(required = false) String searchWord,
+	        @RequestParam(required = false, defaultValue = "DECLRECEPTDATE") String sortColumn,
+	        @RequestParam(required = false, defaultValue = "ASC") String sortDirection,
+	        Model model) {
+		
+		PaginationInfoVO<Map<String, Object>> pagingVO = new PaginationInfoVO<>();
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserVO user = userSec.getUser();
+        
+		int userNo = user.getUserNo();
+		
+		pagingVO.setUserNo(userNo);
+		
+		if(StringUtils.isNotBlank(searchWord)) {
+	        pagingVO.setSearchType(searchType);
+        	pagingVO.setSearchWord(searchWord);
+        	
+	        // 검색 후 목록 페이지로 이동 할 때 검색된 내용들 적용시키기 위한 데이터 전달
+	        model.addAttribute("searchType", searchType);
+	        model.addAttribute("searchWord", searchWord);
+	    }
+		if (StringUtils.isBlank(sortColumn)) {
+		    sortColumn = "DECLRECEPTDATE";
+		}
+		if (StringUtils.isBlank(sortDirection)) {
+			sortDirection = "ASC";
+		}
+		
+		pagingVO.setCurrentPage(currentPage);
+		
+		pagingVO.setSortColumn(sortColumn);
+		pagingVO.setSortDirection(sortDirection);
+		
+		pagingVO.setTotalRecord(servantService.selectCustomsAllCount(pagingVO)); // 총 업무 개수 조회
+		pagingVO.setDataList(servantService.selectCustomsAllList(pagingVO)); // 조회된 목록 데이터 설정
+		
+		log.info("servantAdminWork() -> pagingVO : {}", pagingVO);
+		
+		model.addAttribute("sortColumn", sortColumn);
+        model.addAttribute("sortDirection", sortDirection);
+		model.addAttribute("pagingVO", pagingVO);
+		return "servant/customsDeclaration";
+	}
+
+	// 수출입 신고 상세
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/customsDetail.do")
+	public String importDetail(
+			@RequestParam("declDNo") String declDNo,
+            @RequestParam("contractType") String contractType,
+            Model model) {
+		
+		log.info("importDetail() -> declDNo: {}", declDNo);
+		log.info("importDetail() -> contractType: {}", contractType);
+		
+		Map<String, Object> customsNo = new HashMap<>();
+		customsNo.put("declDNo", declDNo);	
+		customsNo.put("contractType", contractType);	
+		
+	    // 서비스에서 데이터 조회
+	    Map<String, Object> customsDetailInfo = servantService.customsDetail(customsNo);
+	    log.info("customsDetail() -> customsDetail: {}", customsDetailInfo);
+	    
+	    customsDetailInfo.put("contractType", contractType);
+	    
+	    // 모델에 데이터 추가
+	    model.addAttribute("customsDetailInfo", customsDetailInfo);
+	    model.addAttribute("status", customsDetailInfo.get("status"));
+	    log.info("customsDetail() -> customsDetail: {}", customsDetailInfo);
+	    
+	    return "servant/customsDetail";
+	}
+	
+	/**
+	 * 신고필증 작성폼으로 이동
+	 * @param contractNo
+	 * @param declno
+	 * @param model
+	 * @return
+	 */
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/cdform.do")
+	public String declform(String contractNo, String declNo,int status, Model model) {
+		String goPage = "";
+		Map<String, String> errors = new HashMap<>();
+		
+		ContractVO contractVO = contractService.selectdeclDToContract(contractNo);
+		model.addAttribute("declNo",declNo);
+		model.addAttribute("status",status);
+		model.addAttribute("contractVO",contractVO);
+		
+		//수입인지 수출인지 작성 폼 변경
+		String port = contractNo.substring(0,3);
+		log.info("port : {}"+port);
+		if(port.equals("IMP")) {
+			goPage = "servant/icdform";
+		}
+		if(port.equals("EXP")) {
+			goPage = "servant/ecdform";
+		}
+		return goPage;
+	}
+	
+	/**
+	 * 신고필증 작성 하기
+	 * 직인찍고 끝이긴해
+	 * @param declno
+	 * @param model
+	 * @return
+	 */
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@PostMapping("/cdWrite.do")
+	public String cdWrite(CDVO cdVO,int status,Model model) {
+		String goPage = "";
+		Map<String, String> errors = new HashMap<>();
+		
+		// 1. cd 작성
+		int check = servantService.insertCD(cdVO);
+		int check2 =  0;
+
+		if(check > 0){
+			String declDNo = cdVO.getDeclDNo();
+			
+			String contractNo = cdVO.getContractNo();
+			String port = contractNo.substring(0,3);
+			String contractType = "IMP".equals(port) ? "수입" : "수출";
+			
+			try {
+				contractType = URLEncoder.encode(contractType, "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+			
+			//2. 이력추가
+			check = servantService.cdAppl(status, contractNo);
+			check2 = servantService.updateEndDecl(contractNo);
+			if(check>0 && check2 >0) {
+				
+				goPage = "redirect:/servant/customsDetail.do?declDNo="+declDNo+"&contractType="+contractType;
+			}else {
+				goPage = "/"; //2에서 에러
+			}
+			
+		}else {
+			goPage = "/"; //1에서 에러
+		}
+		return goPage;
+	}
+
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/cdDetail.do")
+	public String cdWrite(String cdNo, Model model) {
+		String goPage = "";
+		
+		String contractNo = userUtilService.getContractNoToCdNo(cdNo);
+		
+		ContractVO contractVO = contractService.selectdeclDToContract(contractNo);
+		
+		//CDVO cdVO = userUtilService.selectCD();
+		//model.addAttribute("declNo",declNo);
+		model.addAttribute("contractVO",contractVO);
+		
+		// --- 이미지 Base64 인코딩 로직 start ---
+        String base64Image = "";
+        //이미지 변경로직 필요할듯
+        String imageResourcePath = "classpath:static/img/AdministrativeSupportDepartment.png"; // resources/static/img 경로
+
+        try {
+            Resource resource = resourceLoader.getResource(imageResourcePath);
+
+            if (resource.exists()) {
+                try (InputStream is = resource.getInputStream()) {
+                    byte[] imageData = is.readAllBytes(); // Java 9 이상에서 사용 가능
+                    // Java 8 이하인 경우, 아래 주석 처리된 라인을 사용하거나 commons-io 라이브러리의 IOUtils.toByteArray(is)를 사용하세요.
+                    // byte[] imageData = new byte[is.available()]; is.read(imageData);
+
+                    base64Image = Base64.getEncoder().encodeToString(imageData);
+                    log.info("컨트롤러 DEBUG: Base64 이미지 인코딩 성공. 길이: {}", base64Image.length());
+                }
+            } else {
+                log.error("컨트롤러 ERROR: 이미지를 찾을 수 없습니다: {}", imageResourcePath);
+            }
+        } catch (IOException e) {
+            log.error("컨트롤러 ERROR: 이미지 읽기 중 IO 오류 발생: {}", e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("컨트롤러 ERROR: 이미지 처리 중 예외 발생: {}", e.getMessage(), e);
+        }
+        model.addAttribute("base64EncodedImage", base64Image);
+        // --- 이미지 Base64 인코딩 로직 end ---
+        
+		//수입인지 수출인지 작성 폼 변경
+		String port = contractNo.substring(0,3);
+		log.info("port : {}"+port);
+		if(port.equals("IMP")) {
+			goPage = "servant/icddetail";
+		}
+		if(port.equals("EXP")) {
+			goPage = "servant/ecddetail";
+		}
+		return goPage;
+	}
+	
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@PostMapping("/exaAppro")
+	public ResponseEntity<String> exaAppro(
+	    @RequestParam("status") int status,
+	    @RequestParam("declDNo") String declDNo,
+	    @RequestParam("contractNo") String contractNo) {
+		
+	    int result = 0 ;
+	    result = servantService.exaAppro(status, declDNo, contractNo);
+	    
+	    return result == 1 ? 
+	            ResponseEntity.ok("OK") : 
+	            ResponseEntity.badRequest().body("FAILED");
+	}
+	
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@PostMapping("/inpAppl")
+	public ResponseEntity<String> inpAppl(
+			@RequestParam("contractNo") String contractNo,
+			@RequestParam("status") int status,
+			@RequestParam("declNo") String declNo,
+			@RequestParam("consignorName") String consignorName) {
+		log.info("inpAppl()-> contractNo: {} ", contractNo);
+		log.info("inpAppl()-> status: {} ", status);
+		log.info("inpAppl()-> declNo: {} ", declNo);
+		log.info("inpAppl()-> consignorName: {} ", consignorName);
+		int result = 0 ;
+		result = servantService.inpAppl(status, consignorName, declNo, contractNo);
+		return result == 1 ? 
+				ResponseEntity.ok("OK") : 
+				ResponseEntity.badRequest().body("FAILED");
+	}
+	
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@PostMapping("/bwhAppl")
+	public ResponseEntity<String> bwhAppl(
+			@RequestParam("contractNo") String contractNo,
+			@RequestParam("status") int status,
+			@RequestParam("declNo") String declNo) {
+		log.info("inpAppl()-> contractNo: {} ", contractNo);
+		log.info("inpAppl()-> status: {} ", status);
+		log.info("inpAppl()-> declNo: {} ", declNo);
+		int result = 0 ;
+		result = servantService.bwhAppl(status, declNo, contractNo);
+		
+		return result == 1 ? ResponseEntity.ok("OK") :
+							 ResponseEntity.badRequest().body("FAILED");
+	}
+	
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@PostMapping("/qrnAppl")
+	public ResponseEntity<String> qrnAppl(
+			@RequestParam("contractNo") String contractNo,
+			@RequestParam("status") int status,
+			@RequestParam("declNo") String declNo) {
+		
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserVO user = userSec.getUser();
+		int servantNo = user.getUserNo();
+		log.info("inpAppl()-> contractNo: {} ", contractNo);
+		log.info("inpAppl()-> servantNo: {} ", servantNo);
+		log.info("inpAppl()-> status: {} ", status);
+		log.info("inpAppl()-> declNo: {} ", declNo);
+		
+		int result = 0 ;
+		result = servantService.qrnAppl(status, declNo, contractNo, servantNo);
+		
+		return result == 1 ? ResponseEntity.ok("OK") :
+			ResponseEntity.badRequest().body("FAILED");
+	}
+	
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@PostMapping("/txWrite")
+	public ResponseEntity<String> txWrite(
+			@RequestParam("contractNo") String contractNo,
+			@RequestParam("declNo") String declNo,
+			@RequestParam("prodNo") int prodNo,
+			@RequestParam("totalCost") int totalCost,
+			@RequestParam("status") int status) {
+		
+		log.info("inpAppl()-> contractNo: {} ", contractNo);
+		log.info("inpAppl()-> declNo: {} ", declNo);
+		log.info("inpAppl()-> prodNo: {} ", prodNo);
+		log.info("inpAppl()-> totalCost: {} ", totalCost);
+		log.info("inpAppl()-> status: {} ", status);
+		
+		int result = 0 ;
+		int checkTaxWrite = servantService.txWriteCheck(declNo);
+		
+		// 0건 셀렉트 되면
+		if(checkTaxWrite == 0) {
+			result = servantService.txWrite(contractNo, declNo, prodNo, totalCost, status);
+		}else {
+			// 이미 고지된 건인 경우
+			result = 1;
+		}
+		return result == 1 ? ResponseEntity.ok("OK") :
+			ResponseEntity.badRequest().body("FAILED");
+	}
+	
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@PostMapping("/cdAppl")
+	public ResponseEntity<String> cdAppl(
+			@RequestParam("contractNo") String contractNo,
+			@RequestParam("status") int status) {
+		log.info("inpAppl()-> contractNo: {} ", contractNo);
+		log.info("inpAppl()-> status: {} ", status);
+		
+		int result = 0 ;
+		result = servantService.cdAppl(status, contractNo);
+		
+		return result == 1 ? ResponseEntity.ok("OK") :
+			ResponseEntity.badRequest().body("FAILED");
+	}
+	
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@PostMapping("/exaReject")
+	public ResponseEntity<String> exaReject(
+			@RequestParam("declNo") String declNo,
+			@RequestParam("contractNo") String contractNo,
+			@RequestParam("status") int status) {
+		log.info("inpAppl()-> contractNo: {} ", contractNo);
+		log.info("inpAppl()-> status: {} ", status);
+		log.info("inpAppl()-> declNo: {} ", declNo);
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserVO user = userSec.getUser();
+        int servantNo = user.getUserNo();
+		int result = 0 ;
+		result = servantService.exaReject(declNo, status, contractNo, servantNo);
+		
+		return result == 1 ? ResponseEntity.ok("OK") :
+			ResponseEntity.badRequest().body("FAILED");
+	}
+	
+	// 수출입 이력 조회 페이지
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/customsHistory.do")
+	public String tradeHistory(
+			@RequestParam(name="page", required = false, defaultValue = "1") int currentPage,
+			@RequestParam(required = false, defaultValue = "mediumCategory") String searchType,
+			@RequestParam(required = false) String searchWord,
+			@RequestParam(required = false, defaultValue = "DECLRECEPTDATE") String sortColumn,
+	        @RequestParam(required = false, defaultValue = "DESC") String sortDirection,
+			Model model) {
+		
+		PaginationInfoVO<Map<String, Object>> pagingVO = new PaginationInfoVO<>();
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserVO user = userSec.getUser();
+		int userNo = user.getUserNo();
+		pagingVO.setUserNo(userNo);
+		
+		if(StringUtils.isNotBlank(searchWord)) {
+	        pagingVO.setSearchType(searchType);
+	        pagingVO.setSearchWord(searchWord);
+	        // 검색 후 목록 페이지로 이동 할 때 검색된 내용들 적용시키기 위한 데이터 전달
+	        model.addAttribute("searchType", searchType);
+	        model.addAttribute("searchWord", searchWord);
+	    }
+		if (StringUtils.isBlank(sortColumn)) {
+		    sortColumn = "DECLRECEPTDATE";
+		}
+		if (StringUtils.isBlank(sortDirection)) {
+			sortDirection = "DESC";
+		}
+		
+		pagingVO.setCurrentPage(currentPage);
+		
+		pagingVO.setSortColumn(sortColumn);
+		pagingVO.setSortDirection(sortDirection);
+		
+		pagingVO.setTotalRecord(servantService.selectCustomsHistoryCount(pagingVO)); // 총 업무 개수 조회
+		pagingVO.setDataList(servantService.selectCustomsHistoryList(pagingVO));	 // 조회된 목록 데이터 설정
+		
+		log.info("servantAdminWork() -> pagingVO : {}", pagingVO);
+		model.addAttribute("sortColumn", sortColumn);
+        model.addAttribute("sortDirection", sortDirection);
+		model.addAttribute("pagingVO", pagingVO);
+	    // 뷰 반환
+		return "servant/customsHistory";
+	}
+	
+	// 보세창고 이력 - 예림
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/whInventory.do")
+	public String whInventory(Model model) {
+		
+		List<BwhVO> bwhList = servantService.bwhList();
+		log.info("bwhList : {}", bwhList);
+		model.addAttribute("bwhList",bwhList);
+		return "servant/whInventory";
+	}
+	
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/whSection.do")
+	public String whSection(Model model, @RequestParam("bwhNo") int bwhNo) {
+		log.info("bwhNo : {}", bwhNo);
+		List<WhSetionVO> whSectionVO = servantService.whSection(bwhNo);
+		log.info("whSectionVO : {}", whSectionVO);
+		model.addAttribute("whSectionVO",whSectionVO);
+		return "servant/whSection";
+	}
+	
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/whSectionSelect.do")
+	@ResponseBody
+	public List<WhSetionVO> whSectionSelect(Model model, @RequestParam("bwhNo") int bwhNo) {
+		log.info("bwhNo : {}", bwhNo);
+		List<WhSetionVO> whSectionVO = servantService.whSection(bwhNo);
+		log.info("whSectionVO : {}", whSectionVO);
+		model.addAttribute("whSectionVO",whSectionVO);
+		return whSectionVO;
+	}
+	
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/whSectionHistory.do")
+	public String whSectionHistory(Model model, @RequestParam("whSectionNo") int whSectionNo) {
+		List<BwVO> bwList = servantService.whSectionHistory(whSectionNo);
+		log.info("bwList : {}", bwList);
+		if(bwList.isEmpty()) {
+			model.addAttribute("MSG" ,"해당 창고의 물품 이력이 없습니다.");
+			log.info(model.toString());
+		}
+		model.addAttribute("bwList",bwList);
+		return "servant/whSectionHistory";
+	}
+	
+	// 입고된 모든 물품
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/currentBwList.do")
+	public String currenctBwList(
+			@RequestParam(required = false) String searchType,
+			@RequestParam(required = false) String searchWord,
+			@RequestParam(required = false, defaultValue = "BW_ARRIVAL_DATE") String sortColumn,
+			@RequestParam(required = false, defaultValue = "desc") String sortDirection,
+			@RequestParam(required = false, defaultValue = "1") int currentPage,
+			Model model) {
+
+		log.info("searchType {}", searchType);
+		log.info("searchWord {}", searchWord);
+		log.info("sortColumn {}", sortColumn);
+		log.info("sortDirection {}", sortDirection);
+
+		PaginationInfoVO<Map<String, Object>> pagingVO = new PaginationInfoVO<>();
+		
+	
+		if(StringUtils.isNotBlank(searchWord)) {
+			if(StringUtils.isNotBlank(searchType)) {
+				pagingVO.setSearchType(searchType);
+				pagingVO.setSearchWord(searchWord);
+			}
+		}
+		
+		if(StringUtils.isNotBlank(sortColumn)) {
+			pagingVO.setSortColumn(sortColumn);
+		}
+			
+		if(StringUtils.isNotBlank(sortDirection)) {
+			pagingVO.setSortDirection(sortDirection);
+		}
+		
+		
+		pagingVO.setCurrentPage(currentPage);
+
+		
+		log.info("searchType {}", searchType);
+		log.info("searchWord {}", searchWord);
+		log.info("sortColumn {}", sortColumn);
+		log.info("sortDirection {}", sortDirection);
+
+		int shipmentTotalRecode = servantService.AllTotalRecode(pagingVO);
+		pagingVO.setTotalRecord(shipmentTotalRecode);
+		List<BwVO> crtBw = servantService.bwAwaiteAll(pagingVO);
+		model.addAttribute("crtBw", crtBw);
+		
+		
+		return "servant/currentBwList";
+	}
+	
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/writeBw.do")
+	public String InsertBw(HttpSession session ,Model model, @RequestParam("declNo") int declNo, @RequestParam String contractNo) {
+		//보세창고 리스트
+		log.info(contractNo);
+		List<BwhVO> bwhList = servantService.bwhList();
+		model.addAttribute("bwhList",bwhList);
+		model.addAttribute("declNo", declNo);
+		model.addAttribute("contractNo", contractNo);
+		
+		UserVO userVO = (UserVO) session.getAttribute("userVO");
+		log.info("userVO : {}", userVO);
+		return "servant/writeBw";
+	}
+	
+	// 반입 
+	@Transactional
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@PostMapping("/InsertBw.do")
+	public String InsertBw(BwVO bw, Model model) {
+		log.info("bw : {}", bw);
+		
+		// bw insert -> 트리거로 섹션 사용여부도 바뀌게 해놨음
+		int res = servantService.InsertBw(bw);
+		log.info("res : {}",res);
+		String contractNo = bw.getContractNo();
+		
+		ContractVO selectcontractVO = contractService.selectContract(contractNo);
+		int lastStatusCode = selectcontractVO.getLastStatusCode() + 1 ;
+		
+		Map<String, Object> param = new HashMap<>();
+		
+		param.put("contractNo", contractNo);
+		param.put("lastStatusCode", lastStatusCode);
+		param.put("contractStatusCode", lastStatusCode);
+	
+		
+		// 진행코드 이력 insert
+		if(res == 1) {
+			servantService.conRecordIst(param);
+			servantService.conLastStatCodeUpd(param);
+		}
+		
+		// last 진행코드 update
+	
+		
+		return "redirect:/servant/currentBwList.do";
+	}
+	
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@PostMapping("deleteBw.do")
+	public void deleteBw(int bwNo) {
+		int res = servantService.deleteBw(bwNo);
+		log.info("res : {}", res);
+		
+	}
+	
+	/*
+	 * @GetMapping("bwAwaitReceive") public String bwAwaitReceive(Model model){
+	 * List<DeclVO> bwAwaitlist = servantService.bwAwaitReceive();
+	 * model.addAttribute("bwAwaitlist",bwAwaitlist); return "servant/bwList"; }
+	 */
+	
+	// 검사검역 심사 페이지
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/inspectReview.do")
+	public String inspectReview(
+			@RequestParam(name="page", required = false, defaultValue = "1") int currentPage,
+			@RequestParam(required = false, defaultValue = "") String searchType,       // 검색 조건 추가 (기본값 빈 문자열로 모든 항목 검색)
+			@RequestParam(required = false) String searchWord,          // 검색어
+			@RequestParam(required = false) String sortColumn,
+	        @RequestParam(required = false) String sortDirection,
+			HttpSession session,
+			Model model) {
+		
+		log.info("inspectReview 실행 -> 검사검역 목록 보기 (페이징 및 검색)");
+		
+		PaginationInfoVO<Map<String, Object>> pagingVO = new PaginationInfoVO<>(); 
+		
+		// 검색 조건 설정
+		if(StringUtils.isNotBlank(searchWord)) {
+	        pagingVO.setSearchType(searchType);
+	        pagingVO.setSearchWord(searchWord);
+	        model.addAttribute("searchType", searchType);
+	        model.addAttribute("searchWord", searchWord);
+	    }
+		
+		// 현재 페이지 설정 (startRow, endRow, startPage, endPage 계산)
+		pagingVO.setSortColumn(sortColumn);
+		pagingVO.setSortDirection(sortDirection);
+		
+		// 현재 페이지 설정
+		pagingVO.setCurrentPage(currentPage);
+		
+		// 총 레코드 수 및 데이터 목록 조회
+		int totalRecord = servantService.selectInspectReviewAllCount(pagingVO);
+		pagingVO.setTotalRecord(totalRecord);
+		pagingVO.setDataList(servantService.selectInspectReviewAllList(pagingVO));
+		
+		log.info("inspectReview() -> pagingVO : {}", pagingVO);
+
+		// 정렬 상태를 다시 모델에 담아 JSP로 전달
+		model.addAttribute("sortColumn", sortColumn);
+        model.addAttribute("sortDirection", sortDirection);
+		model.addAttribute("pagingVO", pagingVO);
+		
+		return "servant/inspectReview";
+	}
+		
+	// 검사검역 체크리스트 페이지
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/inspectReviewDetail.do")
+	public String inspectReviewDetail(
+			@RequestParam("declNo") String declNo, 
+			Model model) {
+		log.info("inspectReviewDetail() 실행 -> declNo: {}", declNo);
+		
+		Map<String, Object> inspectDetail = servantService.selectInspectReviewDetail(declNo);
+		log.info("inspectDetail 데이터: {}", inspectDetail);
+		
+		model.addAttribute("inspectDetail", inspectDetail);
+		
+		return "servant/inspectReviewDetail";
+	}
+	
+	// 검사검역 결과 저장
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@PostMapping("/inspectReviewResult.do")
+	public String inspectReviewResultPost(
+			@RequestParam(value="targetDiseases", required = false) List<String> targetDiseases
+			, HCVO hcVO) {
+		
+		log.info("inspectReviewResultPost->hcVO : {}", hcVO);
+		log.info("inspectReviewResultPost->targetDiseases : {}", targetDiseases);
+		
+		servantService.updateInspectResult(hcVO, targetDiseases);
+		
+		return "redirect:/servant/inspectHistory.do";
+	}
+
+	// 검사검역 결과 페이지
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/inspectReviewResult.do")
+	public String inspectReviewResultGet(
+			@RequestParam("hcNo") String hcNo
+			, Model model) {
+		
+		log.info("inspectReviewResultGet->hcNo : {}", hcNo);
+		
+		Map<String, Object> resultData = servantService.getInspectResult(hcNo);
+		
+		if (resultData != null) {
+			model.addAttribute("resultData", resultData);
+		} 
+		
+		return "servant/inspectReviewResult";
+	}
+	
+	// 검사검역 이력 페이지
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/inspectHistory.do")
+	public String inspectHistory(
+			@RequestParam(name="page", required = false, defaultValue = "1") int currentPage,
+			@RequestParam(required = false, defaultValue = "") String searchType,
+			@RequestParam(required = false) String searchWord,
+			@RequestParam(required = false) String sortColumn,
+			@RequestParam(required = false) String sortDirection,
+			HttpSession session,
+			Model model) {
+		
+		log.info("inspectHistory 실행 -> 완료된 검사검역 이력 조회");
+		
+		PaginationInfoVO<Map<String, Object>> pagingVO = new PaginationInfoVO<>();
+		
+		// 검색 조건 설정
+		if(StringUtils.isNotBlank(searchWord)) {
+	        pagingVO.setSearchType(searchType);
+	        pagingVO.setSearchWord(searchWord);
+	        model.addAttribute("searchType", searchType);
+	        model.addAttribute("searchWord", searchWord);
+	    }
+		
+		pagingVO.setSortColumn(sortColumn);
+		pagingVO.setSortDirection(sortDirection);
+		
+		pagingVO.setCurrentPage(currentPage);
+		
+		// 총 이력 수 조회
+		int totalRecord = servantService.selectInspectHistoryCount(pagingVO);
+		pagingVO.setTotalRecord(totalRecord);
+		log.info("ddddddddddd : {}",totalRecord);
+		
+		// 데이터 목록 조회
+		List<Map<String, Object>> historyList = servantService.selectInspectHistoryList(pagingVO);
+		pagingVO.setDataList(historyList);
+		
+		log.info("inspectHistory() -> pagingVO : {}", pagingVO);
+
+		// 최종 PagaingVO 객체 정보 전달
+		model.addAttribute("sortColumn", sortColumn);
+        model.addAttribute("sortDirection", sortDirection);
+		model.addAttribute("pagingVO", pagingVO);
+		
+		return "servant/inspectHistory";
+	}
+	
+	/** QRCode 생성 및 이미지화	 
+    @ResponseBody
+    @PostMapping("/generateQRCode")
+	public ResponseEntity<Map<String, String>> generateQRCode(
+			@RequestParam("declNo") String declNo){
+
+		Map<String, String> response = new HashMap<>();
+		
+        try {
+            // 1. declNo로 QR 코드를 생성할 데이터 조회
+            Map<String, Object> qrDataMap = servantService.selectInspectReviewDetail(declNo);
+
+            if (qrDataMap == null || qrDataMap.isEmpty()) {
+                throw new IllegalArgumentException("QR 코드를 생성할 데이터가 없습니다.");
+            }
+
+            // 2. QR코드 생성 및 이미지 파일 저장
+            String qrCodeJsonData = servantService.generateSaveQRCodeInspection(qrDataMap);
+            
+            response.put("status", "success");
+            response.put("message", "QR 코드 생성 및 저장 완료. \n (경로 C:/upload/qrcode) \n 스캐너를 실행합니다라닷닷오늘도~");
+            response.put("qrData", qrCodeJsonData); // 스캔 후 데이터 검증용
+
+        } catch (Exception e) {
+            log.error("QR 코드 생성 중 오류 : ", e);
+            response.put("status", "error");
+            response.put("message", "오류 : " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+        return ResponseEntity.ok(response);
+	}
+	
+    */
+	/** QRCode 생성 및 이미지화	 */
+	@ResponseBody
+	@PostMapping("/generateQRCode")
+	public ResponseEntity<Map<String, String>> generateQRCode(
+			@RequestParam("declNo") String declNo){
+		
+		Map<String, String> response = new HashMap<>();
+		
+        try {
+            // 1. declNo로 QR 코드를 생성할 데이터 조회
+            Map<String, Object> qrDataMap = servantService.selectInspectReviewDetail(declNo);
+
+            if (qrDataMap == null || qrDataMap.isEmpty()) {
+                throw new IllegalArgumentException("QR 코드를 생성할 데이터가 없습니다.");
+            }
+
+            // 2. QR코드 생성 및 파일명과 데이터가 담긴 Map 반환
+            // (반환 타입이 String에서 Map<String, String>으로 변경됨)
+            Map<String, String> serviceResult = servantService.generateSaveQRCodeInspection(qrDataMap);
+            
+            // 3. 파일명으로 이미지 URL 생성
+            String fileName = serviceResult.get("fileName");
+            String imageUrl = "/upload/qrcode/" + fileName; // 웹 접근 경로
+
+            // 4. 최종 응답에 imageUrl 추가
+            response.put("status", "success");
+            response.put("message", "QR 코드 생성 및 저장 완료. \n (경로 C:/upload/qrcode) \n 스캐너를 실행합니다.");
+            response.put("qrData", serviceResult.get("qrData")); // 스캔 후 데이터 검증용
+            response.put("imageUrl", imageUrl); // 생성된 이미지 URL
+            response.put("fileName", fileName); // 이미지 파일 명
+
+        } catch (Exception e) {
+            log.error("QR 코드 생성 중 오류 : ", e);
+            response.put("status", "error");
+            response.put("message", "오류 : " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+        return ResponseEntity.ok(response);
+	}
+	
+	
+	
+	// 이용자 관리
+    @PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/userMng.do")
+	public String userMngList(
+			 @RequestParam(name="page", required = false, defaultValue = "1") int currentPage,
+		        @RequestParam(required = false) String searchType,
+		        @RequestParam(required = false) String searchWord,
+		        @RequestParam(required = false) String sortColumn,
+		        @RequestParam(required = false) String sortDirection,
+		        Model model) {
+    	
+    	 log.info("userMngList 실행 -> 관리자의 유저 리스트 보기");
+    	    
+    	    PaginationInfoVO<UserVO> pagingVO = new PaginationInfoVO<>();
+    	    
+    	    if(StringUtils.isNotBlank(searchWord)) {
+    	        pagingVO.setSearchType(searchType);
+    	        pagingVO.setSearchWord(searchWord);
+    	        model.addAttribute("searchType", searchType);
+    	        model.addAttribute("searchWord", searchWord);
+    	    }
+    	    
+    	    pagingVO.setSortColumn(sortColumn);
+    	    pagingVO.setSortDirection(sortDirection);
+    	    
+    	    pagingVO.setCurrentPage(currentPage);
+    	    
+    	    int totalRecord = servantService.selectUserMngCount(pagingVO);
+    	    pagingVO.setTotalRecord(totalRecord);
+    	    List<UserVO> userList = servantService.selectUserMngList(pagingVO);
+    	    pagingVO.setDataList(userList);
+    	    
+    	    model.addAttribute("pagingVO", pagingVO);
+    	    
+    	    return "servant/userMng";
+	}
+
+	// 이용자 상세정보 수정
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/userMngDetail.do")
+	public String UserMngDetail(int userNo, Model model) {
+		
+		log.info("UserMngDetail()실행..! -> 사용자 상세정보 이동");
+	    UserVO userVO = servantService.userMngDetail(userNo);
+
+	    // 체크된 관세사 주력분야
+	    if (userVO != null && "ROLE_CCA".equals(userVO.getAuthCode()) && userVO.getCcaVO() != null) {
+	        Map<String, Boolean> specialtyCheckedMap = new HashMap<>();
+
+	        List<SpecialtyVO> userSpecialtyObjects = userVO.getCcaVO().getSpecialty();
+	        List<String> userSpecialtyCodes = new ArrayList<>();
+
+	        if (userSpecialtyObjects != null) {
+	            for (SpecialtyVO svo : userSpecialtyObjects) {
+	                if (svo.getSpecialtyCodeVO() != null) {
+	                    userSpecialtyCodes.add(String.valueOf(svo.getSpecialtyCodeVO().getSpecialtyCode()));
+	                }
+	            }
+	        }
+
+	        // 체크 판단
+	        for (int i = 1; i <= 7; i++) {
+	            specialtyCheckedMap.put("specialty" + i, userSpecialtyCodes.contains(String.valueOf(i)));
+	        }
+
+	        model.addAttribute("specialtyCheckedMap", specialtyCheckedMap);
+	    }
+
+	    model.addAttribute("userVO", userVO);
+	    return "servant/userMngDetail";
+	}
+	
+	// 이용자 정보 수정
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/userMngForm.do")
+	public String userMngForm(
+			@RequestParam("userNo") int userNo, 
+			Model model) {
+		
+		log.info("userMngForm() 실행..! -> 사용자 정보 수정 페이지로 이동. userNo: {}", userNo);
+	    UserVO userVO = servantService.userMngDetail(userNo);
+
+	    // 체크된 관세사 주력분야
+	    if (userVO != null && "ROLE_CCA".equals(userVO.getAuthCode()) && userVO.getCcaVO() != null) {
+	        Map<String, Boolean> specialtyCheckedMap = new HashMap<>();
+
+	        List<SpecialtyVO> userSpecialtyObjects = userVO.getCcaVO().getSpecialty();
+	        List<String> userSpecialtyCodes = new ArrayList<>();
+
+	        if (userSpecialtyObjects != null) {
+	            for (SpecialtyVO svo : userSpecialtyObjects) {
+	                if (svo.getSpecialtyCodeVO() != null) {
+	                    userSpecialtyCodes.add(String.valueOf(svo.getSpecialtyCodeVO().getSpecialtyCode()));
+	                }
+	            }
+	        }
+
+	        for (int i = 1; i <= 7; i++) {
+	            specialtyCheckedMap.put("specialty" + i, userSpecialtyCodes.contains(String.valueOf(i)));
+	        }
+
+	        model.addAttribute("specialtyCheckedMap", specialtyCheckedMap);
+	    }
+
+	    model.addAttribute("userVO", userVO);
+
+	    return "servant/userMngForm";
+	}
+	
+	// 이용자 정보 수정 폼
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@PostMapping("/userMngUpdate.do")	
+	public String userMngUpdate(
+            UserVO userVO,
+            @RequestParam(name = "profileImageFile", required = false) MultipartFile profileImageFile,
+            RedirectAttributes ra) {
+		
+		log.info("userMngUpdate() 실행..! 수정할 사용자 정보: {}", userVO);
+
+        if (profileImageFile != null && !profileImageFile.isEmpty()) {
+            log.info("업로드된 프로필 파일: {}", profileImageFile.getOriginalFilename());
+        }
+
+        String goPage = "";
+
+        try {
+            // 서비스를 호출할 때, 컨트롤러에 주입된 uploadPath를 함께 전달합니다.
+            int result = servantService.userMngUpdate(userVO, profileImageFile, uploadPath);
+
+            if (result > 0) {
+                ra.addFlashAttribute("message", "사용자 정보가 성공적으로 수정되었습니다.");
+                goPage = "redirect:/servant/userMngDetail.do?userNo=" + userVO.getUserNo();
+            } else {
+                ra.addFlashAttribute("message", "수정에 실패했습니다.");
+                goPage = "redirect:/servant/userMngForm.do?userNo=" + userVO.getUserNo();
+            }
+
+        } catch (Exception e) {
+            log.error("사용자 정보 수정 중 오류 발생", e);
+            ra.addFlashAttribute("message", "오류로 인해 수정에 실패했습니다.");
+            goPage = "redirect:/servant/userMngForm.do?userNo=" + userVO.getUserNo();
+        }
+        return goPage;
+	}
+	
+    @ResponseBody
+    @GetMapping("/displayProfileImage")
+    public ResponseEntity<byte[]> displayProfileImage(String fileName) throws Exception{
+    	
+    	InputStream in = null;
+        ResponseEntity<byte[]> entity = null;
+        log.info("displayProfileImage fileName: " + fileName);
+
+        try {
+            String formatName = fileName.substring(fileName.lastIndexOf(".") + 1);
+            MediaType mType = MediaUtils.getMediaType(formatName);
+            HttpHeaders headers = new HttpHeaders();
+
+            in = new FileInputStream(fileName); 
+            log.info("in : " + in);
+            
+            if (mType != null) {
+                headers.setContentType(mType);
+            } else {
+                fileName = fileName.substring(fileName.indexOf("_") + 1);
+                headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+                headers.add("Content-Disposition", "attachment; filename=\""+ 
+                		new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + "\"");
+            }
+            
+            entity = new ResponseEntity<byte[]>(IOUtils.toByteArray(in), headers, HttpStatus.CREATED);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            entity = new ResponseEntity<byte[]>(HttpStatus.BAD_REQUEST);
+            
+        } finally {
+                try { in.close(); } catch (IOException e) { e.printStackTrace(); }
+        }
+        return entity;
+    }
+	
+	
+	// 공무원 계정 관리
+    @PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/servantMng.do")
+	public String servantMngList(
+			@RequestParam(name="page", required = false, defaultValue = "1") int currentPage,
+	        @RequestParam(required = false) String searchType,
+	        @RequestParam(required = false) String searchWord,
+	        @RequestParam(required = false) String sortColumn,
+	        @RequestParam(required = false, defaultValue = "DESC") String sortDirection,
+	        Model model) {
+    	
+    	log.info("servantMngList 실행 -> 공무원 계정 리스트 보기");
+    	    
+    	PaginationInfoVO<UserVO> pagingVO = new PaginationInfoVO<>();
+    	    
+    	if(StringUtils.isNotBlank(searchWord)) {
+    	    pagingVO.setSearchType(searchType);
+    	    pagingVO.setSearchWord(searchWord);
+    	    model.addAttribute("searchType", searchType);
+    	    model.addAttribute("searchWord", searchWord);
+    	}
+    	    
+    	pagingVO.setSortColumn(sortColumn);
+    	pagingVO.setSortDirection(sortDirection);
+    	pagingVO.setCurrentPage(currentPage);
+    	    
+    	int totalRecord = servantService.selectServantMngCount(pagingVO);
+    	pagingVO.setTotalRecord(totalRecord);
+    	List<UserVO> servantList = servantService.selectServantMngList(pagingVO);
+    	pagingVO.setDataList(servantList);
+    	    
+    	model.addAttribute("pagingVO", pagingVO);
+		model.addAttribute("sortColumn", sortColumn);
+		model.addAttribute("sortDirection", sortDirection);
+    	    
+    	return "servant/servantMng";
+	}
+	
+	// 공무원 정보 상세조회
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/servantMngDetail.do")
+	public String servantMngDetail(@RequestParam("userNo") int userNo
+			, Model model) {
+		log.info("servantMngDetail() 실행 -> 공무원 상세 정보 페이지로 이동. userNo: {}", userNo);
+		
+		UserVO servantInfo = servantService.selectServantMngDetail(userNo);
+		model.addAttribute("servantInfo", servantInfo);
+		
+		return "servant/servantMngDetail";
+	}
+	
+	// 공무원 정보 수정
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/servantMngForm.do")
+	public String servantMngForm(@RequestParam("userNo") int userNo
+			, Model model) {
+		log.info("servantMngForm() 실행 -> 공무원 정보 수정 페이지로 이동. userNo: {}", userNo);
+		
+		UserVO servantInfo = servantService.selectServantMngDetail(userNo);
+		model.addAttribute("servantInfo", servantInfo);
+		
+		return "servant/servantMngForm";
+	}
+	
+	// 공무원 정보 수정 폼
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@PostMapping("/servantMngUpdate.do")
+	public String servantMngUpdate(UserVO userVO
+			, RedirectAttributes ra) {
+		log.info("servantMngUpdate() 실행. 수정할 정보: {}", userVO);
+		
+		int result = servantService.updateServantMng(userVO);
+		
+		if (result > 0) {
+			ra.addFlashAttribute("message", "정보가 성공적으로 수정되었습니다.");
+		} else {
+			ra.addFlashAttribute("message", "정보 수정에 실패했습니다.");
+		}
+		
+		return "redirect:/servant/servantMngDetail.do?userNo=" + userVO.getUserNo();
+	}
+	
+	// 부서 관리
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/departMng.do")
+	public String departList() {
+		return "servant/departMng";
+	}
+	
+	// 대행 계약 목록 조회 - 예림
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/contractList.do")
+	public String agencygAreement(Model model) {
+//		List<DeclVO> contractList = servantService.contractList();
+//		model.addAttribute("contractList", contractList);
+		return "servant/contractList";
+	}
+
+	/** 제재이력 화면 요청
+	 * @param currentPage (int)현재 페이지
+	 * @param searchType (String)검색타입
+	 * @param searchWord (String)검색단어
+	 * @param sortColumn (String)정렬기준
+	 * @param sortDirection (String)정렬방법
+	 * @param model
+	 * @return
+	 */
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/sanctionList.do")
+	public String sanctionList(
+			@RequestParam(name = "sPage", required = false, defaultValue = "1") int sCurrentPage,
+			@RequestParam(required = false) String sSearchType,
+			@RequestParam(required = false) String sSearchWord,
+			@RequestParam(required = false, defaultValue = "sanctionDate") String sSortColumn,
+			@RequestParam(required = false, defaultValue = "DESC") String sSortDirection,
+			@RequestParam(name = "cPage", required = false, defaultValue = "1") int cCurrentPage,
+			@RequestParam(required = false) String cSearchType,
+			@RequestParam(required = false) String cSearchWord,
+			@RequestParam(required = false, defaultValue = "ccaName") String cSortColumn,
+			@RequestParam(required = false, defaultValue = "ASC") String cSortDirection,
+			@RequestParam(required = false, defaultValue = "sanctionS") String tabType,
+			Model model) {
+
+		// (제재건별) 화면 페이징을 위한 VO 생성
+		PaginationInfoVO<Map<String, Object>> sPagingVO = new PaginationInfoVO<>();
+		
+		sPagingVO.setCurrentPage(sCurrentPage);					// 현재페이지
+		
+		sPagingVO.setSortColumn(sSortColumn);					// 정렬기준
+		sPagingVO.setSortDirection(sSortDirection);				// 정렬방법
+		model.addAttribute("sSortColumn", sSortColumn);
+		model.addAttribute("sSortDirection", sSortDirection);
+
+		// 검색단어가 존재할 경우 검색타입과 검색단어를 페이징VO와 model에 저장
+		if(StringUtils.isNotBlank(sSearchWord)) {
+			sPagingVO.setSearchType(sSearchType);				// 검색타입
+			sPagingVO.setSearchWord(sSearchWord);				// 검색단어
+			
+		    model.addAttribute("sSearchType", sSearchType);
+		    model.addAttribute("sSearchWord", sSearchWord);
+		}
+
+		int sTotalRecord = servantService.selectSanctionSAllCount(sPagingVO);
+		sPagingVO.setTotalRecord(sTotalRecord); 				// 총 row 수
+		sPagingVO.setDataList(servantService.selectSanctionSList(sPagingVO)); // 조회된 목록 데이터 설정
+		
+		model.addAttribute("sPagingVO", sPagingVO);
+		
+		// (관세사별) 화면 페이징을 위한 VO 생성
+		PaginationInfoVO<Map<String, Object>> cPagingVO = new PaginationInfoVO<>();
+		
+		cPagingVO.setCurrentPage(cCurrentPage);					// 현재페이지
+		
+		cPagingVO.setSortColumn(cSortColumn);					// 정렬기준
+		cPagingVO.setSortDirection(cSortDirection);				// 정렬방법
+		model.addAttribute("cSortColumn", cSortColumn);
+		model.addAttribute("cSortDirection", cSortDirection);
+
+		// 검색단어가 존재할 경우 검색타입과 검색단어를 페이징VO와 model에 저장
+		if(StringUtils.isNotBlank(cSearchType)) {
+			cPagingVO.setSearchType(cSearchType);				// 검색타입
+			cPagingVO.setSearchWord(cSearchWord);				// 검색단어
+			
+		    model.addAttribute("cSearchType", cSearchType);
+		    model.addAttribute("cSearchWord", cSearchWord);
+		}
+
+		int cTotalRecord = servantService.selectSanctionCAllCount(cPagingVO);
+		cPagingVO.setTotalRecord(cTotalRecord); 				// 총 row 수
+		cPagingVO.setDataList(servantService.selectSanctionCList(cPagingVO)); // 조회된 목록 데이터 설정
+		
+		model.addAttribute("tabType", tabType);
+		model.addAttribute("cPagingVO", cPagingVO);
+
+		return "servant/sanctionList";
+	}
+
+}

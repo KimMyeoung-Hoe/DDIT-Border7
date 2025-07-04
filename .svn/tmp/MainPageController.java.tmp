@@ -1,0 +1,209 @@
+package kr.or.ddit.controller;
+
+import java.text.SimpleDateFormat;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+<<<<<<< .mine
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+||||||| .r483447
+=======
+import org.springframework.web.bind.annotation.RequestParam;
+>>>>>>> .r484002
+
+import kr.or.ddit.servant.service.IServantService;
+import kr.or.ddit.service.IBoardService;
+import kr.or.ddit.service.ILogisticsService;
+import kr.or.ddit.service.IMainService;
+import kr.or.ddit.service.IStatisticsService;
+import kr.or.ddit.vo.AppealVO;
+import kr.or.ddit.vo.BwVO;
+import kr.or.ddit.vo.ContractVO;
+import kr.or.ddit.vo.CustomUser;
+import kr.or.ddit.vo.HsCodeVO;
+import kr.or.ddit.vo.NoticeVO;
+import kr.or.ddit.vo.PaginationInfoVO;
+import kr.or.ddit.vo.PeriodStat;
+import kr.or.ddit.vo.StowageVO;
+import kr.or.ddit.vo.UserVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+public class MainPageController {
+	
+	@Autowired
+	private IServantService servantService;
+	
+	@Autowired
+	private IBoardService boardService;
+	
+	@Autowired
+	private IMainService mainService;
+	
+	@Autowired
+	private ILogisticsService logisticsService;
+	
+
+	@GetMapping("/")
+	public String main(@RequestParam(required = false)@DateTimeFormat(pattern = "yyyy-MM-dd") Date startDate,
+			@RequestParam(required = false)@DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate,
+			Model model) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();	// SecurityContextHolder에 저장된 권한정보
+        String loginAuth = null;
+        UserVO user = null;
+        
+        //다진 추가
+        //HS코드 분석 부분 개수 가져옴
+        int exportCount = mainService.selectExportCount();//수출 개수
+        int importCount = mainService.selectImportCount();//수입 개수
+        int hsCodeCount = mainService.selectHsCodeCount();//hs코드 개수
+        int contractCount = mainService.selectContractCount();//최근 7일 신규등록 건수
+        
+        model.addAttribute("exportCount",exportCount);
+        model.addAttribute("importCount",importCount);
+        model.addAttribute("hsCodeCount",hsCodeCount);
+        model.addAttribute("contractCount",contractCount);
+        
+        if (authentication != null && authentication.isAuthenticated()
+            && !(authentication.getPrincipal() instanceof String)) {
+
+            CustomUser userSec = (CustomUser) authentication.getPrincipal();
+            user = userSec.getUser();
+
+            Collection<? extends GrantedAuthority> authorities = userSec.getAuthorities();
+            loginAuth = authorities.stream()
+                                   .findFirst()
+                                   .map(GrantedAuthority::getAuthority)
+                                   .orElse(null);
+        }
+     
+        
+        if("ROLE_CCA".equals(loginAuth)) {
+        	int ccaNo = user.getUserNo(); //관세사일때임 ㅇㅇ
+        	List<ContractVO> ccaContractList = mainService.ccaContractList(ccaNo);
+        	model.addAttribute("contractList",ccaContractList);
+        	return "roleMain/ROLE_CCA";
+        }
+        
+        if ("ROLE_SVT_ADMIN".equals(loginAuth) || "ROLE_SVT_QUARANTINE".equals(loginAuth)) {
+        	int userNo = user.getUserNo();
+        	// 통관신고 업무
+        	PaginationInfoVO<Map<String, Object>> custPagingVO = new PaginationInfoVO<>();
+        	custPagingVO.setUserNo(userNo);
+        	custPagingVO.setSortColumn("DECLRECEPTDATE");
+        	custPagingVO.setSortDirection("DESC");											// 일단 최신순 정렬
+        	custPagingVO.setStartRow(1);	
+        	custPagingVO.setEndRow(5);
+        	custPagingVO.setTotalRecord(servantService.selectCustomsCount(custPagingVO)); 		// 총 업무 개수 조회
+        	custPagingVO.setDataList(servantService.selectCustomsList(custPagingVO)); 			// 조회된 목록 데이터 설정
+        	
+        	log.info("main() -> custPagingVO : {}", custPagingVO);
+        	model.addAttribute("custPagingVO",custPagingVO);
+        	
+        	// 검사검역 심사 업무
+        	PaginationInfoVO<Map<String, Object>> inspectPagingVO = new PaginationInfoVO<>();
+        	inspectPagingVO.setUserNo(userNo);
+        	inspectPagingVO.setSortColumn("QRNT_RECEPT_DATE");
+        	inspectPagingVO.setSortDirection("DESC");														// 일단 최신순 정렬
+        	inspectPagingVO.setStartRow(1);
+        	inspectPagingVO.setEndRow(5);
+        	inspectPagingVO.setTotalRecord(servantService.selectInspectReviewCount(inspectPagingVO)); 		// 총 업무 개수 조회
+        	inspectPagingVO.setDataList(servantService.selectInspectReviewList(inspectPagingVO)); 			// 조회된 목록 데이터 설정
+        	
+        	log.info("main() -> inspectPagingVO : {}", inspectPagingVO);
+        	model.addAttribute("inspectPagingVO",inspectPagingVO);
+        	
+        	// 보세창고 반출입 업무
+        	PaginationInfoVO<Map<String, Object>> BwPagingVO = new PaginationInfoVO<>();
+        	BwPagingVO.setSortColumn("bw_arrival_date");
+        	BwPagingVO.setSortDirection("DESC");														
+        	BwPagingVO.setStartRow(1);
+        	BwPagingVO.setEndRow(5);
+        	BwPagingVO.setTotalRecord(servantService.AllTotalRecode(BwPagingVO)); 
+        	List<BwVO> bwAll = servantService.bwAwaiteAll(BwPagingVO);
+        	
+			log.info("main() -> bwAll : {}",  bwAll);
+        	model.addAttribute("bwAll",bwAll);
+        	
+        	//
+    		PaginationInfoVO<AppealVO> apealPagingVO = new PaginationInfoVO<>();
+    		apealPagingVO.setUserNo(userNo);
+    		apealPagingVO.setSortColumn("APPEAL_REG_DATE DESC");
+    		apealPagingVO.setCurrentPage(1);
+    		apealPagingVO.setStartRow(1);
+    		apealPagingVO.setEndRow(3);
+    		apealPagingVO.setTotalRecord(boardService.getappealSvtCount(apealPagingVO)); 		// 총 업무 개수 조회
+    		apealPagingVO.setDataList(boardService.appealSvtList(apealPagingVO)); 	
+        	
+			log.info("main() -> apealPagingVO : {}", apealPagingVO);
+			model.addAttribute("apealPagingVO",apealPagingVO);
+        	
+        	return "roleMain/ROLE_SVT_ADMIN";
+        }
+        
+        if("ROLE_LOGISTICS".equals(loginAuth)) {
+        	
+        	int userNo = user.getUserNo();
+        	String searchType = "";
+        	String searchWord = "";
+        	String sortColumn = "";
+        	int currentPage = 1;
+        	
+        	PaginationInfoVO<StowageVO> pageVO = new PaginationInfoVO<>();
+        	pageVO.setUserNo(userNo);
+        	pageVO.setSearchType(searchType);
+        	pageVO.setSearchWord(searchWord);
+        	pageVO.setSortColumn(sortColumn);
+        	pageVO.setCurrentPage(currentPage);
+        	
+        	int totalCount = logisticsService.getStowageCount(pageVO);
+        	pageVO.setTotalRecord(totalCount);
+        	
+        	List<StowageVO> stowageList = logisticsService.stowageList(pageVO);
+        	model.addAttribute("stowageList",stowageList);
+        	
+        }
+        
+        if("ROLE_CONSIGNOR".equals(loginAuth)) {
+        		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+        	    Map<String, Object> startEnd = new HashMap<>();
+        	    startEnd.put("startDate", startDate != null ? sdf.format(startDate) : null);
+        	    startEnd.put("endDate", endDate != null ? sdf.format(endDate) : null);
+
+        		List<Map<String, Object>> qrntAgreeList = statisticsService.hsCodeQrntAgree(startEnd);
+        		List<Map<String, Object>>  qrntDisAgreeList = statisticsService.hsCodeQrntDisAgree(startEnd);
+        		
+        		model.addAttribute("startEnd", startEnd);
+        		model.addAttribute("qrntAgreeList", qrntAgreeList);
+        		model.addAttribute("qrntDisAgreeList", qrntDisAgreeList);
+        		
+        		
+        		
+        		//다진 추가
+        			int userNo = user.getUserNo();
+                	List<ContractVO> consignorContractList = mainService.consignorContractList(userNo);
+                	model.addAttribute("contractList",consignorContractList);
+                
+              
+        	return "roleMain/ROLE_CONSIGNOR";
+        }
+        
+		return "main";
+	}
+}

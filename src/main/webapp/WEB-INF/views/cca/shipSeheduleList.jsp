@@ -1,0 +1,143 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<%@ include file="../modules/header.jsp" %>
+<%@ include file="../modules/sidebar.jsp" %>
+<%@ include file="../modules/modal.jsp" %>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/contract.css">
+<script src="<%= request.getContextPath() %>/lib/jQuery/jquery-3.7.1.min.js"></script>
+<style type="text/css">
+
+</style>
+</head>
+<body>
+	<div class="app-container">
+		<main class="main-content-area">
+			<div class="content-header">
+				<div class="breadcrumb-warp">
+					<div class="col-sm-12">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/">Home</a></li>
+							<li class="breadcrumb-item"><a href="/">적재신청</a></li>
+					<li class="breadcrumb-item"><a href="/">선박조회</a></li>
+						</ol>
+					</div>
+				</div>
+
+				<div class="content-title">선박 조회 / 신청</div>
+				<p class="desc">선박을 확인하고 신청할 수 있습니다.</p>
+
+			</div>
+			
+			<div class="search-filter-section">
+			    <div class="search-input-wrapper">
+			        <input type="text" class="form-input search-input" placeholder="의뢰번호, 제목, 관세사, 국가, 물품 검색">
+			    </div>
+			    <div class="filter-group">
+			        <select class="form-select filter-select">
+			            <option>모든 상태</option>
+			        </select>
+			        <select class="form-select filter-select">
+			            <option>날짜순</option>
+			        </select>
+			        <button class="action-button primary">상태순</button>
+			    </div>
+			</div>
+			
+			<div class="dashboard-section table-section">
+			    <table class="data-table">
+			        <thead>
+			            <tr>
+			            
+			                <th>선박 명칭</th>
+			                <th>선박 종류</th>
+			                <th>선박 크기</th>
+			               	<th>출발항</th>
+			                <th>도착항</th> 
+			                <th>출발일시</th>
+			                <th>도착일시</th>
+			                <th>등록</th>
+			          	</tr>
+			        </thead>
+			        <tbody>
+			        	<c:forEach items="${shipsVO}" var="ship">
+
+			            	<tr>
+				                <td>${ship.shipsVO.shipName}</td>
+				                <td>${ship.shipsVO.shipType}</td>
+				                <td>${ship.shipsVO.shipGt}</td>
+				                <td>${ship.portFromName}</td>
+				                <td>${ship.portToName}</td> 
+				                <td>${ship.shipScheduleDeparture}</td>
+				                <td>${ship.shipScheduleArrival}</td>
+				                <td><button class="btn btn-primary stowageBtn" data-ship-schedule-no="${ship.shipScheduleNo}">신청</button></td>
+			               </tr>
+			           </c:forEach>
+			        </tbody>
+			    </table>
+			
+			   <!--  <div class="table-footer">
+			        <div class="pagination">
+			            <a href="#">&lt;&lt;</a>
+			            <a href="#">&lt;</a>
+			            <a href="#">6</a>
+			            <a href="#">7</a>
+			            <a href="#">8</a>
+			            <a href="#" class="active">9</a>
+			            <a href="#">10</a>
+			            <a href="#">&gt;</a>
+			            <a href="#">&gt;&gt;</a>
+			        </div>
+			        <div class="footer-buttons">
+		
+			        </div>
+			    </div> -->
+			</div>
+			
+			
+			<a href="/contract/declform.do" style="color: #007bff; margin-top: 20px; display: inline-block;">문서작성 페이지(테스트 링크용)</a>
+		</main>	
+	</div>
+</body>
+<script type="text/javascript">
+
+
+		let contractNo = "${cfVO.contractNos}".slice(0, 14) 
+		console.log( contractNo );
+		
+		let containerDetail = {
+				contractNos : "${cfVO.contractNos}",
+				containerNos : "${cfVO.containerNos}",
+				containerDetailStowageQtys : "${cfVO.containerDetailStowageQtys}"
+		}
+		
+		$(".stowageBtn").on("click", function(){
+			let shipScheduleNo = $(this).data("ship-schedule-no")
+			console.log(containerDetail)
+			console.log(shipScheduleNo)
+			
+			 $.ajax({
+			        url: "/cca/containerStowage.do", 
+			        method: "POST",
+			        contentType: "application/json", 
+			        data: JSON.stringify({ 
+			        	shipScheduleNo: shipScheduleNo, 
+			            containerDetail: containerDetail 
+			        }),
+			        success: function(resp) {
+			        	
+			        	  location.href ="/cca/ccaDetailContract/"+ contractNo;
+			           
+			        }
+			    });
+			
+		})
+	
+</script>
+</html>

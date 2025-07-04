@@ -1,0 +1,775 @@
+/* ========================================================= */
+/* decl.css 파일 전용 스타일 (기존 decl.css 내용 + 진행 바 수정) */
+/* ========================================================= */
+
+/* --- 페이지 헤더 내부 정보 (header-info) --- */
+/* .page-header-container 안의 .header-info */
+.page-header-container {
+    margin-bottom: 30px; /* 헤더 아래 여백 */
+}
+
+.header-info {
+    display: flex;
+    gap: 20px;
+    font-size: 0.9em; /* 14px 기준 */
+    color: #a0a0d0; /* 약간 어두운 텍스트 */
+    margin-top: 10px; /* 제목과의 간격 */
+    flex-wrap: wrap; /* 작은 화면에서 줄바꿈 허용 */
+}
+
+/* --- 상태 뱃지 (status-badge-custom) --- */
+.status-badge-custom {
+    background-color: rgba(0, 123, 255, 0.2); /* 강조색의 투명한 배경 */
+    color: #007bff; /* 강조색 */
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.75em; /* 12px 기준 */
+    font-weight: 500;
+    white-space: nowrap;
+    align-self: flex-start; /* flex-start 정렬을 통해 상단에 위치 */
+}
+
+.status-badge-custom.blue-variant {
+    background-color: rgba(121, 149, 255, 0.2); /* 약간 다른 파란색 계열 */
+    color: #7995ff;
+}
+
+/* --- 진행 상태 섹션 (progress-section 내부 요소) --- */
+/* .dashboard-section 안에 위치 */
+/* 진행 상태 섹션 간격 조정 */
+.progress-section { /* dashboard-section과 함께 사용 */
+    margin-bottom: 40px; /* 아래 간격 늘림 */
+}
+
+.progress-title {
+    font-size: 1.4em; /* 18px 기준 */
+    font-weight: 600;
+    margin-bottom: 15px; /* 제목 아래 간격 */
+    color: #f0f0f0; /* 밝은 색상 */
+}
+
+.progress-subtitle {
+    font-size: 0.9em; /* 14px 기준 */
+    color: #a0a0d0; /* 약간 어두운 텍스트 */
+    margin-bottom: 25px; /* 아래 간격 */
+}
+
+/* 진행 바 전체 컨테이너 (수직 정렬) */
+.progress-bar {
+    display: flex;
+    flex-direction: column; /* 수직으로 변경 */
+    gap: 15px; /* 항목 간 간격 */
+    padding-left: 20px; /* 아이콘이 좌측으로 더 돌출되도록 공간 확보 */
+}
+
+.progress-step {
+    display: flex;
+    align-items: flex-start; /* 아이콘과 텍스트 상단 정렬 */
+    position: relative;
+    padding-left: 40px; /* 아이콘이 차지하는 공간 확보 */
+}
+
+.step-circle-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #4a4a60; /* 기본 배경색 (비활성) */
+    color: #c0c0c0; /* 기본 글자색 (비활성) */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8em;
+    font-weight: bold;
+    flex-shrink: 0; /* 아이콘이 줄어들지 않도록 */
+}
+
+.step-circle-container.active {
+    background-color: #34a853; /* 활성 배경색 (초록색) */
+    color: white; /* 활성 글자색 */
+}
+
+/* 활성 상태일 때 체크 표시 */
+.step-circle-container.active::before {
+    content: '\2713'; /* 유니코드 체크 표시 */
+    font-size: 1.2em; /* 체크 표시 크기 */
+}
+
+.step-text-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* 남은 공간을 차지하도록 */
+}
+
+.step-title {
+    font-size: 1em;
+    font-weight: 600;
+    color: #f0f0f0;
+    margin-bottom: 5px;
+}
+
+.step-details {
+    font-size: 0.85em;
+    color: #a0a0d0;
+    line-height: 1.4;
+}
+
+/* 진행 상태 하단 담당 관세사/업데이트 정보 */
+.progress-meta {
+    display: flex;
+    justify-content: space-around;
+    padding: 15px 0;
+    margin-top: 20px;
+    border-top: 1px solid #4a4a60;
+}
+
+.progress-meta-item {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.progress-meta-item .label {
+    font-size: 0.8em;
+    color: #a0a0d0;
+    margin-bottom: 5px;
+}
+
+.progress-meta-item .value {
+    font-size: 1em;
+    font-weight: 600;
+    color: #f0f0f0;
+}
+
+
+/* --- 탭 메뉴 스타일 --- */
+.tab-container {
+    margin-bottom: 40px; /* 탭 전체 아래 간격 */
+}
+
+.tab-buttons {
+    display: flex;
+    background-color: rgba(255, 255, 255, 0.05); /* 탭 배경색 */
+    border-radius: 8px 8px 0 0; /* 상단 라운드 */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* 하단 구분선 */
+    overflow: hidden; /* 버튼 border-radius를 위해 */
+}
+
+.tab-button {
+    flex: 1; /* 동일 너비 */
+    padding: 15px 20px;
+    background-color: transparent;
+    border: none;
+    color: #c0c0c0;
+    font-size: 1.1em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    outline: none; /* 클릭 시 아웃라인 제거 */
+    text-align: center; /* 텍스트 중앙 정렬 */
+    white-space: nowrap; /* 탭 이름이 줄바꿈되지 않도록 */
+}
+
+.tab-button:hover {
+    color: #f0f0f0;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.tab-button.active {
+    color: #007bff; /* 활성화된 탭 색상 */
+    font-weight: 600;
+    background-color: #2b2b40; /* 활성화된 탭 배경색 */
+    border-bottom: 1px solid #007bff; /* 하단 활성 선 */
+    transform: translateY(1px); /* 살짝 위로 들린 느낌 */
+}
+
+.tab-button.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; /* 탭 하단 선과 일치하도록 */
+    left: 0;
+    width: 100%;
+    height: 3px; /* 활성화 표시 두께 */
+    background-color: #007bff;
+}
+
+.tab-content {
+    display: none; /* 기본적으로 모든 탭 콘텐츠 숨김 */
+    padding: 30px 0; /* 내부 패딩 */
+}
+
+.tab-content.active {
+    display: block; /* 활성화된 탭 콘텐츠만 표시 */
+}
+
+/* --- 콘텐츠 그리드 (content-grid) --- */
+/* 의뢰 정보 섹션 간격 조정 */
+.content-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px; /* 그리드 아이템 사이 간격 늘림 */
+    margin-bottom: 40px; /* 아래 간격 늘림 */
+}
+
+/* --- 정보 카드 (info-card-custom 내부 요소) --- */
+/* .dashboard-section 클래스도 함께 적용됩니다. */
+/* 의뢰 정보 카드 내부 간격 조정 */
+.info-card-custom {
+    padding: 20px; /* 내부 패딩 약간 줄임 */
+}
+
+.card-title {
+    font-size: 1.4em; /* 18px 기준 */
+    font-weight: 600;
+    margin-bottom: 15px; /* 제목 아래 간격 줄임 */
+    color: #f0f0f0; /* 밝은 색상 */
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 20px; /* 아이템 사이 간격 조정 */
+    margin-bottom: 12px; /* info-grid 아래 간격 줄임 */
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-item.full-width {
+    grid-column: span 2;
+}
+
+.info-label {
+    font-size: 0.8em; /* 라벨 폰트 크기 약간 줄임 */
+    color: #a0a0d0; /* 약간 어두운 텍스트 */
+    margin-bottom: 6px; /* 라벨 아래 간격 조정 */
+}
+
+.info-value {
+    font-size: 0.95em; /* 값 필드 폰트 크기 약간 늘림 */
+    color: #f0f0f0; /* 밝은 텍스트 */
+    background-color: rgba(255, 255, 255, 0.08); /* 더 어두운 입력 필드 배경 */
+    padding: 10px 15px; /* 값 필드 패딩 조정 */
+    border-radius: 4px;
+    border: 1px solid #4a4a60; /* 다크 테마 테두리 */
+}
+
+/* --- 담당자 정보 (contact-section 내부 요소) --- */
+/* 담당자 정보 섹션 상단 마진 조정 */
+.contact-section {
+    margin-top: 30px;
+}
+
+/* 담당자 아이템 간 간격 조정 */
+.contact-item {
+    display: flex;
+    align-items: flex-start; /* 아바타와 텍스트의 시작점 맞춤 */
+    gap: 10px; /* 아바타와 내용 사이 간격 조정 */
+    margin-bottom: 18px;
+}
+
+/* 담당자 아바타 크기 조정 */
+.contact-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1em; /* 내부 숫자 크기 조정 */
+    color: white;
+    flex-shrink: 0; /* 크기가 줄어들지 않도록 */
+}
+
+.contact-avatar.primary {
+    background-color: #007bff; /* 주 강조색 */
+}
+
+.contact-avatar.secondary {
+    background-color: #34a853; /* 녹색 계열 */
+}
+
+.contact-details {
+    flex: 1;
+}
+
+/* 담당자 이름 및 정보 폰트 크기 조정 */
+.contact-name {
+    font-weight: 600;
+    font-size: 1em;
+    margin-bottom: 4px;
+    color: #f0f0f0; /* 밝은 텍스트 */
+}
+
+.contact-info {
+    font-size: 0.9em;
+    color: #c0c0c0; /* 약간 어두운 텍스트 */
+    line-height: 1.4;
+}
+
+/* --- 상세 설명 섹션 (description-section-custom 내부 요소) --- */
+/* .dashboard-section 클래스도 함께 적용됩니다. */
+/* 상세 설명 섹션 상단 마진 조정 */
+.description-section-custom {
+    margin-top: 30px;
+    padding: 20px; /* 내부 패딩 약간 줄임 */
+}
+
+/* 상세 설명 텍스트 스타일 조정 */
+.description-section-custom p {
+    color: #c0c0c0; /* 텍스트 색상 */
+    font-size: 0.95em;
+    line-height: 1.6;
+}
+
+/* --- 서류 관리 탭 (documents) 관련 스타일 --- */
+.section-alert {
+    background-color: rgba(255, 99, 71, 0.1); /* 연한 주황색 배경 */
+    border: 1px solid tomato; /* 주황색 테두리 */
+    color: tomato; /* 텍스트 색상 */
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    font-size: 0.9em;
+}
+
+.section-alert i {
+    font-size: 1.2em;
+}
+
+.file-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #4a4a60; /* 구분선 */
+}
+
+/* .file-item:last-child {
+    border-bottom: none; 마지막 항목은 선 없음
+} */
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-grow: 1;
+}
+
+.file-info i {
+    font-size: 1.5em;
+    color: #007bff;
+}
+
+.file-item.completed .file-info i {
+    color: #34a853; /* 완료된 파일 아이콘 색상 */
+}
+
+.file-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.file-name {
+    font-size: 1em;
+    font-weight: 600;
+    color: #f0f0f0;
+    margin-bottom: 4px;
+}
+
+.file-meta {
+    font-size: 0.8em;
+    color: #a0a0d0;
+}
+
+.file-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.action-button.secondary.file-action { /* 파일 관리 버튼에만 적용 */
+    background-color: transparent;
+    color: #007bff;
+    border: 1px solid #007bff;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: bold;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.action-button.secondary.file-action:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.action-button.secondary.disabled {
+    color: #808080;
+    border-color: #808080;
+    cursor: not-allowed;
+    background-color: transparent;
+}
+
+.status-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #4a4a60;
+}
+
+.status-heading {
+    font-size: 1.1em;
+    color: #f0f0f0;
+    margin-bottom: 10px;
+}
+
+.status-text {
+    font-size: 1em;
+    color: #c0c0c0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-text i {
+    color: #ffc107; /* 대기중 아이콘 색상 */
+}
+
+/* --- 진행 내역 탭 (history) 관련 스타일 --- */
+.section-description {
+    font-size: 0.9em;
+    color: #c0c0c0;
+    margin-bottom: 30px;
+}
+
+.history-title {
+    font-size: 1.2em;
+    color: #f0f0f0;
+    margin-bottom: 20px;
+}
+
+.timeline {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: relative;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px; /* 아이콘과 정렬 */
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #4a4a60; /* 타임라인 라인 색상 */
+}
+
+.timeline-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 25px;
+    position: relative;
+}
+
+.timeline-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #34a853; /* 체크 아이콘 배경색 */
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.9em;
+    flex-shrink: 0;
+    margin-right: 15px;
+    z-index: 1; /* 라인 위에 표시 */
+    border: 2px solid #287a3d; /* 약간 어두운 테두리 */
+}
+
+.timeline-content {
+    flex-grow: 1;
+}
+
+.timeline-title {
+    font-size: 1em;
+    font-weight: 600;
+    color: #f0f0f0;
+    margin-bottom: 5px;
+}
+
+.timeline-date {
+    font-size: 0.8em;
+    color: #a0a0d0;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.timeline-description {
+    font-size: 0.9em;
+    color: #c0c0c0;
+    line-height: 1.5;
+}
+
+
+/* --- 액션 버튼 그룹 (action-buttons-custom) --- */
+/* 액션 버튼 그룹 상단 마진 및 패딩 조정 */
+.action-buttons-custom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 25px; /* 상단 패딩 늘림 */
+    border-top: 1px solid #4a4a60; /* 다크 테마 구분선 */
+    margin-top: 40px; /* 섹션과 버튼 사이 간격 늘림 */
+}
+
+.action-buttons-custom.bottom-fixed {
+    position: sticky; /* 하단 고정 */
+    bottom: 0;
+    background-color: #17193b; /* 페이지 배경과 동일하게 */
+    padding: 25px 30px; /* 패딩 조정 */
+    margin-top: 0; /* 기존 마진 제거 */
+    z-index: 10; /* 다른 콘텐츠 위에 오도록 */
+    width: 100%; /* 부모 너비에 맞춤 */
+    box-sizing: border-box; /* 패딩 포함 너비 */
+    border-top: 1px solid #4a4a60; /* 상단 구분선 */
+}
+
+
+.btn-group-custom {
+    display: flex;
+    gap: 15px; /* 버튼 간 간격 늘림 */
+}
+
+.action-button {
+    padding: 12px 25px; /* 버튼 패딩 조정 */
+    border-radius: 8px; /* 버튼 모서리 둥글게 */
+    cursor: pointer;
+    font-size: 1em; /* 버튼 폰트 사이즈 조정 */
+    font-weight: bold;
+    transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px; /* 아이콘과 텍스트 사이 간격 */
+    white-space: nowrap; /* 버튼 텍스트 줄바꿈 방지 */
+}
+
+.action-button.primary {
+    background-color: #007bff;
+    color: white;
+    border: none;
+}
+
+.action-button.primary:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+.action-button.secondary {
+    background-color: transparent;
+    color: #c0c0c0; /* 회색 텍스트 */
+    border: 1px solid #4a4a60; /* 연한 테두리 */
+}
+
+.action-button.secondary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #f0f0f0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+
+/* --- 반응형 디자인 추가/조정 --- */
+@media (max-width: 1024px) { /* 태블릿 가로 방향 */
+    .main-content-area {
+        padding: 25px;
+    }
+    .content-grid {
+        gap: 30px;
+    }
+}
+
+@media (max-width: 768px) { /* 태블릿 세로 및 모바일 */
+    .main-content-area {
+        padding: 20px;
+        margin-left: 0; /* 사이드바 없는 경우 */
+    }
+
+    .page-header-container {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+
+    .header-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 5px;
+    }
+    
+    .status-badge-custom {
+        align-self: flex-start; /* 모바일에서 뱃지 위치 조정 */
+    }
+
+    .content-grid {
+        grid-template-columns: 1fr;
+        gap: 25px; /* 모바일에서 카드 간 간격 조정 */
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .action-buttons-custom {
+        flex-direction: column;
+        gap: 15px; /* 버튼 그룹과 뒤로 가기 버튼 사이 간격 */
+        align-items: stretch;
+        padding-top: 20px;
+        margin-top: 30px;
+    }
+
+    .action-buttons-custom.bottom-fixed {
+        padding: 15px 20px; /* 모바일 하단 고정 버튼 패딩 조정 */
+    }
+
+    .btn-group-custom {
+        flex-direction: column; /* 모바일에서 버튼 세로로 쌓기 */
+        width: 100%;
+        gap: 10px;
+    }
+
+    .btn-group-custom .action-button {
+        width: 100%; /* 버튼이 전체 너비 차지 */
+        justify-content: center; /* 버튼 텍스트 중앙 정렬 */
+    }
+
+    /* 진행 바 (수직형) 모바일 반응형 */
+    .progress-bar {
+        padding-left: 10px; /* 모바일에서 아이콘 위치 조정 */
+    }
+    .progress-step {
+        padding-left: 35px; /* 모바일에서 아이콘이 차지하는 공간 조정 */
+    }
+    .step-circle-container {
+        width: 25px;
+        height: 25px;
+        font-size: 0.7em;
+    }
+    .step-circle-container.active::before {
+        font-size: 1em;
+    }
+    .step-title {
+        font-size: 0.95em;
+    }
+    .step-details {
+        font-size: 0.8em;
+    }
+
+    .progress-meta {
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 15px;
+        padding: 10px 0;
+    }
+
+    /* 탭 버튼 모바일 최적화 */
+    .tab-buttons {
+        flex-wrap: wrap; /* 버튼이 너무 많으면 줄바꿈 */
+        border-radius: 8px; /* 전체 탭 버튼 컨테이너 라운드 */
+        border-bottom: none; /* 하단 선 제거 */
+    }
+
+    .tab-button {
+        flex-basis: 100%; /* 각 버튼이 한 줄에 하나씩 */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* 각 버튼에 하단 선 */
+        border-radius: 0; /* 개별 버튼 라운드 제거 */
+    }
+
+    .tab-button:first-child {
+        border-top-left-radius: 8px; /* 첫 번째 버튼 상단 좌측 라운드 */
+        border-top-right-radius: 8px; /* 첫 번째 버튼 상단 우측 라운드 */
+    }
+
+    .tab-button:last-child {
+        border-bottom-left-radius: 8px; /* 마지막 버튼 하단 좌측 라운드 */
+        border-bottom-right-radius: 8px; /* 마지막 버튼 하단 우측 라운드 */
+        border-bottom: none; /* 마지막 버튼은 선 없음 */
+    }
+    
+    .tab-button.active::after {
+        display: none; /* 모바일에서는 하단 활성 선 숨김 */
+    }
+
+    .tab-content {
+        padding: 20px 0; /* 모바일 탭 콘텐츠 패딩 조정 */
+    }
+
+    .file-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 0;
+    }
+
+    .file-actions {
+        width: 100%;
+        justify-content: flex-end; /* 버튼 우측 정렬 */
+    }
+
+    .timeline::before {
+        left: 10px; /* 모바일 타임라인 라인 조정 */
+    }
+
+    .timeline-icon {
+        margin-right: 10px; /* 모바일 타임라인 아이콘 간격 조정 */
+        width: 28px;
+        height: 28px;
+        font-size: 0.8em;
+    }
+}
+
+@media (max-width: 480px) { /* 소형 모바일 기기 */
+    .status-badge-custom {
+        font-size: 0.7em;
+        padding: 5px 10px;
+    }
+    .action-button {
+        padding: 10px 20px;
+        font-size: 0.9em;
+    }
+    .upload-card .card-header h3 {
+        font-size: 1.1em;
+    }
+    .upload-card .action-button {
+        padding: 6px 12px;
+        font-size: 0.8em;
+    }
+    .upload-card .upload-label i {
+        font-size: 2.5em;
+    }
+    .upload-card .upload-label p {
+        font-size: 1em;
+    }
+    .upload-card .upload-label small {
+        font-size: 0.8em;
+    }
+}

@@ -1,0 +1,687 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib uri="jakarta.tags.core" prefix="c"%>
+<%@ taglib uri="jakarta.tags.fmt" prefix="fmt" %>
+<%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>검사검역 상세 및 진행</title>
+<%@ include file="../modules/header.jsp" %>
+<%@ include file="../modules/sidebar.jsp" %>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.1.0/dist/jsQR.min.js"></script>
+<link rel="stylesheet" href="<%= request.getContextPath() %>/css/main.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<style type="text/css">
+.section { margin-bottom: 25px; }
+
+/* --- officer-input-section 공통 스타일 --- */
+.officer-input-section {
+    padding: 25px; /* 초기 선언 값으로 통일 */
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+.officer-input-section .section-header { margin-top: 0; }
+.officer-input-section .form-input-group { margin-bottom: 15px; }
+.officer-input-section .form-input-group > label { display: block; font-weight: bold; margin-bottom: 5px; }
+.officer-input-section .form-input-group input[type="text"],
+.officer-input-section .form-input-group textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+.officer-input-section .inline-group { display: flex; align-items: center; gap: 10px; }
+.officer-input-section .inline-group > label { margin-bottom: 0; font-weight: bold; flex-shrink: 0; }
+
+/* --- form-detail-group 공통 스타일 --- */
+.form-detail-group {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+}
+.form-detail-group > label {
+    font-weight: bold; /* bold로 통일 */
+    color: #555;
+    width: 158px;
+    flex-shrink: 0;
+    margin-top:10px;
+}
+.form-detail-group > span { color: #333; font-weight: 600; /* 기존 폰트 웨이트 유지 */ }
+
+/* --- hr 스타일 --- */
+hr { border: 0; height: 1px; background-color: #e0e0e0; margin: 30px 0; }
+
+/* --- sub-header 스타일 --- */
+.sub-header {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #343a40;
+    margin-top: 20px;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* --- info-column 내 label 스타일 (세분화된 스타일) --- */
+.info-column .form-input-group > label { font-size: 1rem; }
+
+/* --- [수정] 질병 목록 레이아웃 --- */
+.disease-list {
+    padding: 15px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: flex; /* flexbox로 가로 정렬 및 줄바꿈 설정 */
+    flex-wrap: wrap;
+    gap: 10px 15px; /* 세로 간격, 가로 간격 */
+}
+/* [수정] 각 질병 항목 스타일 */
+.disease-item {
+    display: inline-flex; /* 내부 요소를 한 줄로 정렬 */
+    align-items: center;
+    flex-grow: 0; /* 불필요하게 늘어나지 않도록 설정 */
+    flex-shrink: 0;
+    margin-right: 4px;
+}
+/* [수정] 질병 이름 라벨과 체크박스 순서 및 간격 */
+.disease-item .form-check-label {
+    margin-right: 8px; /* 이름과 체크박스 사이 간격 */
+}
+
+/* --- 아코디언 트리거 --- */
+.accordion-trigger { display: flex; align-items: center; cursor: pointer; user-select: none; }
+.accordion-trigger label { cursor: pointer; }
+.accordion-trigger i { margin-left: 8px; transition: transform 0.2s ease-in-out; }
+.accordion-trigger.active i { transform: rotate(180deg); }
+
+/* --- 정보 컬럼 컨테이너 --- */
+.info-columns-container { display: flex; justify-content: space-between; gap: 4%; }
+.info-column { width: 48%; }
+
+/* --- [수정] QR 스캐너 모달 관련 스타일 --- */
+#qrScannerModal .modal-dialog {
+    max-width: none; /* 모달의 최대 너비를 적절하게 설정 */
+    width: 90%;
+}
+#qrScannerModal .modal-body > div {
+    display: flex;
+    gap: 30px; /* 스캐너와 이미지 사이 간격 */
+    align-items: center;
+    justify-content: center;
+}
+#videoContainer {
+    flex-basis: 450px; /* 스캐너 영역의 기본 너비를 450px로 설정 */
+    height: 338px; /* 4:3 비율에 맞춘 높이 */
+    position: relative;
+    background-color: #222;
+    border-radius: 4px;
+    overflow: hidden;
+    /* padding-top 트릭 제거 */
+}
+#webcamVideo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+#qrImageContainer {
+    flex-basis: 350px; /* QR 이미지 영역의 기본 너비를 350px로 설정 */
+    text-align: center;
+}
+#generatedQrImage {
+    width: 100%; /* 컨테이너 너비에 꽉 채움 */
+    height: auto;
+    border: 1px solid #ddd;
+}
+#feedback {
+    text-align: center;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+/* --- 카드 메인 레이아웃 --- */
+.card-main { display: flex; justify-content: space-between; gap: 2%; }
+.card-left, .card-right {
+    width: 49%;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.card-left .section-header, .card-right .section-header { margin-top: 0; }
+
+/* --- section-header 선 제거 (기존 클래스 유지) --- */
+.section-header {
+    border-bottom: 1px solid #475569; /* 다른 곳에 적용되는 선을 위해 다시 추가 */
+    position: relative;
+    padding: 10px 16px;
+}
+
+/* --- 검사·검역 결과 보고서 섹션 헤더 (flexbox를 사용하여 정렬) --- */
+.section-header-inspection {
+    display: flex; /* Flexbox 활성화 */
+    justify-content: space-between; /* 양쪽 끝으로 정렬 */
+    align-items: center; /* 세로 중앙 정렬 */
+    border-bottom: none !important; /* 선 제거 */
+    position: relative;
+    padding: 10px 16px;
+}
+
+/* 검사·검역 결과 보고서 제목 h3의 하단 마진 제거 */
+.section-header-inspection h3 {
+    margin-bottom: 0;
+}
+
+/* QR 코드 입력 버튼의 상단 마진 제거 */
+.section-header-inspection #qrScanBtn {
+    margin-top: 0 !important;
+}
+/* 모달창 위치 중앙으로 수정 */
+#qrScannerModal .modal-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    width: auto;
+}
+.form-check-input{
+	position: relative;
+    margin-top: 0;
+    margin-left: 0;
+}
+</style>
+</head>
+<body>
+<div class="app-container">
+	<main class="main-content-area">
+		<div class="content-header">
+		   <div class="breadcrumb-warp">
+			   <div class="col-sm-12">
+			   <ol class="breadcrumb">
+			   		<li class="breadcrumb-item"><a href="/">Home</a></li>
+			   		<li class="breadcrumb-item"><a href="/servant/inspectReview.do">검사·검역 심사</a></li>
+			   		<li class="breadcrumb-item active"><a href="#">검사·검역 체크리스트</a></li>
+			   </ol>
+			   </div>
+		   </div>
+		   <div class="content-title">검사·검역 체크리스트</div>
+		   <p class="desc">신청된 검사·검역을 실시하고 결과를 입력합니다.</p>
+		</div>
+
+		<form action="/servant/inspectReviewResult.do" method="post" id="inspectReviewForm">
+            <input type="hidden" name="declNo" value="${inspectDetail.DECL_NO}">
+            <input type="hidden" name="hcNo" value="${inspectDetail.HC_NO}">
+
+			<div class="section">
+	            <div class="card-main">
+	                <div class="card-left">
+	                    <div class="section-header"><h3>검사·검역 대상 물품 정보</h3></div>
+	                    <div class="form-detail-group">
+		                    <label>품명 :</label>
+		                    <span>${inspectDetail.PRODUCT_NAME}</span>
+	                    </div>
+	                    <div class="form-detail-group">
+		                    <label>품종 :</label>
+		                    <span>${inspectDetail.HS_NCC_NAME} (${inspectDetail.HS_KR_NAME})</span>
+	                    </div>
+	                    <div class="form-detail-group">
+		                    <label>무게 :</label>
+		                    <span><fmt:formatNumber value="${inspectDetail.HC_WEIGHT}" pattern="#,##0.##" /> KG</span>
+	                    </div>
+	                    <div class="form-detail-group">
+		                    <label>수량 :</label>
+		                    <span>${inspectDetail.PRODUCT_QTY} 개</span>
+	                    </div>
+	                    <div class="form-detail-group">
+		                    <label>학명 :</label>
+		                    <span>${inspectDetail.HS_EN_NAME}</span>
+	                    </div>
+	                    <div class="form-detail-group">
+		                    <label>원산지 :</label>
+		                    <span>${inspectDetail.PRODUCT_ORIGIN}</span>
+	                    </div>
+	                </div>
+	                
+	                <div class="card-right">
+	                    <div class="section-header"><h3>신청 기본 정보</h3></div>
+	                    <div class="form-detail-group">
+	                    	<label>신고접수 일련번호 :</label>
+	                    	<span>${inspectDetail.HC_NO}</span>
+	                    </div>
+	                    <div class="form-detail-group">
+		                    <label>접수일 :</label>
+		                    <span><fmt:formatDate value="${inspectDetail.QRNT_RECEPT_DATE}" pattern="yyyy-MM-dd"/></span>
+	                    </div>
+	                    <div class="form-detail-group">
+		                    <label>신청인 성명 :</label>
+		                    <span>${inspectDetail.CONSIGNOR_USER_NAME}</span>
+	                    </div>
+		                    <div class="form-detail-group">
+		                    <label>상호명 :</label><span>${inspectDetail.CONSIGNOR_NAME}</span>
+	                    </div>
+		                    <div class="form-detail-group">
+		                    <label>주소 :</label><span>${inspectDetail.CONSIGNOR_ADDR} ${inspectDetail.CONSIGNOR_DET_ADDR}</span>
+	                    </div>
+		                    <div class="form-detail-group">
+		                    <label>전화번호 :</label><span>${inspectDetail.CONSIGNOR_TEL}</span>
+	                    </div>
+	                </div>
+	            </div>
+			</div>
+				
+				<div class="section">
+				<div class="officer-input-section">
+					<div class="section-header-inspection">
+						<h3>검사·검역 결과 보고서</h3>
+						<button type="button" class="btn btn-success" id="qrScanBtn">
+								<i class="fas fa-qrcode"></i> QRCode로 입력
+						</button>
+					</div>
+                    
+                    
+                    <div class="info-columns-container">
+                    	<div class="info-column">
+                    		<h4 class="sub-header">물품 정보</h4>
+							<div class="form-input-group"><label for="hcProductName">품명</label>
+								<input type="text" id="hcProductName" name="hcProductName" class="form-control" >
+								 <%-- <input type="text" id="hcProductName" name="hcProductName" class="form-control" value="${inspectDetail.PRODUCT_NAME}" > --%>
+							</div>
+		                    <div class="form-input-group">
+					            <label for="hcCommonName">품종</label>
+					            <input type="text" id="hcCommonName" name="hcCommonName" class="form-control" >
+					            <%-- <input type="text" id="hcCommonName" name="hcCommonName" class="form-control" value="${inspectDetail.HS_NCC_NAME} (${inspectDetail.HS_KR_NAME})"> --%>
+					        </div>
+					        <div class="form-input-group">
+					            <label for="hcWeight">무게 (KG)</label>
+					            <input type="text" id="hcWeight" name="hcWeight" class="form-control">
+					            <%-- <input type="text" id="hcWeight" name="hcWeight" class="form-control" value="<fmt:formatNumber value="${inspectDetail.HC_WEIGHT}" pattern="0.##"/>"> --%>
+					        </div>
+					        <div class="form-input-group">
+					            <label for="hcQty">수량 (개)</label>
+					            <input type="text" id="hcQty" name="hcQty" class="form-control" >
+					            <%-- <input type="text" id="hcQty" name="hcQty" class="form-control" value="${inspectDetail.PRODUCT_QTY}"> --%>
+					        </div>
+					        <div class="form-input-group">
+					            <label for="hcSn">학명</label>
+					            <input type="text" id="hcSn" name="hcSn" class="form-control" >
+					            <%-- <input type="text" id="hcSn" name="hcSn" class="form-control" value="${inspectDetail.HS_EN_NAME}"> --%>
+					        </div>
+					        <div class="form-input-group">
+					            <label for="hcOrigin">원산지</label>
+					            <input type="text" id="hcOrigin" name="hcOrigin" class="form-control" >
+					            <%-- <input type="text" id="hcOrigin" name="hcOrigin" class="form-control" value="${inspectDetail.PRODUCT_ORIGIN}"> --%>
+					        </div>
+                    	</div>
+
+                    	<div class="info-column">
+                    		<h4 class="sub-header">신청 정보</h4>
+		                    <div class="form-input-group">
+					            <label for="hcConsignorName">신청 회사명</label>
+					            <input type="text" id="hcConsignorName" name="hcConsignorName" class="form-control" >
+					            <%-- <input type="text" id="hcConsignorName" name="hcConsignorName" class="form-control" value="${inspectDetail.CONSIGNOR_NAME}"> --%>
+					        </div>
+					        <div class="form-input-group">
+					            <label for="hcName">신청인 성명</label>
+					            <input type="text" id="hcName" name="hcName" class="form-control" >
+					            <%-- <input type="text" id="hcName" name="hcName" class="form-control" value="${inspectDetail.CONSIGNOR_USER_NAME}"> --%>
+					        </div>
+					        <div class="form-input-group">
+					            <label for="hcAddr">신청인 주소</label>
+					            <input type="text" id="hcAddr" name="hcAddr" class="form-control">
+					            <%-- <input type="text" id="hcAddr" name="hcAddr" class="form-control" value="${inspectDetail.CONSIGNOR_ADDR} ${inspectDetail.CONSIGNOR_DET_ADDR}"> --%>
+					        </div>
+					        <div class="form-input-group">
+					            <label for="hcTel">신청인 전화번호</label>
+					            <input type="text" id="hcTel" name="hcTel" class="form-control" >
+					            <%-- <input type="text" id="hcTel" name="hcTel" class="form-control" value="${inspectDetail.CONSIGNOR_TEL}"> --%>
+					        </div>
+                    	</div>
+                    </div><br/>
+                    
+                    
+                    <h4 class="sub-header">검사관 확인 사항</h4>
+                    <div class="form-input-group"><label for="hcPackagingCondition">포장상자 개봉파손 확인</label>
+                    	<textarea id="hcPackagingCondition" name="hcPackagingCondition" class="form-control" rows="2" placeholder="포장상자 상태에 대한 소견을 입력하세요."></textarea>
+                    </div>
+                    <div class="form-input-group"><label for="hcStorageCondition">보존/보관상태</label>
+                    	<textarea id="hcStorageCondition" name="hcStorageCondition" class="form-control" rows="2" placeholder="보존 및 보관 상태에 대한 소견을 입력하세요."></textarea>
+                    </div>
+                    <div class="form-input-group"><label for="hcSensoryProperties">성상/색깔/냄새/육질 등 확인</label>
+                    	<textarea id="hcSensoryProperties" name="hcSensoryProperties" class="form-control" rows="2" placeholder="육안 및 후각 검사에 대한 소견을 입력하세요."></textarea>
+                    </div>
+                    <div class="form-input-group"><label for="hcSpoilageCheck">부패/변질 확인</label>
+                    	<textarea id="hcSpoilageCheck" name="hcSpoilageCheck" class="form-control" rows="2" placeholder="부패 또는 변질 여부에 대한 소견을 입력하세요."></textarea>
+                    </div>
+                    <div class="form-input-group"><label for="hcForeignSubstanceCheck">이물질 확인</label>
+                    	<textarea id="hcForeignSubstanceCheck" name="hcForeignSubstanceCheck" class="form-control" rows="2" placeholder="이물질 발견 여부 및 종류에 대한 소견을 입력하세요."></textarea>
+                    </div>
+                    
+                    <c:if test="${fn:startsWith(inspectDetail.CONTRACT_NO, 'IMP') }">
+                    	<div class="form-input-group inline-group">
+	                        <label class="form-check-label" for="hcKrNotation"></label>
+	                        <input class="form-check-input" type="checkbox" name="hcKrNotation" value="true" id="hcKrNotation" checked>
+	                        <label for="hcKrNotation">한글표시사항 :</label>
+	                        <button type="button" class="btn btn-info btn-sm" id="kLabelDetailBtn" value="${inspectDetail.CONTRACT_NO}">
+	                        	<i class="fas fa-search"></i> 문서 확인</button>
+	                    </div>
+	                    
+                    </c:if>
+                    
+                    <c:if test="${fn:startsWith(inspectDetail.CONTRACT_NO, 'EXP') }">
+                    	<div class="form-input-group inline-group" hidden>
+	                        <label for="hcKrNotation">한글표시사항 :</label>
+	                        <button type="button" class="btn btn-info btn-sm" id="kLabelDetailBtn" value="${inspectDetail.CONTRACT_NO}">
+	                        	<i class="fas fa-search"></i> 문서 확인</button>
+	                        <label class="form-check-label" for="hcKrNotation"></label>
+	                        <input class="form-check-input" type="checkbox" name="hcKrNotation" value="true" id="hcKrNotation" checked>
+	                    </div>
+                    </c:if>
+                    
+					<div class="form-input-group inline-group"><label>검사 유형 :</label>
+						<span>${inspectDetail.QRNT_TYPE}</span>
+					</div>
+					
+					<div class="form-input-group">
+				    	<div class="accordion-header" id="disease-accordion"> 
+					    <label>질병 관리 목록</label>
+					        <i class="fas fa-chevron-down"></i>
+					    </div>
+					    <div class="disease-list">
+					        <c:choose>
+					            <c:when test="${not empty inspectDetail.diseaseList}">
+					                <c:forEach var="disease" items="${inspectDetail.diseaseList}" varStatus="status">
+					                	<div>
+					                		<div class="disease-item">
+						                        <label class="form-check-label" for="disease_${disease.DISEASE_CODE}">${disease.DISEASE_KR_NAME}</label>
+						                        <input class="form-check-input" type="checkbox" name="targetDiseases" value="${disease.DISEASE_CODE}" id="disease_${disease.DISEASE_CODE}">
+						                    </div><c:if test="${not status.last}">,&nbsp;</c:if>
+					                	</div>
+					                </c:forEach>
+					            </c:when>
+					            <c:otherwise>
+					                <p style="margin:0;">확인 대상 질병이 없습니다.</p>
+					            </c:otherwise>
+					        </c:choose>
+					    </div>
+					    
+					</div>
+                    <div class="form-input-group"><label for="hcEtc">기타 (결격 사유 등)</label><textarea id="hcEtc" name="hcEtc" class="form-control" rows="3" placeholder="기타 특이사항이나 불합격 시 상세 사유를 입력하세요."></textarea></div>
+                    
+                    <hr>
+                    
+                    <div class="form-input-group inline-group"><label for="hcYn">최종 검사 결과 :</label>
+                    	<select id="hcYn" name="hcYn" class="form-select" style="width: 150px;">
+	                    	<option value="">선택</option>
+	                    	<option value="true">합격</option>
+	                    	<option value="false">불합격</option>
+	                    </select>
+                    </div>
+                    <div class="form-input-group inline-group" style="margin-top: 30px;"><label>검사자 :</label>
+                    	<span>${inspectDetail.SERVANT_NAME}</span>
+                    </div>
+				</div>
+			</div>
+			
+			<div class="form-buttons" style="text-align: right; margin-top: 20px;">
+				<button type="button" class="btn btn-secondary" id="cancelBtn">목록으로</button>
+				<button type="submit" class="btn btn-primary">결과 제출</button>
+			</div>
+		</form>
+		<div class="btn-container autovalbtn">
+				<input class="btn btn-primary btn-c btn-sm" id="autoval" value="자동"/>
+		</div>
+	</main>
+</div>
+
+<!-- QR스캐너 모달 -->
+<div class="modal fade" id="qrScannerModal" tabindex="-1" aria-labelledby="qrScannerModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered"> 
+  	<div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="qrScannerModalLabel">QR 코드 스캐너</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <div style="flex: 1;">
+                <div id="videoContainer">
+                    <video id="webcamVideo" playsinline></video>
+                    <canvas id="qrCanvas" style="display:none;"></canvas>
+                </div>
+                <div id="feedback" class="mt-2">카메라를 QR 코드에 맞춰주세요.</div>
+            </div>
+            <!-- 
+            <div id="qrImageContainer" style="flex: 1; text-align: center;">
+            	<p style="font-weight: bold; margin-bottom: 10px;">생성된 QR 코드</p>
+                <img id="generatedQrImage" src="" alt="생성된 QR 코드" style="max-width: 100%; height: auto; border: 1px solid #ddd;"/>
+            </div>
+             --> 
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+<script type="text/javascript">
+$(function(){
+	
+	let kLabelDetailBtn = $("#kLabelDetailBtn");
+	
+	const autoval = $("#autoval");
+	
+	autoval.on("click",function(){
+		const data = {
+	            hcConsignorName: "${inspectDetail.CONSIGNOR_NAME}",
+	            hcName: "${inspectDetail.CONSIGNOR_USER_NAME}",
+	            hcAddr: "${inspectDetail.CONSIGNOR_ADDR} ${inspectDetail.CONSIGNOR_DET_ADDR}",
+	            hcTel: "${inspectDetail.CONSIGNOR_TEL}",
+	            hcProductName: "${inspectDetail.PRODUCT_NAME}",
+	            hcCommonName: "${inspectDetail.HS_NCC_NAME} (${inspectDetail.HS_KR_NAME})",
+	            hcWeight: "<fmt:formatNumber value='${inspectDetail.HC_WEIGHT}' pattern='0.##'/>",
+	            hcQty: "${inspectDetail.PRODUCT_QTY}",
+	            hcSn: "${inspectDetail.HS_EN_NAME}",
+	            hcOrigin: "${inspectDetail.PRODUCT_ORIGIN}"
+	        };
+		
+		for (const key in data) {
+            $('#' + key).val(data[key]);
+        }
+		
+	});
+	
+	
+    $("#cancelBtn").on("click", function() {
+        location.href = '<c:url value="/servant/inspectReview.do"/>';
+    });
+    
+	
+	kLabelDetailBtn.on("click",function(){
+		let contractNo = kLabelDetailBtn.val();
+		window.open("/cca/koreanLabelDetail.do?contractNo="+contractNo
+				, "_blank"
+		        , "width=650,height=570,scrollbars=yes,resizable=yes");
+		//location.href = "/cca/koreanLabelDetail.do?contractNo="+contractNo;
+	})
+    
+    // 질병 목록 
+    $("#disease-accordion").on("click", function(){ 
+    	$(this).toggleClass("active");
+        $(this).next(".disease-list").slideToggle("fast").css('display', 'flex'); 
+    });
+
+    $("#inspectReviewForm").on("submit", function(e) {
+        if($("#hcYn").val() === "") {
+        	alertify.warning("최종 검사 결과를 선택해주세요.");
+            e.preventDefault(); 
+            return;
+        }
+        if (!confirm("입력한 내용으로 결과를 제출하시겠습니까?")) {
+            e.preventDefault(); 
+        }
+    });
+    
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const qrScannerModal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
+
+    // 1. 'QRCode스캔' 클릭
+    $("#qrScanBtn").on("click", function() {
+	
+	    $.ajax({
+	        url: "/servant/generateQRCode",
+	        type: "POST",
+	        data: { declNo: "${inspectDetail.DECL_NO}" },
+	        dataType: "json",
+	        success: function(response) {
+	            if(response.status === 'success') {	// 성공
+					
+	                // 2.QRCode가 생성되면, 해당 이미지 URL을 문자로 발송
+					// SendMessageController의 sendMessage 호출
+					let receiver = "01098421600";
+					// WebConfig에서 설정한 경로와 서버 주소를 URL로 만듬
+					//let qrCodeUrl = "쫌가라ㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏ";
+					//let qrCodeUrl = "http://QR이미지가 저장된 컴퓨터 ip:8080/qrcode-images/" + response.fileName;
+					let qrCodeUrl = "http://192.168.35.23:8080/qrcode-image/" + response.fileName;
+					let messageText = "검사·검역 QR코드 URL링크\n" + qrCodeUrl;
+				 
+					console.log("문자 내용:", messageText);
+					// sendMessage
+					$.ajax({
+						url: "/sendMessage",
+						type: "get",
+						data: {
+							receiver: receiver,
+							text: messageText
+						},
+						success: function(smsResult) {
+							if (smsResult === 'SUCCESS') {
+								alertify.success("등록된 휴대폰으로 QR코드 URL이 포함된 문자가 발송되었습니다.");
+							} else {
+								alertify.error("SMS 발송에 실패했습니다.");
+							}
+						},
+						error: function() {
+							alertify.error("SMS 발송 중 통신 오류가 발생했습니다.");
+						}
+					});
+
+	                // 3. QR 스캐너 모달 킴 
+	                $("#generatedQrImage").attr("src", response.imageUrl); 
+	                qrScannerModal.show(); 
+
+	            } else {
+	            	alertify.error("QR 코드 생성 오류 : " + response.message);
+	            }
+	        },
+	        error: function(xhr) {
+	        	alertify.error("QR 코드 생성 중 서버 오류가 발생했습니다: " + xhr.responseText);
+	        }
+	    });
+    });
+
+    // 2. 모달창에 맞추어 스캐너 컨트롤
+    const video = document.getElementById('webcamVideo');
+    const feedbackDiv = document.getElementById('feedback');
+    let stream;
+    let scanning = false;
+    
+    // 모달이 열리면 스캐너 시작
+    $('#qrScannerModal').on('shown.bs.modal', function () {
+        startScan(); 
+    });
+	
+ 	// 모달이 닫히면 스캐너 중지
+    $('#qrScannerModal').on('hidden.bs.modal', function () {
+        stopScan(); 
+    });
+    
+    // 3. QR 스캐너 관련 함수
+    async function startScan() {
+        if (scanning) return;
+        feedbackDiv.textContent = '카메라 찾는 중...';
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            video.srcObject = stream;
+            video.setAttribute("playsinline", true);
+            await video.play();
+            scanning = true;
+            feedbackDiv.textContent = '카메라 활성화. QR 코드를 인식해주세요.';
+            requestAnimationFrame(tick);
+        } catch (err) {
+            feedbackDiv.textContent = '카메라에 접근할 수 없습니다! : ' + err;
+        }
+    }
+
+    function stopScan() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        scanning = false;
+        video.srcObject = null;
+    }
+
+    function tick() {
+        if (!scanning) return;
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            const canvasElement = document.getElementById('qrCanvas');
+            const canvas = canvasElement.getContext('2d');
+            canvasElement.height = video.videoHeight;
+            canvasElement.width = video.videoWidth;
+            canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+            const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+
+            if (code) {
+                stopScan();
+                alertify.success("QR 코드 스캔이 완료되었습니다!");
+                qrScannerModal.hide();
+                populateFormWithScannedData(code.data);
+                return; 
+            }
+        }
+        requestAnimationFrame(tick);
+    }
+
+    // 4. QR 코드 데이터 input 태그에 채우는 함수
+    function populateFormWithScannedData(jsonDataString) {
+        try {
+        	
+            const data = JSON.parse(jsonDataString);
+            $("#hcConsignorName").val(data.hcConsignorName || '');
+            $("#hcName").val(data.hcName || '');
+            $("#hcAddr").val(data.hcAddr || '');
+            $("#hcTel").val(data.hcTel || '');
+            $("#hcProductName").val(data.hcProductName || '');
+            $("#hcCommonName").val(data.hcCommonName || '');
+            $("#hcWeight").val(data.hcWeight || '');
+            $("#hcQty").val(data.hcQty || '');
+            $("#hcSn").val(data.hcSn || '');
+            $("#hcOrigin").val(data.hcOrigin || '');
+            
+            // 랜덤 질병 체크박스 체크
+            if (data.targetDiseases && Array.isArray(data.targetDiseases)) {
+                // 체크 박스 초기화
+                $('input[name="targetDiseases"]').prop('checked', false);
+                
+                // QR 코드에 들어있는 질병 코드 체크
+                data.targetDiseases.forEach(function(diseaseCode) {
+                    $('#disease_' + diseaseCode).prop('checked', true);
+                });
+            }
+            
+        } catch (e) {
+        	alertify.error("QR 코드의 데이터를 읽는데 실패하였습니다. \n그거 우리거 아닌데?");
+            console.error("QR Scanning 오류: ", e);
+        }
+    }
+    
+});
+</script>
+</html>

@@ -1,0 +1,68 @@
+package kr.or.ddit.user.controller;
+
+import java.net.URI;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import kr.or.ddit.service.IMyMailService;
+import kr.or.ddit.user.service.IUserService;
+import kr.or.ddit.vo.CustomUser;
+import kr.or.ddit.vo.MyMailVO;
+import kr.or.ddit.vo.UserVO;
+import lombok.extern.slf4j.Slf4j;
+
+@RestController
+@RequestMapping("/api/user")
+public class UserRestController {
+	
+	@Autowired
+	private IMyMailService myMailService;
+	
+	@Autowired
+	private IUserService userService;
+	
+    /**
+     * 현재 로그인한 사용자의 읽지 않은 메일 수를 반환하는 REST API
+     * @param principal Spring Security의 @AuthenticationPrincipal 어노테이션을 통해 현재 인증된 사용자 정보를 주입받습니다.
+     * @return 읽지 않은 메일 수 (정수)
+     */
+    @GetMapping("/mailCount")
+    public int getMailCount(@AuthenticationPrincipal CustomUser principal) {
+        if (principal != null && principal.getUser() != null) {
+            // CustomUser 객체에서 사용자 번호(userNo)를 가져와 서비스 메서드에 전달
+            int userNo = principal.getUser().getUserNo();
+            // 실제 메일 서비스에서 읽지 않은 메일 수를 조회하는 메서드를 호출합니다.
+            MyMailVO myMailVO = myMailService.selectMailAllCount(userNo);
+            int mailCount = myMailVO.getUnreadCount();
+            return mailCount;
+        }
+        return 0; // 로그인되지 않았거나 사용자 정보가 없는 경우 0을 반환
+    }
+	
+//	@PostMapping("/login")
+//	public ResponseEntity<String> loginCheck(@ModelAttribute UserVO userVO, HttpServletRequest request) {
+//	    log.info("loginCheck()->getUserId : " + userVO.getUserId());
+//	    UserVO authUser = userService.signin(userVO);
+//	    
+//	    if(authUser != null) {
+//	        HttpSession session = request.getSession();
+//	        session.setAttribute("user", authUser);
+//	        
+//	        log.info("loginCheck()->AuthCode : {}", authUser.getAuthCode());
+//	        return ResponseEntity.ok(authUser.getAuthCode());
+//	    } else {
+//	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("아이디 또는 비밀번호가 잘못되었습니다.");
+//	    }
+//	}
+}

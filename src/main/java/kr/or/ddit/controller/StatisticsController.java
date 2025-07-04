@@ -1,0 +1,133 @@
+package kr.or.ddit.controller;
+
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import kr.or.ddit.service.IStatisticsService;
+import kr.or.ddit.vo.CustomUser;
+import kr.or.ddit.vo.HsCodeVO;
+import kr.or.ddit.vo.PeriodStat;
+import kr.or.ddit.vo.UserVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+@RequestMapping("/statistics")
+public class StatisticsController {
+	
+	@Autowired
+	private IStatisticsService statisticsService;
+	
+	// 화주 통계지원 페이지
+	@GetMapping("")
+	public String main() {
+		return "statistics/main";
+	}
+	
+	// 화주 통계지원 페이지
+	@GetMapping("/consignor.do")
+	public String statisticsConsignor(
+			@RequestParam(required = false)@DateTimeFormat(pattern = "yyyy-MM-dd") Date startDate,
+			@RequestParam(required = false)@DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate,
+			Model model) {
+		
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+	    Map<String, Object> startEnd = new HashMap<>();
+	    startEnd.put("startDate", startDate != null ? sdf.format(startDate) : null);
+	    startEnd.put("endDate", endDate != null ? sdf.format(endDate) : null);
+
+		List<Map<String, Object>> qrntAgreeList = statisticsService.hsCodeQrntAgree(startEnd);
+		List<Map<String, Object>>  qrntDisAgreeList = statisticsService.hsCodeQrntDisAgree(startEnd);
+		
+		model.addAttribute("startEnd", startEnd);
+		model.addAttribute("qrntAgreeList", qrntAgreeList);
+		model.addAttribute("qrntDisAgreeList", qrntDisAgreeList);
+		
+		return "statistics/consignor";
+	}
+	
+	// 관세사 통계지원 페이지
+	@GetMapping("/cca.do")
+	public String statisticsCCA() {
+		return "statistics/cca";
+	}
+	
+	// 제재내역 통계리스트 페이지 
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')") 
+	@GetMapping("/selectSanctionList")
+	public ResponseEntity<List<Map<String,Object>>>  selectSanctionList( int sanctionCode) {
+		log.info("넘어온 데이터 {}",sanctionCode);
+		List<Map<String,Object>> selectSanctionList = statisticsService.selectSanctionList(sanctionCode);
+		return new ResponseEntity<List<Map<String,Object>>>(selectSanctionList,HttpStatus.OK);
+	}
+	
+	// 물류관리자 통계지원 페이지
+	@GetMapping("/logistics.do")
+	public String statisticsLogistics(Model model) {
+		
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserVO user = userSec.getUser();
+
+        Map<HsCodeVO , Map<String, PeriodStat>> myStatistics = statisticsService.myStatisticsHsCodeAndPeriod(user);
+        Map<HsCodeVO , Map<String, PeriodStat>> allStatistics = statisticsService.allStatisticsHsCodeAndPeriod();
+        
+        model.addAttribute("myStatistics",myStatistics);
+        model.addAttribute("allStatistics",allStatistics);
+        
+        log.info("statisticsLogistics -> myStatistics : ",myStatistics);
+        log.info("statisticsLogistics -> allStatistics : ",allStatistics);
+        
+		return "statistics/logistics";
+	}
+	
+	// 공무원 통계지원 페이지
+	@GetMapping("/servant.do")
+	public String statisticsServant() {
+		return "statistics/servant";
+	}
+	
+	//공무원 직원의 기간별 업무처리량
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/servantWorkCount")
+	public ResponseEntity<List<Map<String, Object>>> servantWorkCount(){
+		List<Map<String,Object>> servantWorkCount = statisticsService.servantWorkCount();
+		return new ResponseEntity<List<Map<String,Object>>>(servantWorkCount,HttpStatus.OK);
+	}
+	
+	// 민원항목 * 기간 민원발생건수 통계
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/selectAppealList")
+	public ResponseEntity<List<Map<String,Object>>> selectAppealList(String appealType) {
+		log.info("요청된 민원 유형 {}", appealType);
+		List<Map<String,Object>> selectAppealList = statisticsService.selectAppealList(appealType);
+		return new ResponseEntity<List<Map<String,Object>>>(selectAppealList,HttpStatus.OK);
+    }
+	
+	/** 기간 * 회원 가입/탈퇴건수 통계
+	 * @return
+	 */
+	@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_QUARANTINE', 'ROLE_SVT_MANDARIN')")
+	@GetMapping("/userCount")
+	public ResponseEntity<List<Map<String,Object>>> userCount() {
+		List<Map<String,Object>> selectUserCountList = statisticsService.selectUserCountList();
+		return new ResponseEntity<List<Map<String,Object>>>(selectUserCountList, HttpStatus.OK);
+    }
+	
+}

@@ -1,0 +1,937 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib uri="jakarta.tags.core" prefix="c"%>
+<%@ taglib uri="jakarta.tags.functions" prefix="fn"%>
+<%@ taglib uri="jakarta.tags.fmt" prefix="fmt"%>
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>상세 의뢰현황</title>
+<%@ include file="../modules/header.jsp"%>
+<%@ include file="../modules/sidebar.jsp"%>
+<%@ include file="../modules/modal.jsp"%>
+<link rel="stylesheet" href="/css/main.css">
+<style>
+/* 깜빡임 애니메이션 정의 */
+/* 깜빡임 애니메이션 정의 */
+@keyframes blink-animation {
+    0% { opacity: 1; }
+    50% { opacity: 0.2; }
+    100% { opacity: 1; }
+}
+.blink {
+	animation: blink-animation 1s infinite alternate;
+	font-weight: bold;
+	color: red;
+	margin-left: 5px;
+	display: inline-block;
+}
+</style>
+<link rel="stylesheet"
+	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+	<div class="app-container">
+		<main class="main-content-area">
+
+			<div class="content-header">
+				<!-- 브레드크럼 엘리먼트 -->
+				<div class="breadcrumb-warp">
+					<div class="col-sm-12">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/">Home</a></li>
+							<li class="breadcrumb-item"><a href="/cca/ccaContract">접수내역</a></li>
+							<li class="breadcrumb-item"><a href="#">의뢰 진행 상세</a></li>
+						</ol>
+					</div>
+				</div>
+
+				<div class="content-title" title="gg">의뢰 진행 상세</div>
+				<p class="desc">접수된 의뢰의 상세 내역을 볼 수 있습니다.</p>
+			</div>
+			<div class="container section">
+				<!-- Progress Section -->
+				<div class="progress-section">
+					<div class="progress-bar-container">
+						<div class="progress-bar">
+							<c:forEach items="${categoryBar }" var="bar"
+								varStatus="categoryStatus">
+								<c:set var="currentCategoryName"
+									value="${bar.statusCodeMediumCategoryName}" />
+
+								<c:set var="isActive" value="false" />
+
+								<c:forEach items="${contractVo.contractRecordList }"
+									var="record" varStatus="recordStatus">
+									<c:if
+										test="${record.statusCodeMediumCategoryName eq currentCategoryName}">
+										<c:set var="isActive" value="true" />
+									</c:if>
+								</c:forEach>
+
+								<div class="progress-step">
+									<button class="step-circle ${isActive ? 'active' : 'inactive'}">
+										${categoryStatus.index + 1}</button>
+									<span class="step-label">${bar.statusCodeMediumCategoryName}</span>
+									<div class="progress-details"
+										id="details-step-${categoryStatus.index + 1}"
+										style="display: none;">
+										<div
+											style="color: black; font-size: 12px; margin-left: 60px; width: 300px"
+											class="divArea"></div>
+									</div>
+								</div>
+							</c:forEach>
+						</div>
+
+					</div>
+				</div>
+
+				<!-- Content Section -->
+				<div class="content-section content-section-2nd">
+					<div class="tabs-container">
+						<div class="tabs-header">
+							<div class="tab-button active categories-title" data-tab="detail">
+								상세정보</div>
+							<div class="tab-button categories-title" data-tab="document">
+								서류관리</div>
+							<c:if
+								test="${contractVo.contractType == '수입' and contractVo.lastStatusCode > 16}">
+								<div
+									class="tab-button categories-title <c:if test="${contractVo.lastStatusCode == 17 }">blink</c:if>"
+									data-tab="duty">세금납부</div>
+							</c:if>
+							<c:if
+								test="${contractVo.lastStatusCode >= 19 or contractVo.lastStatusCode >=38}">
+								<c:if test="${contractVo.contractType == '수입' }">
+									<div
+									class="tab-button categories-title <c:if test="${contractVo.lastStatusCode == 19 }">blink</c:if>"
+									data-tab="item">물품창고</div>
+								</c:if>
+								<c:if test="${contractVo.contractType == '수출' and contractVo.lastStatusCode >= 38 }">
+									<div
+									class="tab-button categories-title <c:if test="${contractVo.lastStatusCode == 38 }">blink</c:if>"
+									data-tab="item">컨테이너</div>
+								</c:if>
+								
+							</c:if>
+							<!-- <div class="tab-button categories-title" data-tab="progress">
+								진행내역</div> -->
+						</div>
+
+						<div class="tabs-content">
+
+							<div class="tab-pane active category-options" id="detail">
+								<div class="info-card">
+									<div class="info-row">
+										<span class="card-title">의뢰 정보</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">계약 번호</span> <span class="info-value">${contractVo.contractNo }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">등록일</span> <span class="info-value">${contractVo.contractDate }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">의뢰 유형</span> <span class="info-value">${contractVo.contractType }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품명</span> <span class="info-value">${contractVo.productVO.productName }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품 원산지</span> <span
+											class="info-value">${contractVo.productVO.productOrigin }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품 수량</span> <span class="info-value">${contractVo.productVO.productQty }
+											개</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품 중량</span> <span class="info-value">${contractVo.productVO.productWeight }
+											KG</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품 부피</span> <span class="info-value">${contractVo.productVO.productVolume}
+											CBM</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품 단가</span> <span class="info-value"><fmt:formatNumber
+												value="${contractVo.productVO.productPrice}" pattern="#,###" />
+											원</span>
+									</div>
+
+								</div>
+								<!-- Manager Information -->
+								<div class="info-card">
+									<div class="info-row">
+										<span class="card-title" style="margin-right: 10px">담당자
+											정보</span>
+										<button class="" style="border: 1px solid;" id="maskedBtn">
+											<i class="fas fa-eye"></i>
+										</button>
+									</div>
+
+									<div>
+										<div class="info-row">
+											<span class="info-label">의뢰인</span> <span class="info-value">${contractVo.consignorCompanyName}</span>
+										</div>
+
+										<div class="info-row">
+											<span class="info-label">담당자</span>
+											<div class="info-value">
+												<div style="font-weight: bold; margin-bottom: 10px;">
+													<span id="maskedConsignorName">${contractVo.consignorName }</span>
+												</div>
+												<div class="contact-info"
+													style="font-weight: bold; margin-bottom: 10px;">
+													<div class="ccaTel">📞 ${contractVo.consignorTel }</div>
+													<div class="userTel">
+														📱 <span id="maskedConsignorTel">${contractVo.consignorUserTel }</span>
+													</div>
+													<div class="ccaUserFax">📠
+														${contractVo.consignorUserFax }</div>
+													<div class="ccaUserEmail">✉️
+														${contractVo.consignorUserEmail }</div>
+												</div>
+											</div>
+										</div>
+
+										<c:if test="${! empty servantVo }">
+
+											<div class="info-row">
+												<span class="info-label">담당 공무원</span> <span
+													class="info-value"><span id="maskedServantName">${servantVo.userName}</span></span>
+											</div>
+											<div class="info-row">
+												<span class="info-label">직급</span> <span class="info-value">
+													${servantVo.jobGradeName}</span>
+											</div>
+
+											<div class="info-row">
+												<span class="info-label">부서</span>
+												<div class="info-value">
+													<div style="font-weight: bold; margin-bottom: 10px;">${servantVo.deptName}</div>
+													<div class="contact-info"
+														style="font-weight: bold; margin-bottom: 10px;">
+														<div class="ccaTel">📞 ${servantVo.deptTel }</div>
+														<div class="userTel">
+															📱 <span id="maskedServantTel">${servantVo.userTel }</span>
+														</div>
+														<div class="ccaUserFax">📠 ${servantVo.userFax }</div>
+														<div class="ccaUserEmail">✉️ ${servantVo.userEmail }</div>
+													</div>
+												</div>
+											</div>
+
+										</c:if>
+
+									</div>
+								</div>
+							</div>
+							<div class="tab-pane" id="document">
+								<div class="info-card">
+									<div class="info-row">
+										<span class="card-title">의뢰 정보</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">계약 번호</span> <span class="info-value">${contractVo.contractNo }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">등록일</span> <span class="info-value">${contractVo.contractDate }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">의뢰 유형</span> <span class="info-value">${contractVo.contractType }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품명</span> <span class="info-value">${contractVo.productVO.productName }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품 원산지</span> <span
+											class="info-value">${contractVo.productVO.productOrigin }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품 수량</span> <span class="info-value">${contractVo.productVO.productQty }
+											개</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품 중량</span> <span class="info-value">${contractVo.productVO.productWeight }
+											KG</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품 부피</span> <span class="info-value">${contractVo.productVO.productVolume}
+											CBM</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품 단가</span> <span class="info-value"><fmt:formatNumber
+												value="${contractVo.productVO.productPrice}" pattern="#,###" />
+											원</span>
+									</div>
+
+								</div>
+								<div class="info-card">
+									<div class="info-row">
+										<span class="card-title">서류</span>
+									</div>
+									<ul class="file-list">
+										<li class="file-item">
+											<div class="file-info">
+												<i class="fas fa-file-alt"></i>
+												<div class="file-details">
+													<span class="file-name">상업송장.pdf (CI)</span>
+													<fmt:parseDate value="${contractVo.contractDate }"
+														var="ciDate" pattern="yyyy-MM-dd HH:mm:ss" />
+													<span class="file-meta">최종 업데이트: <fmt:formatDate
+															value="${ciDate }" pattern="yyyy-MM-dd HH:mm:ss" /></span>
+
+												</div>
+											</div>
+											<div class="file-actions">
+												<a href="/pdf/download/ci/${contractVo.ciNo }"
+													class="action-button secondary" id="ciDlBtn"><i
+													class="fas fa-download"></i> 다운로드</a>
+												<button class="btn btn-primary" id="ciBtn"
+													value="${contractVo.ciNo }">
+													<i class="fas fa-edit"></i> 상세
+												</button>
+											</div>
+										</li>
+										<li class="file-item">
+											<div class="file-info">
+												<i class="fas fa-file-alt"></i>
+												<div class="file-details">
+													<span class="file-name">패킹리스트.pdf (PL)</span>
+													<fmt:parseDate value="${contractVo.contractDate }"
+														var="plDate" pattern="yyyy-MM-dd HH:mm:ss" />
+													<span class="file-meta">최종 업데이트: <fmt:formatDate
+															value="${plDate }" pattern="yyyy-MM-dd HH:mm:ss" /></span>
+												</div>
+											</div>
+											<div class="file-actions">
+												<a href="/pdf/download/pl/${contractVo.plNo }"
+													class="action-button secondary" id="plDlBtn"><i
+													class="fas fa-download"></i> 다운로드</a>
+												<button class="btn btn-primary" id="plBtn"
+													value="${contractVo.plNo }">
+													<i class="fas fa-edit"></i> 상세
+												</button>
+											</div>
+										</li>
+
+										<c:set var="getStatusCode"
+											value="${contractVo.lastStatusCode }" />
+										<c:choose>
+											<c:when
+												test="${getStatusCode == 2 || getStatusCode == 3 || getStatusCode == 4 || getStatusCode == 5
+										|| getStatusCode == 23 || getStatusCode == 24 || getStatusCode == 25 || getStatusCode == 26}">
+										차단
+									</c:when>
+											<c:otherwise>
+												<c:choose>
+													<c:when
+														test="${fn:substring(contractVo.contractNo, 0, 3) == 'IMP'}">
+														<li class="file-item">
+															<div class="file-info">
+																<i class="fas fa-file-alt"></i>
+																<div class="file-details">
+																	<span class="file-name">한글표시사항</span> <span
+																		class="file-meta">최종 업데이트: <c:choose>
+																			<c:when test="${empty krNotationVO.regDate}">
+																        작성되지 않았습니다
+																    </c:when>
+																			<c:otherwise>
+																				<fmt:formatDate value="${krNotationVO.regDate}"
+																					pattern="yyyy-MM-dd HH:mm:ss" />
+																			</c:otherwise>
+																		</c:choose>
+																	</span>
+
+																</div>
+															</div>
+															<div class="file-actions">
+																<c:choose>
+																	<c:when
+																		test="${not empty krNotationVO.packagingMaterialKr}">
+																		<a
+																			href="/pdf/download2.do?url=cca/koreanLabelDetail.do?contractNo=${contractVo.contractNo }"
+																			class="action-button secondary" id="knDlBtn"><i
+																			class="fas fa-download"></i> 다운로드</a>
+																		<button class="btn btn-primary" id="kLabelDetailBtn"
+																			value="${contractVo.contractNo }">
+																			<i class="fas fa-edit"></i> 상세
+																		</button>
+																	</c:when>
+																	<c:otherwise>
+																		<button class="btn btn-primary" id="kLabelWriteBtn"
+																			value="${contractVo.contractNo }">
+																			<i class="fas fa-edit"></i> 작성
+																		</button>
+																	</c:otherwise>
+																</c:choose>
+															</div>
+														</li>
+														<li class="file-item">
+															<div class="file-info">
+																<i class="fas fa-file-alt"></i>
+																<div class="file-details">
+																	<span class="file-name">${contractVo.contractType }신고서</span>
+																	<span class="file-meta">최종 업데이트: <c:choose>
+																			<c:when test="${empty contractDelNo[0].declDNo}">
+																        작성되지 않았습니다
+																    </c:when>
+																			<c:otherwise>
+																				<fmt:parseDate
+																					value="${contractDelNo[0].contractFileDate}"
+																					var="declDDate" pattern="yyyy-MM-dd HH:mm:ss" />
+																				<fmt:formatDate value="${declDDate}"
+																					pattern="yyyy-MM-dd HH:mm:ss" />
+																			</c:otherwise>
+																		</c:choose>
+																	</span>
+																</div>
+															</div>
+															<div class="file-actions">
+																<c:choose>
+																	<c:when
+																		test="${empty krNotationVO.packagingMaterialKr}">
+																		<button class="btn btn-warning" id=""
+																			value="${contractDelNo[0].declDNo }">
+																			<i class="fas fa-edit"></i> 대기중
+																		</button>
+																	</c:when>
+																	<c:when test="${contractDelNo[0].declDNo != null}">
+																		<a
+																			href="/pdf/download2.do?url=contract/decl/detail.do?declDNo=${contractDelNo[0].declDNo }"
+																			class="action-button secondary" id="declDlBtn"><i
+																			class="fas fa-download"></i> 다운로드</a>
+																		<button class="btn btn-primary" id="delDBtn"
+																			value="${contractDelNo[0].declDNo }">
+																			<i class="fas fa-edit"></i> 상세
+																		</button>
+																	</c:when>
+																	<c:otherwise>
+																		<button class="btn btn-primary" id="delDWriteBtn"
+																			value="${contractVo.contractNo }">
+																			<i class="fas fa-edit"></i> 작성
+																		</button>
+																	</c:otherwise>
+																</c:choose>
+															</div>
+														</li>
+													</c:when>
+													<c:otherwise>
+														<li class="file-item">
+															<div class="file-info">
+																<i class="fas fa-file-alt"></i>
+																<div class="file-details">
+																	<span class="file-name">${contractVo.contractType }신고서</span>
+																	<span class="file-meta">최종 업데이트: <c:choose>
+																			<c:when test="${empty contractDelNo[0].declDNo}">
+																        작성되지 않았습니다
+																    </c:when>
+																			<c:otherwise>
+																				<fmt:parseDate
+																					value="${contractDelNo[0].contractFileDate}"
+																					var="declDDate" pattern="yyyy-MM-dd HH:mm:ss" />
+																				<fmt:formatDate value="${declDDate}"
+																					pattern="yyyy-MM-dd HH:mm:ss" />
+																			</c:otherwise>
+																		</c:choose>
+																	</span>
+																</div>
+															</div>
+															<div class="file-actions">
+																<c:choose>
+																	<c:when test="${contractDelNo[0].declDNo != null}">
+																		<a
+																			href="/pdf/download2.do?url=contract/decl/detail.do?declDNo=${contractDelNo[0].declDNo }"
+																			class="action-button secondary" id="declDlBtn"><i
+																			class="fas fa-download"></i> 다운로드</a>
+																		<button class="btn btn-primary" id="delDBtn"
+																			value="${contractDelNo[0].declDNo }">
+																			<i class="fas fa-edit"></i> 상세
+																		</button>
+																	</c:when>
+																	<c:otherwise>
+																		<button class="btn btn-primary" id="delDWriteBtn"
+																			value="${contractVo.contractNo }">
+																			<i class="fas fa-edit"></i> 작성
+																		</button>
+																	</c:otherwise>
+																</c:choose>
+															</div>
+														</li>
+													</c:otherwise>
+												</c:choose>
+
+												<%-- <c:if test="${fn:substring(contractVo.contractNo, 0, 3) == 'IMP'}">
+				                        	<li class="file-item">
+				                                <div class="file-info">
+				                                    <i class="fas fa-file-alt"></i>
+				                                    <div class="file-details">
+				                                        <span class="file-name">세금고지서</span>
+				                                        <span class="file-meta">최종 업데이트: 2025-05-10</span>
+				                                    </div>
+				                                </div>
+				                                <div class="file-actions">
+				                                	<button class="btn btn-warning" id="" value="${contractVo.contractNo }"><i class="fas fa-edit"></i> 대기중</button>
+				                                	<c:choose>
+		                                    			<c:when test="${contractDelNo[0].declDNo != null}">
+		                                    				<a href="/pdf/download2.do?url=contract/decl/detail.do?declDNo=${contractDelNo[0].declDNo }"  class="action-button secondary" id="declDlBtn"><i class="fas fa-download"></i> 다운로드</a>
+						                                    <button class="btn btn-primary" id="delDBtn" value="${contractDelNo[0].declDNo }"><i class="fas fa-edit"></i> 상세</button>
+		                                     			</c:when>
+														<c:otherwise>
+					                                    	<button class="btn btn-warning" id="" value="${contractVo.contractNo }"><i class="fas fa-edit"></i> 대기중</button>
+													    </c:otherwise>
+													</c:choose>
+				                                </div>
+				                            </li>
+				                        </c:if> --%>
+
+												<li class="file-item">
+													<div class="file-info">
+														<i class="fas fa-file-alt"></i>
+														<div class="file-details">
+															<span class="file-name">${contractVo.contractType }신고필증</span>
+															<span class="file-meta">최종 업데이트: <c:choose>
+																	<c:when test="${empty CDVO.cdDate }">
+														        작성되지 않았습니다
+														    </c:when>
+																	<c:otherwise>
+																		<%-- <fmt:parseDate value="${CDVO.cdDate }" var="cdDate" pattern="yyyy-MM-dd" /> --%>
+																		<fmt:formatDate value="${CDVO.cdDate}"
+																			pattern="yyyy-MM-dd HH:mm:ss" />
+																	</c:otherwise>
+																</c:choose>
+
+															</span>
+														</div>
+													</div>
+													<div class="file-actions">
+														<c:choose>
+															<c:when test="${not empty CDVO.cdDate }">
+																<a
+																	href="/pdf/download2.do?url=servant/cdDetail.do?cdNo=${CDVO.cdNo }"
+																	class="action-button secondary" id="declDlBtn"><i
+																	class="fas fa-download"></i> 다운로드</a>
+																<button class="btn btn-primary" id="cdBtn"
+																	value="${CDVO.cdNo }">
+																	<i class="fas fa-edit"></i> 상세
+																</button>
+															</c:when>
+															<c:otherwise>
+																<button class="btn btn-warning" id=""
+																	value="${contractVo.contractNo }">
+																	<i class="fas fa-edit"></i> 대기중
+																</button>
+															</c:otherwise>
+														</c:choose>
+													</div>
+												</li>
+											</c:otherwise>
+										</c:choose>
+									</ul>
+								</div>
+							</div>
+
+							<c:if test="${contractVo.contractType == '수입' }">
+								<div class="tab-pane" id="duty">
+									<div class="info-card">
+										<div class="info-row">
+											<span class="card-title">세금 납부</span>
+										</div>
+										<div>
+
+											<c:if test="${contractVo.lastStatusCode == 17 }">
+												<div class="info-row">
+													<span class="info-label blink" style="width: 500px;">세금
+														고지서가 도착했습니다!</span>
+												</div>
+
+												<div class="info-row">
+													<span class="info-label">고지서 보기 :</span><%--  <a
+														href="/doc/taxBill.do?declNo=${declNo }"
+														class="action-button secondary "><i
+														class="fas fa-edit"></i> 상세</a> --%>
+													<button class="btn btn-primary" id="taxBtn" value="${declNo }">
+														<i class="fas fa-edit"></i> 상세
+													</button>
+												</div>
+
+
+											</c:if>
+											<c:if test="${contractVo.lastStatusCode != 17 }">
+												<div class="info-row">
+													<i class="fas fa-check-circle"></i> 세금 납부가 완료 되었습니다.
+												</div>
+												<div class="info-row">
+													<span class="info-label">고지서 보기 :</span> <%-- <a
+														href="/doc/taxBill.do?declNo=${declNo }"
+														class="action-button secondary "><i
+														class="fas fa-edit"></i> 상세</a> --%>
+														<button class="btn btn-primary" id="taxOkBtn" value="${declNo }">
+														<i class="fas fa-edit"></i> 상세
+													</button>
+												</div>
+											</c:if>
+
+										</div>
+
+									</div>
+								</div>
+							</c:if>
+
+							<div class="tab-pane" id="item">
+								<c:if test="${contractVo.contractType == '수입' }">
+									<div class="info-card">
+										<div class="info-row">
+											<span class="card-title">물품 적재</span>
+										</div>
+										<c:if test="${contractVo.lastStatusCode == 19 }">
+											<div>
+												<div class="info-row">
+													<span class="info-label">물품 적재 신청</span> <a
+														href="/cca/stowageList.do" class="action-button secondary "><i
+														class="fas fa-edit"></i>신청하러 가기</a>
+												</div>
+											</div>
+										</c:if>
+									<c:if test="${contractVo.lastStatusCode > 19 }">
+										<div class="info-row">
+											<span class="info-label">계약 번호</span>
+											<span class="info-value">${contractVo.contractNo }</span>
+										</div>
+										<div class="info-row">
+											<span class="info-label">물류창고 이름</span>
+											<span class="info-value">${whList.whName }</span>
+										</div>
+										<div class="info-row">
+											<span class="info-label">물류창고 주소</span>
+											<span class="info-value">${whList.whAddr }</span>
+										</div>
+										<div class="info-row">
+											<span class="info-label">물류창고 타입</span>
+											<span class="info-value">${whList.whType }</span>
+										</div>
+										<div class="info-row">
+											<span class="info-label">물류창고 가격</span>
+											<span class="info-value"><fmt:formatNumber  value="${whList.whPrice }" pattern="#,###"/> 원</span>
+										</div>
+										<div class="info-row">
+											<span class="info-label">담당자 회사</span>
+											<span class="info-value">${whList.logistMngName }</span>
+										</div>
+										<div class="info-row">
+											<span class="info-label">담당자 주소</span>
+											<span class="info-value">${whList.logistMngAddr }</span>
+										</div>
+										<div class="info-row">
+											<span class="info-label">담당자 번호</span>
+											<span class="info-value">${whList.logistMngTel }</span>
+										</div>
+									</c:if>
+
+									</div>
+								</c:if>
+								<c:if test="${contractVo.contractType == '수출' }">
+									<div class="info-card">
+										<div class="info-row">
+											<span class="card-title">컨테이너 적재</span>
+										</div>
+										<c:if test="${contractVo.lastStatusCode == 38 }">
+											<div>
+												<div class="info-row">
+													<span class="info-label" style="width: 160px">컨테이너 상세 보기</span> <a
+														href="/cca/stowageList.do" class="action-button secondary "><i
+														class="fas fa-edit"></i> 상세</a>
+												</div>
+											</div>
+										</c:if>
+										<c:if test="${contractVo.lastStatusCode > 38 }">
+												<div class="info-row">
+													<span class="info-label">계약 번호</span>
+													<span class="info-value">${contractVo.contractNo }</span>
+												</div>
+												<div class="info-row">
+													<span class="info-label">컨테이너 이름</span>
+													<span class="info-value">${conList.containerName }</span>
+												</div>
+												<div class="info-row">
+													<span class="info-label">컨테이너 주소</span>
+													<span class="info-value">${conList.containerLocation }</span>
+												</div>
+												<div class="info-row">
+													<span class="info-label">컨테이너 타입</span>
+													<span class="info-value">${conList.containerType }</span>
+												</div>
+												<div class="info-row">
+													<span class="info-label">컨테이너 가격</span>
+													<span class="info-value"><fmt:formatNumber  value="${conList.containerPrice }" pattern="#,###"/> 원</span>
+												</div>
+												<div class="info-row">
+													<span class="info-label">담당자 회사</span>
+													<span class="info-value">${conList.logistMngName }</span>
+												</div>
+												<div class="info-row">
+													<span class="info-label">담당자 주소</span>
+													<span class="info-value">${conList.logistMngAddr }</span>
+												</div>
+												<div class="info-row">
+													<span class="info-label">담당자 번호</span>
+													<span class="info-value">${conList.logistMngTel }</span>
+												</div>
+										</c:if>
+
+									</div>
+								</c:if>
+							</div>
+						</div>
+
+					</div>
+					<div id="progress">
+						<div class="info-card">
+							<div class="info-row">
+								<span class="card-title">진행 내역</span>
+							</div>
+							<div>
+								<div class="info-row">
+									<div class="contract-progress-details">
+										<c:forEach items="${contractVo.contractRecordList }"
+											var="list" varStatus="status">
+											<div style="font-weight: bold;" class="dis-f-ai-c">
+												<i class="fas fa-check-circle" style="margin-right: 10px;"></i>
+												${list.statusCodeMediumCategoryName } <span
+													style="margin-left: 10px">${list.statusCodeName }</span>
+											</div>
+											<div style="margin-left: 30px">${list.contractRecordRegDate }</div>
+											<c:if test="${! status.last }">
+												<i class="fa-solid fa-arrow-down"
+													style="margin-left: 60px; margin-bottom: 10px"></i>
+											</c:if>
+										</c:forEach>
+									</div>
+								</div>
+							</div>
+
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+	</div>
+
+	<script>
+		$(function() {
+			let listBtn = $("#listBtn")
+			let ciBtn = $("#ciBtn");
+			let plBtn = $("#plBtn");
+			let delDBtn = $("#delDBtn");
+			let delDWriteBtn = $("#delDWriteBtn");
+			let kLabelWriteBtn = $("#kLabelWriteBtn");
+			let kLabelDetailBtn = $("#kLabelDetailBtn");
+			let taxBtn = $("#taxBtn");
+			let taxOkBtn = $("#taxOkBtn");
+			
+			let cdBtn = $("#cdBtn");
+			
+			let contractNo = window.location.pathname.split("/")[3]
+			console.log(contractNo);
+
+			listBtn.on("click", function() {
+				location.href = "/cca/ccaContract";
+			})
+
+			
+			//개인정보 마스킹
+			let maskedBtn = $("#maskedBtn");
+			let consignorName = $("#maskedConsignorName");
+			let consignorTel = $("#maskedConsignorTel");
+			
+			let servantName = $("#maskedServantName");
+			let servantTel = $("#maskedServantTel");
+			let isMasked = true;
+			
+			
+			function maskPhoneNumber(phoneNumber){
+				 if (!phoneNumber || phoneNumber.length < 10) {
+			            return phoneNumber; 
+			        }
+				return phoneNumber.replace(/(\d{3})-?(\d{4})-?(\d{4})/, "$1-****-$3");
+			}
+			
+			function maskName(name){
+				 if (!name || name.length < 2) {
+			            return name; 
+			        }
+				 const firstChar = name.charAt(0);
+			        const lastChar = name.charAt(name.length - 1);
+			        const maskedMiddle = "*".repeat(name.length - 2); // 중간 글자 개수만큼 * 반복
+			        return firstChar + maskedMiddle + lastChar;
+			}
+		
+			const originalConsignorTel = consignorTel.text().trim();
+			const originalServantTel = servantTel.text().trim();
+			const originalConsignorName = consignorName.text().trim();
+			const originalServantName = servantName.text().trim();
+			
+			const maskedConsignorTel = maskPhoneNumber(originalConsignorTel);
+			const maskedServantTel = maskPhoneNumber(originalServantTel);
+			const maskedConsignorName = maskName(originalConsignorName);
+			const maskedServantName = maskName(originalServantName);
+			
+			consignorName.text(maskedConsignorName); //페이지 로딩시 마스킹된거 보이게 ㅇㅇ
+			consignorTel.text(maskedConsignorTel); //페이지 로딩시 마스킹된거 보이게 ㅇㅇ
+			servantName.text(maskedServantName); //페이지 로딩시 마스킹된거 보이게 ㅇㅇ
+			servantTel.text(maskedServantTel); //페이지 로딩시 마스킹된거 보이게 ㅇㅇ
+			
+			maskedBtn.on("click",function(){
+				isMasked = !isMasked;
+				
+				if(isMasked){
+					consignorTel.text(maskedConsignorTel);
+					servantTel.text(maskedServantTel);
+					consignorName.text(maskedConsignorName);
+					servantName.text(maskedServantName);
+				}else{
+					consignorTel.text(originalConsignorTel);
+					servantTel.text(originalServantTel);
+					consignorName.text(originalConsignorName);
+					servantName.text(originalServantName);
+				}
+			})
+			
+			//
+			$(document).ready(function() {
+				$(".tab-button").on("click", function() {
+					$(".tab-button").removeClass("active");
+					$(this).addClass("active");
+
+					$(".tab-pane").removeClass("active");
+					var targetTab = $(this).data('tab');
+					$('#' + targetTab).addClass('active');
+
+				})
+				$('.tab-button.active').click();
+			})
+
+			//
+			$(".step-circle").on("click", function() {
+				let value = $(this).next(".step-label").text(); //버튼의 순서
+				let numValue = $(this).text(); //버튼의 번호
+				console.log(value);
+				console.log(numValue);
+				
+				let targetDetailsDiv = $("#details-step-" + numValue);
+				 $('.progress-details').not(targetDetailsDiv).slideUp();
+				 
+				 targetDetailsDiv.slideToggle();
+				$.ajax({
+					url : "/consignor/findStatusCode/" + contractNo,
+					type: "get",
+					data : {paramName : value},
+					success : function(result){
+						console.log(result);
+						  let specificDivArea = targetDetailsDiv.find(".divArea");
+						  
+						let html = ``;
+						for (let i = 0 ; i < result.length; i++){
+							html += `
+								<div>
+									\${result[i].statusCodeName}										
+								</div>
+							`;
+						}
+						
+						specificDivArea.html(html);
+					}
+				})
+				
+			})
+			//
+			ciBtn.on("click",function(){
+				let ciNo = ciBtn.val();
+				console.log("ci클릭" , ciNo);
+				window.open("/ci/detail.do?ciNo="+ciNo
+						, "_blank"
+				        , "width=800,height=1000,scrollbars=yes,resizable=yes");
+			});
+			
+			plBtn.on("click",function(){
+				let plNo = plBtn.val();
+				console.log("pl클릭",plNo);
+				window.open("/pl/detail.do?plNo="+plNo
+						, "_blank"
+				        , "width=800,height=1000,scrollbars=yes,resizable=yes");
+			});
+			
+			delDBtn.on("click",function(){
+				let delDNo = delDBtn.val();
+				console.log("delD클릭",delDNo);
+				window.open("/contract/decl/detail.do?declDNo="+delDNo
+						, "_blank"
+				        , "width=800,height=1000,scrollbars=yes,resizable=yes");
+				//location.href = "/contract/decl/detail.do?declDNo="+delDNo;
+			})
+		
+			delDWriteBtn.on("click",function(){
+				let contractNo = delDWriteBtn.val();
+				//window.open("/contract/declform.do?contractNo="+contractNo);
+				location.href = "/contract/declform.do?contractNo="+contractNo;
+			})
+			
+			kLabelWriteBtn.on("click",function(){
+				let contractNo = kLabelWriteBtn.val();
+				location.href = "/cca/koreanLabelWrite.do?contractNo="+contractNo;
+			})
+			
+			kLabelDetailBtn.on("click",function(){
+				let contractNo = kLabelDetailBtn.val();
+				window.open("/cca/koreanLabelDetail.do?contractNo="+contractNo
+						, "_blank"
+				        , "width=665,height=600,scrollbars=yes,resizable=yes");
+				//location.href = "/cca/koreanLabelDetail.do?contractNo="+contractNo;
+			})
+			
+			cdBtn.on("click",function(){
+				let cdNo = cdBtn.val();
+				window.open("/servant/cdDetail.do?cdNo="+cdNo
+						, "_blank"
+				        , "width=800,height=1000,scrollbars=yes,resizable=yes");
+			})
+			
+			//세금 납부 전 버튼
+			taxBtn.on("click",function(){
+				let declNo = taxBtn.val();
+				window.open("/doc/taxBill.do?declNo=" + declNo ,"_blank","width=800,height=1000,scrollbars=yes,resizable=yes");
+			});
+			
+			//세금 납부 후 버튼
+			taxOkBtn.on("click",function(){
+				let declNo = taxOkBtn.val();
+				window.open("/doc/taxBill.do?declNo=" + declNo ,"_blank","width=800,height=1000,scrollbars=yes,resizable=yes");
+			});
+			
+		})
+	</script>
+</body>
+</html>

@@ -1,0 +1,2099 @@
+body {
+	margin: 0;
+	padding:0;
+}
+
+/* 메인영역 상단 밀기 및 배경 */
+.app-container {
+  display: flex;
+  flex-grow: 1;
+  /* background: radial-gradient(farthest-side ellipse at 10% 0, #333867 20%, #17193b); */
+  /* background: #ffffff; */
+  background: #f2f4fA;
+  color: #00000000;
+  margin-top: 60px;
+  overflow: hidden;
+}
+
+/* Main Content 영역 잡기*/
+.main-content-area {
+	flex: 1;
+	padding: 25px;
+	margin: 0 80px 0 240px; /* 사이드바 너비(200px) + 패딩 40px 정도 확보 */
+	display: flex;
+	flex-direction: column;
+	/* color: #c5c8cc; */ /* 기본 텍스트 색상 설정 */
+	color: #000000;
+	/* 전체 배경 적용 */
+	min-height: calc(100vh - 60px); /* 헤더를 제외한 나머지 높이 */
+}
+.main-content-area.main-loginForm {
+	margin:0;
+}
+.app-container:has(#pdfTarget){
+	margin: 0;
+}
+.main-content-area:has(#pdfTarget){
+	margin: 0;
+    max-width: 900px;
+}
+/* 흠? */
+.app-container-wrapper {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh; /* 전체 뷰포트 높이 차지 */
+}
+
+/* 특정 요소들에 대한 기본 스타일 */
+p, br { /* 원본 코드의 p 태그와 br 태그가 스타일을 가지도록 추가 */
+	color: #ffffff; /* p 태그의 글씨색을 흰색으로 설정 */
+	margin-bottom: 10px; /* 줄 간격 조절 */
+}
+
+/* 링크 스타일 */
+a {
+	color: #7995ff; /* 링크 색상 */
+	text-decoration: none !important; /* 밑줄 제거 */
+	font-size: 16px;
+	padding: 5px 0;
+	display: inline-block; /* 패딩을 위해 블록 요소처럼 보이게 */
+	transition: color 0.2s ease;
+}
+
+a:hover {
+	color: #6070e0; /* 호버 시 색상 변경 */
+	text-decoration: none !important; /* 호버 시 밑줄 추가 */
+}
+/* 브레드크럼 start */
+.breadcrumb-item+.breadcrumb-item{
+    display: flex;
+    align-items: center;
+}
+.breadcrumb-item + .breadcrumb-item::before {
+  content: ">" !important;
+}
+
+.breadcrumb .breadcrumb-item > a {
+	color: #7995ff; /* 링크 색상 */
+	text-decoration: none !important; /* 밑줄 제거 */
+	font-size: 18px;
+	padding: 2px 6px;
+	display: inline-block; /* 패딩을 위해 블록 요소처럼 보이게 */
+	border-radius:10px;
+	transition: color 0.2s ease;
+}
+
+.breadcrumb .breadcrumb-item > a:hover {
+	color: #fff;
+    background-color: #0069d9;
+    border-color: #0062cc;
+	text-decoration: none !important; /* 호버 시 밑줄 추가 */
+}
+/* 브레드크럼 end */
+/* 페이지 상단 해더 */
+.content-title{
+    display: inline-block;
+	font-size: 40px;
+	font-weight: bold;
+}
+/* 페이지 설명 */
+.desc{	
+    display: inline-block;
+    margin:0;
+    color:#000000;
+}
+/*필수 표기*/
+.essential {
+  position: relative;
+}
+
+.essential::before {
+  content: "\f005"; /* Font Awesome solid star 아이콘 코드 */
+  font-family: "Font Awesome 6 Free"; /* Font Awesome 폰트 지정 */
+  font-weight: 900; /* solid 아이콘에 필요한 weight */
+  color: #e74c3c; /* 빨간색 별 (원하는 색상으로 변경) */
+  font-size: 0.8em; /* 텍스트보다 살짝 작게 */
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  transform: translateY(-90%);
+}
+.section.section-loginForm{
+	
+}
+
+.section{
+	background: #ffffff !important;
+    border-radius: 12px;
+    padding: 30px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 30px;
+}
+.section .section-header{
+	border-bottom: 1px solid #475569;
+	position: relative;
+	padding: 10px 16px;
+}
+.section-title{
+	margin:0;
+    font-size: 34px;
+    font-weight: bold;
+    color: #000000;
+}
+.section-title + .data-table{
+	margin-top: 10px;
+}
+.section-title + .table-section{
+	margin-top: 10px;
+}
+.content-section.content-section-2nd{
+	display: flex;
+	gap:10px;
+}
+/* .content-section.content-section-2nd:first-child{
+	width: 70%;
+}
+.content-section.content-section-2nd:last-child{
+	width: 30%;
+} */
+.content-section.content-section-2nd .tabs-container{
+	width: 70%;
+	margin: 0;
+}
+.content-section.content-section-2nd #progress{
+	width: 30%;
+}
+.section-contant-2nd{
+
+}
+.section-contant-3nd{
+
+}
+.section-content{
+    padding: 20px;
+    background: #f8f9fa;
+}
+.section-content + .section-content{
+	margin-top:20px;
+}
+.container{
+	max-width: 100%;
+}
+
+
+/* 버튼 css start */
+.btn-container{
+	margin:30px 0 0 0;
+}
+
+
+div:has(.btn-container-bt){
+	position: relative;
+}
+.btn-container-bt{
+	position:absolute;
+	bottom: 0;
+	width: 100%;
+}
+.btn-container.btncl{
+	text-align: left;
+}
+.btn-container.btncr{
+	text-align: right;
+}
+.btn-container-bt.btncl{
+	left: 0;
+}
+.btn-container-bt.btncr{
+	right: 0;
+}
+
+.btn{
+    border: none;
+    border-radius: 8px;
+    font-size: 16px !important;
+    font-weight: bold;
+    transition: background-color 0.2s, transform 0.1s;
+    /* width: 100%; */
+    width:160px;
+    height: 48px;
+}
+.btn.btn-mc{
+    width: 100%;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-container:has(.btn-l) {
+	text-align: left;
+}
+
+.btn-container:has(.btn-c) {
+	text-align: center;
+}
+
+.btn-container:has(.btn-r) {
+	text-align: right;
+}
+/* 작은 버튼 */
+.btn-group-sm>.btn, .btn-sm{
+    padding: .25rem .5rem !important;
+    font-size: .875rem !important;
+    line-height: 1.5 !important;
+    border-radius: .2rem !important;
+    width: 100px;
+    height: 30px;
+}
+
+/**
+버튼 색
+<button type="button" class="btn btn-primary">Primary</button>
+<button type="button" class="btn btn-secondary">Secondary</button>
+<button type="button" class="btn btn-success">Success</button>
+<button type="button" class="btn btn-danger">Danger</button>
+<button type="button" class="btn btn-warning">Warning</button>
+<button type="button" class="btn btn-info">Info</button>
+<button type="button" class="btn btn-light">Light</button>
+<button type="button" class="btn btn-dark">Dark</button>
+<button type="button" class="btn btn-link">Link</button>
+.btn-primary:hover{
+	background:#fff !important;
+	border-color: #fff !important;
+	color:#007bff !important;
+}
+**/
+.btn-primary {
+    color: #fff;
+    background-color: #007bff;
+    border-color: #007bff;
+    box-shadow: none;
+}
+#pdfDownFrom{
+    text-align: right;
+    margin: 0 15px 15px 0; 
+}
+
+/* 버튼 css end */
+
+/* 인풋,셀렉 엘리먼트 css */
+.form-input, .form-select{
+	padding: 10px 15px;
+    border: 1px solid #17193b !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-radius: 8px;
+    font-size: 1.05em;
+    box-sizing: border-box;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+	width: 100%;
+	height: 50px;
+}
+.fa-cloud-arrow-up.complet:before,
+.fa-cloud-upload-alt.complet:before,
+.fa-cloud-upload.complet:before {
+    content: "\f00c";
+}
+.form-select{
+	width: auto !important;
+	-webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="black"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 1em;
+    padding-right: 30px;
+}
+.form-select-12{
+	width: 100% !important;
+}
+.form-input{
+	
+}
+input:-webkit-autofill {
+   -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+   -webkit-text-fill-color: #000000;
+}
+label{
+	color:#000000 !important;
+}
+.form-label{
+	color:#000000 !important;
+	display: flex;
+    align-items: center;
+}
+/* 인풋 css end */
+/* 드롭다운 css start */
+.dropdown-warp {
+	width:100%;
+    position: relative; /* 드롭다운을 위한 부모 요소 */
+}
+.hs-search-input-wrapper {
+	width:100%;
+    position: relative; /* 드롭다운을 위한 부모 요소 */
+}
+.dropdown{
+	display: block;
+    position: absolute !important;
+    top: 100%;
+    left: 0;
+    margin-top: 5px;
+    background: #ffffff !important;
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.dropdown-off{
+	display: none;
+}
+.dropdown-item{
+    display: block;
+    width: 100%;
+    padding: .25rem 1rem;
+    clear: both;
+    font-weight: 400;
+    color: #212529;
+    text-align: inherit;
+    white-space: nowrap;
+    background-color: transparent;
+    border: 0;
+}
+
+/* 드롭다운 css end */
+
+/* 테이블 css start */
+/* --- 데이터 테이블 섹션 (table-section) --- */
+/* dashboard-section은 일반적인 카드형 섹션에 사용되는 스타일입니다. */
+/* table-section은 테이블 컨테이너에만 적용되는 특정 스타일입니다. */
+.table-section {
+    padding: 0; /* 테이블 자체에 패딩이 있으므로 컨테이너 패딩 제거 */
+    background: transparent; /* 배경을 투명하게 */
+    border: none; /* 테두리 없음 */
+    box-shadow: none; /* 그림자 없음 */
+    backdrop-filter: none; /* 블러 없음 */
+    overflow: hidden;
+    overflow-x: auto;
+}
+
+/* --- 데이터 테이블 --- */
+.data-table {
+    width: 100%;
+    border-collapse: collapse; /* 셀 간의 간격 제거 */
+    background-color: rgba(255, 255, 255, 0.03); /* 테이블 배경색 */
+    border-radius: 8px; /* 둥근 모서리 */
+    overflow: hidden; /* 둥근 모서리 적용을 위해 내용이 넘치지 않도록 */
+}
+
+.data-table th,
+.data-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #4a4a60; /* 셀 구분선 */
+    color: #000000;
+    font-size: 0.95em;
+}
+
+.data-table th {
+	text-align:center;
+    background-color: #3a3a50; /* 헤더 배경색 */
+    font-weight: bold;
+    color: #f0f0f0;
+    white-space: nowrap; /* 헤더 텍스트 줄바꿈 방지 */
+}
+.data-table td {
+	text-align:center;
+}
+.data-table td.td-tl {
+	text-align:left;
+}
+.data-table td.td-tr {
+	text-align:right;
+}
+
+.data-table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.08); /* 호버 효과 */
+}
+
+.data-table .link-text {
+    color: #007bff; /* 링크처럼 보이는 텍스트 */
+    cursor: pointer;
+}
+
+.data-table .link-text:hover {
+    text-decoration: underline;
+}
+
+.data-table .info-text {
+    color: #a0a0d0; /* 일반 정보 텍스트 */
+}
+
+/* 상태 뱃지 (진행중, 접수완료, 완료, 접수대기 등) */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.85em;
+    font-weight: bold;
+    color: #fff;
+    white-space: nowrap; /* 뱃지 텍스트 줄바꿈 방지 */
+}
+
+.status-badge::before {
+    content: '•'; /* 점 아이콘 */
+    font-size: 1.5em; /* 점 크기 */
+    line-height: 0.5em; /* 점 정렬 */
+    margin-right: 5px;
+}
+
+.status-badge.progress { /* 진행중 */
+    background-color: #007bff; /* 파란색 */
+}
+
+.status-badge.received { /* 접수완료 */
+    background-color: #28a745; /* 녹색 */
+}
+
+.status-badge.completed { /* 완료 */
+    background-color: #6c757d; /* 회색 */
+}
+
+.status-badge.pending { /* 접수대기 */
+    background-color: #ffc107; /* 노란색 */
+    color: #333; /* 노란색 배경에 어울리는 어두운 글자색 */
+}
+
+/* 아이콘 버튼 (예: 다운로드 아이콘) */
+.icon-button {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 1.2em;
+    color: #c0c0c0;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.icon-button:hover {
+    color: #007bff;
+}
+
+/* 체크박스 */
+.data-table input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #007bff; /* 체크박스 색상 */
+    cursor: pointer;
+}
+
+/* --- 테이블 하단 (페이지네이션, 버튼) --- */
+.table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 15px; /* 패딩 */
+    margin-top: 0; /* 테이블과 바로 이어지도록 마진 제거 */
+    background-color: rgba(255, 255, 255, 0.03); /* 테이블과 동일한 배경 */
+    border-top: 1px solid #4a4a60; /* 테이블 하단선과 맞춤 */
+    border-radius: 0 0 8px 8px; /* 하단만 둥글게 */
+    text-decoration: none;
+}
+
+.pagination {
+	display: flex ;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagination a {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%; /* 원형 */
+    color: #c0c0c0;
+    background-color: #3a3a50; /* 숫자 배경 */
+    transition: background-color 0.2s, color 0.2s;
+    font-weight: bold;
+    font-size: 16px;
+    padding: 5px 0;
+    line-height: 1.5;
+}
+/* 부트스트랩 css 덥어씌기 */
+
+/* .pagination-sm .page-item:first-child .page-link{
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+.pagination-sm .page-item:last-child .page-link{
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+} */
+.pagination-sm .page-item:first-child .page-link{
+    border-top-left-radius: 50%;
+    border-bottom-left-radius: 50%;
+}
+.pagination-sm .page-item:last-child .page-link{
+    border-top-right-radius: 50%;
+    border-bottom-right-radius: 50%;
+}
+.pagination-sm .page-link{
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    color: #c0c0c0;
+    background-color: #3a3a50;
+    transition: background-color 0.2s, color 0.2s;
+    font-weight: bold;
+    font-size: 16px;
+    padding: 5px 0;
+}
+.page-item.active .page-link{
+	
+}
+.page-link{
+	position: relative;
+    display: block;
+    padding: 0;
+    color:transparent;
+}
+.pagination .page-item .page-link-Next
+, .pagination .page-item .page-link-Prev 
+, .pagination .page-item .page-link-text {
+	width: 50px !important;
+    border-radius: 10px !important;
+}
+.pagination a:hover {
+    background-color: #007bff;
+    color: white;
+	text-decoration: none !important; /* 호버 시 밑줄 추가 */
+}
+
+.pagination a.active {
+    background-color: #007bff;
+    color: white;
+    border: 2px solid #007bff;
+}
+
+.table-footer .footer-buttons {
+    display: flex;
+    gap: 10px; /* 버튼들 사이 간격 */
+}
+
+/* 테이블 css end */
+
+/* --- 공통 버튼 스타일 (목록 페이지 내에서도 사용됨) --- */
+.action-button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.action-button.primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.action-button.primary:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+.action-button.secondary {
+    background-color: transparent;
+    color: #007bff;
+    border: 1px solid #007bff;
+}
+
+.action-button.secondary:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+/* --- 검색 및 필터 섹션 start --- */
+.search-filter-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    gap: 20px; /* 요소들 사이의 간격 */
+}
+
+.search-input-wrapper{
+    flex-grow: 1; /* 검색 입력 필드가 남은 공간을 유연하게 차지 */
+    position: relative; /* 아이콘 위치 지정을 위함 */
+}
+/* 
+.search-input-wrapper .search-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #808080; 검색 아이콘 색상
+}
+ */
+.search-input-icon{
+	position:absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+	background: url(../../icon/dd.png) no-repeat;
+    background-size: contain;
+}
+.search-input:before{
+	content:'';
+	position:absolute;
+	left:0;
+	top:50%;
+    width: 100px;
+    height: 100px;
+	background: url(../../icon/dd.png);
+}
+
+.search-filter-section .form-input {
+    width: 100%;
+    padding: 10px 15px;
+    padding-left: 45px; /* 검색 아이콘을 위한 왼쪽 패딩 */
+    border: 1px solid #4a4a60;
+    background-color: #3a3a50;
+    color: #f0f0f0;
+    border-radius: 8px;
+    font-size: 1em;
+    box-sizing: border-box; /* 패딩이 너비에 포함되도록 */
+}
+
+.search-filter-section .filter-group {
+    display: flex;
+    gap: 10px; /* 드롭다운 및 버튼 사이 간격 */
+    align-items: center;
+}
+
+.search-filter-section .form-select {
+    padding: 10px 15px;
+    border: 1px solid #4a4a60;
+    background-color: #3a3a50;
+    color: #f0f0f0;
+    border-radius: 8px;
+    font-size: 1em;
+    appearance: none; /* 브라우저 기본 select 스타일 제거 */
+    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="black"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>');
+
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 1em;
+    min-width: 120px;
+    cursor: pointer;
+}
+
+/* --- 검색 및 필터 섹션 end --- */
+.disflex{
+	display: flex;
+	gap:10px;
+}
+
+.row+.row{
+	margin-top:20px;	
+}
+/* ========================================================= */
+/* 고객지원 탭 메뉴 스타일                   */
+/* ========================================================= */
+.tabs-header{
+	display: flex;
+    background-color: #f1f1f1;
+    border-bottom: 1px solid #ddd;
+}
+.tab-button {
+    padding: 15px 20px;
+    cursor: pointer;
+    text-align: center;
+    flex-grow: 1;
+    transition: background-color 0.3s ease;
+    border-right: 1px solid #eee;
+    transition: color 0.3s;
+}
+.tab-button.active {
+    background-color: #fff;
+    border-bottom: 2px solid #000000 !important;
+    color: #000000 !important;
+    font-weight: bold;
+}
+.tab-button:hover {
+    background-color: #fff;
+    border-bottom: 2px solid #000000;
+    color: #000000;
+    font-weight: bold;
+    transition: color 0.3s;
+}
+/* ========================================================= */
+/* 고객지원 탭 메뉴 스타일                   */
+/* ========================================================= */
+.support-tabs {
+    display: flex;
+    margin-bottom: 30px;
+    border-bottom: 1px solid #4a4a60; /* 하단 경계선 */
+}
+
+.support-tabs .tab-item {
+    padding: 0 15px 25px 15px;
+    color: #a0a0d0;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    position: relative; /* 하단 활성화 라인 */
+    transition: color 0.3s;
+}
+
+.support-tabs .tab-item:hover {
+    color: #000000;
+}
+
+.support-tabs .tab-item.active {
+    color: #000000;
+}
+
+.support-tabs .tab-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; /* 부모 border-bottom 위로 */
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: #000000;
+    border-radius: 2px;
+}
+
+.support-tabs .tab-icon {
+    margin-right: 8px;
+    font-size: 1.2em;
+}
+
+
+/*진행 상태 엘리먼트 css*/
+.progress-section {
+}
+
+.progress-title {
+	font-size: 18px;
+	font-weight: bold;
+	margin-bottom: 15px;
+	color: #333;
+}
+
+.progress-bar-container {
+	background-color: #f8f9fa;
+	padding: 20px;
+	border-radius: 8px;
+	margin-bottom: 10px;
+}
+
+.progress-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-direction: row;
+	position: relative;
+	overflow: hidden;
+	background: transparent;
+}
+
+.progress-step {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	flex: 1;
+	position: relative;
+}
+
+.progress-details {
+	position: absolute;
+	top: 70px;
+	left: 0;
+}
+
+.progress-step:not(:last-child)::after {
+	content: '';
+	position: absolute;
+	top: 15px;
+	right: -50%;
+	width: 100%;
+	height: 2px;
+	background-color: #007bff;
+	z-index: 1;
+}
+
+.step-circle {
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	background-color: #007bff;
+    border: 2px solid #007bff;
+	color: white;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 14px;
+	font-weight: bold;
+	margin-bottom: 8px;
+	z-index: 2;
+	position: relative;
+}
+
+.step-circle.inactive {
+	background-color: #fff;
+	color: #007bff;
+}
+
+.step-circle.wait {
+	background-color: yellow;
+	color: #6c757d;
+}
+
+.progress-date {
+	font-size: 12px;
+	color: #6c757d;
+	margin-top: 5px;
+}
+
+.card-main{
+	display: flex;
+    justify-content: space-between;
+}
+.card-left{
+    width: 48%;
+}
+.card-right{
+	width: 48%;
+} 
+/* 자동 버튼 start */
+
+
+/********** 분류 잡기 start **********/
+.autovalbtn{
+	position: fixed;
+	right: 20px;
+	top: 100px;
+}
+.autolink{
+	position: fixed;
+	right: 20px;
+	top: 100px;
+}
+/* 자동 버튼 end */
+.dis-f-ai-c{
+    display: flex;
+    align-items: center;
+}
+
+
+.info-card {
+	background-color: #f8f9fa;
+	padding: 25px;
+	border-radius: 8px;
+	border: 1px solid #e9ecef;
+}
+.info-card:has(.contract-progress-details){
+	height: 100%;
+}
+
+.card-title {
+	font-size: 18px;
+	font-weight: bold;
+	margin-bottom: 20px;
+	color: #333;
+	border-bottom: 2px solid #007bff;
+	padding-bottom: 10px;
+}
+
+.info-row {
+	display: flex;
+	margin-bottom: 15px;
+	align-items: flex-start;
+}
+.info-row + .info-row{
+	
+}
+.info-label{
+	font-weight: bold;
+    color: #495057;
+    width: 150px;
+    flex-shrink: 0;
+	font-size: 18px;
+}
+
+.info-value{
+    color: #333;
+    flex: 1;
+	font-size: 18px;
+}
+.info-value.link {
+	color: #007bff;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.amount-highlight {
+	font-size: 18px;
+	font-weight: bold;
+	color: #dc3545;
+}
+
+.contact-info {
+	background-color: white;
+	padding: 15px;
+	border-radius: 6px;
+	border: 1px solid #dee2e6;
+	margin-top: 10px;
+}
+
+.contact-info div {
+	margin-bottom: 5px;
+	font-size: 13px;
+	color: #666;
+}
+.contact-info .ccaTel
+, .contact-info .userTel
+, .contact-info .ccaUserFax
+, .contact-info .ccaUserEmail{
+	font-size: 16px;
+	color: #666;
+}
+.description-section {
+	background-color: #f8f9fa;
+	padding: 25px;
+	border-radius: 8px;
+	margin-bottom: 30px;
+}
+
+.description-title {
+	font-size: 18px;
+	font-weight: bold;
+	margin-bottom: 15px;
+	color: #333;
+}
+
+.description-text {
+	color: #666;
+	font-size: 14px;
+	line-height: 1.6;
+}
+
+.info-card + .info-card{
+	margin-top: 10px;
+}
+/********** 분류 잡기 end **********/
+
+/* --- 플로팅 메뉴 스타일 --- */
+.floating-menu {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1000; /* 모달/채팅창 아래에 가려지지 않도록 높은 z-index */
+}
+
+.floating-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 45px;
+    height: 45px;
+    margin: 6px 0;
+    border: none;
+    border-radius: 50%;
+    background-color: #59f23d;
+    color: #555555;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.floating-button:hover {
+    background-color: #b9ffb8;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+.floating-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* --- 모달 공통 스타일 --- */
+.modal-warp {
+    display: none; /* 초기에는 숨김 */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    justify-content: center;
+    align-items: center;
+    z-index: 2000; /* 가장 위에 표시 */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-warp.show {
+    opacity: 1;
+    display: flex;
+}
+.modal-warp .modal-flex-column{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 80%;
+    width: 80%;
+    position: absolute;
+    top: 130px;
+}
+.modal-warp .modal-flex-column .modal-2nd{
+    display: flex;
+    gap: 20px;
+}
+
+.modal-warp{
+	color:#000000 !important;
+}
+.modal-warp p{
+	color:#000000 !important;
+}
+.modal p{
+	color:#000000 !important;
+}
+.modal-content {
+    background-color: #ffffff !important;
+    padding: 30px;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 500px; /* 기본 모달 최대 너비 */
+    box-sizing: border-box;
+    position: relative;
+    animation: fadeInScale 0.3s ease-out forwards;
+}
+
+/* 모달 나타날 때 애니메이션 */
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal-close-button {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #888;
+    cursor: pointer;
+    padding: 5px;
+    transition: color 0.2s ease;
+}
+
+.modal-close-button:hover {
+    color: #333;
+}
+
+/* --- 검색 모달 내부 스타일 --- */
+/* searchModal 자체의 max-width를 100%로 설정하여 modal-content가 더 넓게 퍼질 수 있도록 함 */
+#searchModal .modal-content {
+    max-width: 100%; /* 이전 500px 제한 제거 */
+    width: 100%; /* 부모의 90%를 따르도록 */
+}
+
+#searchModal .modal-content h3 {
+    text-align: center;
+    color: #333;
+    margin: 0 0 25px 0;
+    font-size: 24px;
+}
+#searchModal .dropdown{
+    max-height: 400px;
+    max-width: 100%;
+    overflow: auto;
+}
+/* HS CODE 검색 섹션 (첫 번째 search-input-group) */
+#searchModal .modal-content:first-of-type .search-input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center; /* 세로 중앙 정렬 */
+}
+
+#searchModal .modal-content:first-of-type .search-input-group select {
+    padding: 12px 15px 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    outline: none;
+    flex-shrink: 0; /* 줄어들지 않도록 */
+}
+
+#searchModal .modal-content:first-of-type .search-input-group input[type="text"] {
+    flex-grow: 1; /* 남은 공간을 채우도록 */
+    min-width: 150px; /* 최소 너비 지정 */
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+#searchModal .modal-content:first-of-type .search-input-group input[type="text"]:focus {
+    border-color: #007bff;
+}
+
+#searchModal .modal-content:first-of-type .search-input-group button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    flex-shrink: 0;
+}
+
+#searchModal .modal-content:first-of-type .search-input-group button:hover {
+    background-color: #0056b3;
+}
+
+#searchModal .search-results {
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+#searchModal .search-results .search-answer-wrap{
+	overflow: auto;
+	max-width: 690px;
+	height: 300px;
+}
+#searchModal .search-results .search-answer-wrap .search-answer-item{
+	border-radius: 6px;
+    width: max-content;
+    padding: 4px 10px 4px 10px;
+    margin: 10px;
+	
+}
+#searchModal .search-results .search-answer-wrap .search-answer-item:hover {
+    color: #fff;
+    text-decoration: none;
+    background-color: #007bff;
+}
+/* 두 번째 search-input-group (계산기 섹션) */
+#searchModal .modal-content:last-of-type .search-input-group {
+    display: grid; /* Grid Layout 사용 */
+    grid-template-columns: 1fr 1fr; /* 두 개의 컬럼으로 나눔 */
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+#searchModal .modal-content:last-of-type .search-input-group {
+    display: flex;
+}
+/* 각 행마다 요소를 배치하기 위한 추가적인 스타일 */
+#searchModal .modal-content:last-of-type .search-input-group input,
+#searchModal .modal-content:last-of-type .search-input-group select,
+#searchModal .modal-content:last-of-type .search-input-group button {
+    width: 100%; /* 그리드 셀 내에서 꽉 채우도록 */
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    outline: none;
+    box-sizing: border-box; /* 패딩, 보더 포함 너비 계산 */
+}
+
+#searchModal .modal-content:last-of-type .search-input-group input[type="text"]:focus,
+#searchModal .modal-content:last-of-type .search-input-group select:focus {
+    border-color: #007bff;
+}
+
+#searchModal .modal-content:last-of-type .search-input-group button {
+    grid-column: span 2; /* 버튼은 두 컬럼을 모두 사용 */
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#searchModal .modal-content:last-of-type .search-input-group button:hover {
+    background-color: #0056b3;
+}
+
+#searchModal .search-input-label{
+	display: flex;
+    justify-content: space-around;
+}
+#searchModal .search-input-label > div{
+	width: 25%;
+}
+/* --- 채팅창 스타일 --- */
+.chat-warp {
+    display: none; /* 초기에는 숨김 */
+    position: fixed;
+    bottom: 15px; /* 플로팅 메뉴 위로 띄우기 */
+    right: 15px;
+    width: 320px; /* 채팅창 너비 */
+    height: 400px; /* 채팅창 높이 */
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    flex-direction: column;
+    z-index: 1001; /* 플로팅 메뉴와 모달 사이 또는 그 위 (원하는 위치에 따라) */
+    opacity: 0;
+    transform: translateY(20px); /* 아래에서 위로 나타나는 효과 */
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.chat-warp.show {
+    opacity: 1;
+    transform: translateY(0);
+    display: flex;
+}
+
+.chat-header {
+    background-color: #007bff;
+    color: white;
+    padding: 15px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-close-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+.chat-messages {
+    flex-grow: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background-color: #f8f8f8;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-message {
+    padding: 8px 12px;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    max-width: 80%;
+    word-wrap: break-word;
+}
+
+.chat-message.sent {
+    align-self: flex-end;
+    background-color: #dcf8c6;
+}
+
+.chat-message.received {
+    align-self: flex-start;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+}
+
+.chat-input-group {
+    display: flex;
+    padding: 10px 15px;
+    border-top: 1px solid #eee;
+}
+
+.chat-input-group input {
+    flex-grow: 1;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    font-size: 14px;
+    outline: none;
+    margin-right: 10px;
+}
+
+.chat-input-group button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.chat-input-group button:hover {
+    background-color: #0056b3;
+}
+
+/* --- 달력 모달 스타일 (calendarModal에만 적용) --- */
+#calendarModal .modal-content {
+    max-width: 1560px; /* 달력 크기에 맞게 최대 너비 늘림 */
+    max-height: 80vh;
+    overflow-y: auto;
+    width: 95%;      /* 화면 너비에 따라 조절되도록 설정 */
+    padding: 20px;   /* 내부 여백 조정 */
+}
+
+#calendarModal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 20px;
+}
+
+#calendarModal .modal-header h3 {
+    margin: 0;
+    font-size: 24px;
+    color: #333;
+}
+/*임시방편*/
+#calendarModal .fc-col-header{
+	width: 100% !important;
+}
+#calendarModal .fc-scrollgrid-sync-table{
+	width: 100% !important;
+}
+#calendarModal .fc-daygrid-body{
+	width: 100% !important;
+}
+/* FullCalendar 기본 스타일 재정의 (선택 사항) */
+.fc .fc-button {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+    transition: background-color 0.2s;
+}
+.fc .fc-button:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+.fc .fc-daygrid-day.fc-day-today {
+    background-color: #e6f7ff; /* 오늘 날짜 배경색 */
+}
+
+/* --- 계산기 모달 내부 스타일 (새로 추가) --- */
+#calcModal .modal-content {
+    max-width: 320px; /* 계산기 크기에 맞게 조정 */
+    padding: 20px;
+    text-align: center;
+}
+
+#calcModal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 20px;
+}
+
+#calcModal .modal-header h3 {
+    margin: 0;
+    font-size: 24px;
+    color: #333;
+}
+
+.calculator {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px;
+    background-color: #f9f9f9;
+}
+
+.calculator-display {
+    width: calc(100% - 20px);
+    height: 50px;
+    font-size: 2em;
+    text-align: right;
+    margin-bottom: 10px;
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #e0e0e0;
+}
+
+.calculator-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.calculator-button {
+    width: 100%;
+    height: 60px;
+    font-size: 1.5em;
+    border: none;
+    border-radius: 5px;
+    background-color: #e0e0e0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.calculator-button:hover {
+    background-color: #d0d0d0;
+}
+
+.calculator-button.operator {
+    background-color: #ff9500;
+    color: white;
+}
+.calculator-button.operator:hover {
+    background-color: #e08500;
+}
+
+.calculator-button.equals {
+    grid-column: span 2;
+    background-color: #4CAF50;
+    color: white;
+}
+.calculator-button.equals:hover {
+    background-color: #45a049;
+}
+
+.calculator-button.clear {
+    background-color: #f44336;
+    color: white;
+}
+.calculator-button.clear:hover {
+    background-color: #d32f2f;
+}
+#enterAmount{
+	width: 25% !important;
+}
+.modal-search-sm-wrap{
+	width: 25%;
+}
+.answer-ipt{
+	width: 25% !important;
+}
+
+#modalOverlay .modal {
+    background-color: white;
+    border-radius: 10px;
+    width: 300px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height:auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#modalOverlay .modal-header {
+    background-color: #4e6ef2;
+    color: white;
+    padding: 15px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: auto;
+}
+
+#modalOverlay .modal-body {
+    padding: 20px;
+}
+
+#modalOverlay .option-button {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #f0f0f0;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#modalOverlay .option-button:hover {
+    background-color: #e0e0e0;
+}
+
+#modalOverlay .option-button:last-child {
+    margin-bottom: 0;
+}
+
+#modalOverlay .option-icon {
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+#modalOverlay .close-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.section-alert {
+    background-color: rgba(255, 99, 71, 0.1); /* 연한 주황색 배경 */
+    border: 1px solid tomato; /* 주황색 테두리 */
+    color: tomato; /* 텍스트 색상 */
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    font-size: 0.9em;
+}
+
+.section-alert i {
+    font-size: 1.2em;
+}
+.section-alert p{
+	color:#000000;
+	margin:0;
+}
+
+
+.file-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap:10px;
+    padding: 15px 0;
+    border-bottom: 1px solid #4a4a60; /* 구분선 */
+}
+
+/* .file-item:last-child {
+    border-bottom: none; 마지막 항목은 선 없음
+} */
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-grow: 1;
+}
+
+.file-info i {
+    font-size: 1.5em;
+    color: #007bff;
+}
+
+.file-item.completed .file-info i {
+    color: #34a853; /* 완료된 파일 아이콘 색상 */
+}
+
+.file-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.file-name {
+    font-size: 1em;
+    font-weight: 600;
+    color: #000000;
+    margin-bottom: 4px;
+}
+
+.file-meta {
+    font-size: 0.8em;
+    color: #a0a0d0;
+}
+
+.file-actions {
+    display: flex;
+    gap: 10px;
+}
+.breadcrumb {
+	font-size: 18px;
+	color: #333;
+	font-weight: bold;
+}
+
+.breadcrumb span {
+	color: #6c757d;
+}
+
+.header-actions {
+	display: flex;
+	gap: 10px;
+}
+
+.btn-icon {
+	background: none;
+	border: 1px solid #ddd;
+	padding: 8px 12px;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 14px;
+}
+
+.progress-section {
+	margin-bottom: 30px;
+}
+
+.progress-title {
+	font-size: 18px;
+	font-weight: bold;
+	margin-bottom: 15px;
+	color: #333;
+}
+
+.progress-step {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	flex: 1;
+	position: relative;
+}
+
+.progress-details {
+	position: absolute;
+	top: 70px;
+	left: 0;
+}
+
+.progress-step:not(:last-child)::after {
+	content: '';
+	position: absolute;
+	top: 15px;
+	right: -50%;
+	width: 100%;
+	height: 2px;
+	background-color: #007bff;
+	z-index: 1;
+}
+
+.step-circle {
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	background-color: #007bff;
+	color: white;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: bold;
+	font-size: 14px;
+	margin-bottom: 8px;
+	z-index: 2;
+	position: relative;
+}
+
+.step-circle.inactive {
+	background-color: #dee2e6;
+	color: #6c757d;
+}
+
+.step-circle.wait {
+	background-color: yellow;
+	color: #6c757d;
+}
+
+.step-label {
+	font-size: 18px;
+	text-align: center;
+	color: #333;
+	font-weight: 500;
+}
+
+.progress-date {
+	font-size: 12px;
+	color: #6c757d;
+	margin-top: 5px;
+}
+
+
+.card-title {
+	font-size: 18px;
+	font-weight: bold;
+	margin-bottom: 20px;
+	color: #333;
+	border-bottom: 2px solid #007bff;
+	padding-bottom: 10px;
+}
+
+.amount-highlight {
+	font-size: 18px;
+	font-weight: bold;
+	color: #dc3545;
+}
+
+.contact-info {
+	background-color: white;
+	padding: 15px;
+	border-radius: 6px;
+	border: 1px solid #dee2e6;
+	margin-top: 10px;
+}
+
+.contact-info div {
+	margin-bottom: 5px;
+	font-size: 13px;
+	color: #666;
+}
+
+.description-title {
+	font-size: 18px;
+	font-weight: bold;
+	margin-bottom: 15px;
+	color: #333;
+}
+
+.description-text {
+	color: #666;
+	font-size: 14px;
+	line-height: 1.6;
+}
+
+.action-buttons {
+	display: flex;
+	justify-content: space-between;
+	padding-top: 20px;
+	border-top: 1px solid #e9ecef;
+}
+
+
+/* 탭 컨테이너 */
+.tabs-container {
+	width: 100%;
+	margin: 20px 0;
+	border: 1px solid #ddd;
+	border-radius: 5px;
+	overflow: hidden; /* 내용이 넘칠 경우 스크롤 처리 */
+	/* 탭 헤더 (버튼 부분) */
+}
+.tabs-header { display : flex; /* 버튼들을 가로로 나열 */
+	background-color: #f1f1f1;
+	border-bottom: 1px solid #ddd;
+}
+
+/* 각 탭 버튼 */
+.tab-button {
+	padding: 15px 20px;
+	cursor: pointer;
+	text-align: center;
+	flex-grow: 1; /* 버튼들이 균등하게 공간을 차지하도록 */
+	transition: background-color 0.3s ease; /* 호버 효과 */
+	border-right: 1px solid #eee; /* 버튼 구분선 */
+}
+
+.tab-button:last-child {
+	border-right: none; /* 마지막 버튼은 오른쪽 선 제거 */
+}
+
+.tab-button:hover {
+	background-color: #e9e9e9;
+}
+
+/* 활성화된 탭 버튼 */
+.tab-button.active {
+	background-color: #fff;
+	border-bottom: 2px solid #007bff; /* 활성화된 탭 하단에 강조선 */
+	color: #007bff;
+	font-weight: bold;
+}
+
+/* 탭 내용 */
+.tabs-content {
+	padding: 20px;
+}
+.tabs-content-2nd:has(.tabs-content + .tabs-content){
+	display: flex;
+}
+.tabs-content-2nd:has(.tabs-content + .tabs-content) .tabs-content{
+	width: 50%;
+}
+.tabs-content-2nd:has(.tabs-content + .tabs-content) .tabs-content:first-child{
+	width: 70%;
+	padding-right: 10px;
+}
+.tabs-content-2nd:has(.tabs-content + .tabs-content) .tabs-content:last-child{
+	width: 30%;
+	padding-left: 10px;
+}
+/* 각 탭 패널 (내용 부분) */
+.tab-pane {
+	display: none; /* 기본적으로 숨김 */
+}
+
+/* 활성화된 탭 패널 */
+.tab-pane.active {
+	display: block; /* 활성화되면 보임 */
+}
+.contract-progress-details{
+	font-size: 18px;
+	color: #333
+}
+/* 진행과정 탭 */
+.progress-history-container {
+	padding-left: 20px; /* 아이콘과 세로 선을 위한 왼쪽 여백 */
+	position: relative;
+	background-color: #f8f9fa; /* 배경색 통일 */
+	padding: 25px; /* 전체 패딩 */
+	border-radius: 8px;
+	border: 1px solid #e9ecef; /* 테두리 */
+}
+
+/* 각 진행 단계 아이템 */
+.progress-history-item {
+	display: flex; /* 아이콘과 내용을 가로로 배열 */
+	align-items: flex-start; /* 세로 정렬: 시작점(상단)에 맞춤 */
+	margin-bottom: 25px; /* 각 아이템 간의 간격 */
+	position: relative;
+	z-index: 1; /* 아이템이 선 위에 오도록 */
+}
+
+/* 마지막 아이템의 하단 간격 조정 */
+.progress-history-item:last-child {
+	margin-bottom: 0;
+}
+
+/* 각 단계의 동그란 아이콘 */
+.status-icon {
+	flex-shrink: 0; /* 아이콘 크기 고정, 내용이 줄어들어도 아이콘은 그대로 */
+	width: 28px; /* 아이콘 원형의 너비 */
+	height: 28px; /* 아이콘 원형의 높이 */
+	border-radius: 50%; /* 원형으로 만들기 */
+	background-color: #007bff; /* 파란색 배경 */
+	color: white; /* 아이콘 색상 */
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	font-size: 15px; /* Font Awesome 아이콘 크기 */
+	margin-right: 15px; /* 아이콘과 텍스트 간격 */
+	position: relative;
+	z-index: 2; /* 아이콘이 세로 선 위에 오도록 */
+}
+
+/* Font Awesome 아이콘 크기 미세 조정 */
+.status-icon .fas {
+	font-size: 0.9em; /* 아이콘 폰트 크기 조절 */
+}
+
+/* 진행 단계의 내용 (이름, 날짜, 설명) */
+.status-content {
+	flex-grow: 1; /* 남은 공간을 모두 차지 */
+}
+
+/* 단계 이름 (예: 관세계약 접수) */
+.status-name {
+	font-weight: bold;
+	color: #333;
+	font-size: 16px;
+	margin-bottom: 3px; /* 날짜와의 간격 */
+}
+
+/* 날짜와 시간 (예: 2025-05-10 09:00) */
+.status-date {
+	font-size: 13px;
+	color: #6c757d;
+	margin-bottom: 5px; /* 설명과의 간격 */
+}
+
+/* 추가 설명 텍스트 (예: 의뢰 접수 완료) - 이 부분은 데이터에 따라 조정 필요 */
+.status-description {
+	font-size: 14px;
+	color: #555;
+	line-height: 1.5;
+}
+
+/* 각 진행 단계 아이템을 연결하는 세로 선 */
+.vertical-line {
+	position: absolute;
+	top: 28px; /* 아이콘의 대략적인 중앙(높이/2 + 아이템 상단 패딩 고려)에서 시작 */
+	left: 34px;
+	/* 아이콘의 중앙(status-icon width/2 + container padding-left)에 오도록 조정 */
+	width: 2px; /* 선의 두께 */
+	height: calc(100% - 28px); /* 아이템 높이에서 아이콘 위쪽까지의 길이 제외 */
+	background-color: #e9ecef; /* 선 색상 (연한 회색) */
+	z-index: 0; /* 내용 뒤로 배치 */
+}
+
+/* 마지막 진행 단계 아이템에는 세로 선을 숨김 */
+.progress-history-item:last-child .vertical-line {
+	display: none;
+}
+
+@media ( max-width : 768px) {
+	.content-section {
+		grid-template-columns: 1fr;
+		gap: 20px;
+	}
+	.action-buttons {
+		flex-direction: column;
+		gap: 10px;
+	}
+	.progress-bar {
+		flex-direction: column;
+		gap: 20px;
+	}
+	.progress-step:not(:last-child)::after {
+		display: none;
+	}
+}
+.seal-wrap {
+    display: none;
+	position: absolute;
+	right: 50px;
+	bottom: 140px;
+}
+.seal-wrap.stamp{
+    display: block;
+	animation-name: stamp;
+	animation-duration: 0.5s;
+	animation-iteration-count: 1;
+	animation-timing-function: ease;
+}
+@keyframes stamp {
+	0% {transform: scale(1); opacity:0;}
+	95% {transform: scale(5); opacity:0;}
+	100% {transform: scale(1); opacity:1;}
+}
+
+/**임시**/
+@media screen and (max-width: 600px){
+	.main-content-area{
+		margin: 0;
+	}
+	.sidebar{
+		padding:0;
+		width: 0;
+	}
+	.header-nav-item{
+		display: none;
+	}
+	.header-profile{
+		display: none;
+	}
+	.header-profile-name{
+		display: none;
+	}
+}
+#localStream{
+	width: auto;
+}
+
+.alertify-notifier.ajs-bottom{
+	top: 60px !important;
+	bottom: 0 !important;	
+}
+.ajs-message{
+	/* width: 300px !important; */
+}
+
+/* 롤링 배너 컨테이너 */
+.rollingBanner {
+    flex-grow: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative; 
+    height: 30px;
+    display: flex;
+    align-items: center;
+    margin: 0 30px;
+}
+
+/* 롤링될 텍스트 */
+.rolling-text {
+    display: inline-block;
+    width:100%;
+    position: absolute; 
+    left: 0%;
+    font-size: 30px;
+    color: #ffffff;
+    font-weight: bold;
+    margin:0;
+    animation: roll 16s linear infinite;
+}
+
+/* 롤링 애니메이션 정의 */
+@keyframes roll {
+    0% {
+        transform: translateX(0%);
+    }
+    50%{
+        transform: translateX(90%);
+    }
+    100%{
+    	transform: translateX(0%) ;
+    }
+}
+.ajs-header{
+	font-size: 0;
+	
+}
+
+.yt-wrap{
+	display: flex;
+    justify-content: center;
+    gap: 60px;
+}
+.yt-wrap > div {
+	width: calc(50% - 60px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.chart-placeholder{
+	
+}
+
+.alertify .ajs-dimmer, .alertify .ajs-modal{
+    z-index: 2001;
+	
+}

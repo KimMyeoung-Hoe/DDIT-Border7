@@ -1,0 +1,453 @@
+package kr.or.ddit.controller;
+
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.io.IOUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping; 
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.servlet.http.HttpSession;
+import kr.or.ddit.ServiceResult;
+import kr.or.ddit.servant.service.IServantService;
+import kr.or.ddit.service.ICCAService;
+import kr.or.ddit.service.IMyInfoService;
+import kr.or.ddit.user.service.IUserService;
+import kr.or.ddit.util.MediaUtils;
+import kr.or.ddit.util.UploadFileUtils;
+import kr.or.ddit.vo.CCAVO;
+import kr.or.ddit.vo.ConsignorVO;
+import kr.or.ddit.vo.CustomUser;
+import kr.or.ddit.vo.DeptVO;
+import kr.or.ddit.vo.LogistMngVO;
+import kr.or.ddit.vo.SanctionVO;
+import kr.or.ddit.vo.ServantVO;
+import kr.or.ddit.vo.UserVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+@RequestMapping("/myPage")
+public class MyInfoController {
+
+	@Autowired 
+	private IMyInfoService myInfoService;
+	
+	@Autowired
+	private IUserService userService;
+	
+	@Autowired
+	private ICCAService ccaService;
+	
+	@Value("${kr.or.ddit.upload.path}")
+	private String uploadPath;
+	
+	/** (공무원)내 정보 조회 기능
+	 * @param session 로그인사용자 정보
+	 * @param model userVO를 담음
+	 * @return "myPage/myInfo"
+	 */
+	@GetMapping("/myInfoSvt.do")
+	public String myInfoSvt(Model model) {
+		log.info("실행 {} : (공무원)내 정보 조회 기능");
+		
+		// session에 저장된 로그인사용자ID를 통해 사용자식별번호를 가져온다.
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		UserVO user = userSec.getUser();
+		int userNo = user.getUserNo();
+
+		// 사용자식별번호를 통해 사용자정보를 가져와 userVO에 담는다.
+		UserVO userVO = myInfoService.myInfoUser(userNo);
+		
+		// 공무원정보를 가져와 공무원VO에 담는다.
+		ServantVO servantVO = myInfoService.myInfoServant(userNo);
+		// 공무원의 직급명칭을 가져와 공무원VO에 담는다.
+		String jobGradeName = myInfoService.selectJobGradeName(servantVO.getJobGradeCode());
+		servantVO.setJobGradeName(jobGradeName);
+		// 공무원의 부서코드를 가져와 부서VO에 담는다.
+		DeptVO deptVO = myInfoService.selectDept(servantVO.getDeptCode());
+		// 위의 부서VO를 공무원VO에 담는다.
+		servantVO.setDeptVO(deptVO);
+		// 위의 공무원VO를 유저VO에 담는다.
+		userVO.setServantVO(servantVO);
+		
+		// userVO를 model에 담는다.
+		model.addAttribute("userVO",userVO);
+		
+		return "myPage/myInfoSvt";
+	}
+	
+	/** (공무원)내 정보 수정 기능
+	 * @param session 로그인사용자 정보
+	 * @param map
+	 * @return
+	 * @throws Exception
+	 */
+	@ResponseBody
+	@PostMapping("/myInfoUpdateSvt")
+	public ResponseEntity<String> myInfoUpdateSvt(@RequestBody Map<String, Object> map) throws Exception {
+		
+		log.info("실행 {} : (공무원)개인정보 수정 기능");
+		
+		ResponseEntity<String> entity = null;
+		ServiceResult result = null;
+		
+		// session에 저장된 로그인사용자ID를 통해 사용자식별번호를 가져온다.
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		UserVO user = userSec.getUser();
+		int userNo = user.getUserNo();
+		
+        log.info("화면에서 전달받은 입력항목의 데이터 : " + map);
+        
+		// map에서 데이터를 꺼내와 VO에 담는다.
+		String userPhone = (String)map.get("userPhone");								// 담당자 핸드폰번호
+		String userEmail = (String)map.get("userEmail");								// 담당자 이메일
+		String userFax = (String)map.get("userFax");									// 담당자 팩스번호
+
+		UserVO userVO = new UserVO();
+		userVO.setUserNo(userNo);
+		userVO.setUserTel(userPhone);
+		userVO.setUserEmail(userEmail);
+		userVO.setUserFax(userFax);
+		
+		result = myInfoService.myInfoUpdateSvt(userVO);
+
+		// 정보 수정 진행 결과를 화면으로 전달한다.
+		if(result.equals(ServiceResult.OK)) {
+			entity = new ResponseEntity<String>(result.toString(), HttpStatus.OK);
+		}else {
+			entity = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+		}
+		
+		return entity;
+	}
+	
+	/** 내 정보 조회 기능
+	 * @param session 로그인사용자 정보
+	 * @param model userVO를 담음
+	 * @return "myPage/myInfo"
+	 */
+	@GetMapping("/myInfo.do")
+	public String myInfo(Model model) {
+		log.info("실행 {} : 내 정보 조회 기능");
+		
+		// session에 저장된 로그인사용자ID를 통해 사용자식별번호를 가져온다.
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		UserVO user = userSec.getUser();
+		int userNo = user.getUserNo();
+		
+		// 사용자식별번호를 통해 사용자정보를 가져와 userVO에 담는다.
+		UserVO userVO = myInfoService.myInfoUser(userNo);
+		
+		// session에 저장된 로그인사용자권한코드를 가져와 주체를 확인한다.
+		String authCode = user.getAuthCode();
+		// 화주일 경우 화주정보를 가져와 화주VO에 담고, 그 화주VO를 다시 userVO에 담는다.
+		if(authCode.equals("ROLE_CONSIGNOR")) {
+			ConsignorVO consignorVO = myInfoService.myInfoConsignor(userNo);
+			userVO.setConsignorVO(consignorVO);
+		}
+		// 관세사일 경우 관세사정보를 가져와 관세사VO에 담고, 그 관세사VO를 다시 userVO에 담는다.
+		if(authCode.equals("ROLE_CCA")) {
+			CCAVO ccaVO = myInfoService.myInfoCca(userNo);
+			
+			// 주력분야(코드 - 내 정보 체크박스 표시 위해)List를 가져와 관세사VO에 담는다.
+			List<String> ccaSpecialtyCodeList = new ArrayList<>();
+			ccaSpecialtyCodeList = myInfoService.myInfoCcaSpecialtyCodeList(userNo);
+			ccaVO.setCcaSpecialtyCodeList(ccaSpecialtyCodeList);
+			
+			// 주력분야(이름 - 내 프로필 표시 위해)List를 가져와 관세사VO에 담는다.
+			List<String> ccaSpecialtyNameList = new ArrayList<>();
+			ccaSpecialtyNameList = myInfoService.myInfoCcaSpecialtyNameList(userNo);
+			ccaVO.setCcaSpecialtyNameList(ccaSpecialtyNameList);
+			
+			// 관세사 무오류 처리율을 가져와 관세사VO에 담는다.
+			int ccaSanctionCount = ccaVO.getCcaSanctionCount();
+			int ccaDeclCount = ccaVO.getCcaDeclCount();
+			int infallible = (ccaDeclCount - ccaSanctionCount) * 100 / ccaDeclCount;
+			ccaVO.setInfallible(infallible);
+			
+			// 오류점수 부과 내역을 가져와 관세사VO에 담는다.
+			List<SanctionVO> sanctionScoreList = ccaService.selectSanctionScore(userNo);
+			ccaVO.setSanctionScoreList(sanctionScoreList);
+			
+			// 업무 내역을 가져와 model에 담는다.
+			List<Map<String, Object>> contractList = myInfoService.myInfoCcaContractList(userNo);
+			model.addAttribute("contractList", contractList);
+			
+			userVO.setCcaVO(ccaVO);
+		}
+		// 물류관리자일 경우 물류관리자정보를 가져와 물류관리자VO에 담고, 그 물류관리자VO를 다시 userVO에 담는다.
+		if(authCode.equals("ROLE_LOGISTICS")) {
+			LogistMngVO logistMngVO = myInfoService.myInfoLogistMng(userNo);
+			userVO.setLogistMngVO(logistMngVO);
+		}
+		
+		// userVO를 model에 담는다.
+		model.addAttribute("userVO",userVO);
+		
+		return "myPage/myInfo";
+	}
+	
+	/** 개인정보 수정 기능
+	 * @param map 로그인사용자의 수정 가능한 개인정보 항목 값
+	 * @return 성공 시 "success", 실패 시 "fail"
+	 * @throws Exception
+	 */
+	@ResponseBody
+	@PostMapping("/myInfoUpdate")
+	public ResponseEntity<String> myInfoUpdate(
+			 @RequestParam(value = "file", required = false) MultipartFile file,
+	         @RequestParam("infoData") String infoData) throws Exception {
+		
+		log.info("실행 {} : 개인정보 수정 기능");
+		
+		ResponseEntity<String> entity = null;
+		ServiceResult result = null;
+		
+		// session에 저장된 로그인사용자ID를 통해 사용자식별번호를 가져온다.
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		UserVO user = userSec.getUser();
+		int userNo = user.getUserNo();
+		
+		// 프로필사진 저장경로 저장할 변수
+		String savedName = "";
+		
+		// 받아온 데이터 중 파일(프로필사진)이 존재하면
+		if(file != null && !file.isEmpty()){
+			log.info("화면에서 전달받은 프로필이미지의 원본파일명 : " + file.getOriginalFilename());
+			
+			// 프로필사진을 지정된 경로에 저장하고 저장경로를 변수에 저장함
+			savedName = UploadFileUtils.uploadFile(
+					uploadPath + "\\profile",
+					file.getOriginalFilename(),
+					file.getBytes()
+			);
+			savedName = uploadPath + "/profile" + savedName;
+		}
+		
+		// 2. infoData JSON 문자열을 Map으로 변환
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> map = objectMapper.readValue(infoData, Map.class);
+        log.info("화면에서 전달받은 입력항목의 데이터 : " + map);
+        
+		// map에서 데이터를 꺼내와 VO에 담는다.
+		// (1) 담당자정보 - userVO에 담을 정보
+		String userName = (String)map.get("userName");									// 담당자 이름
+		String userPhone = (String)map.get("userPhone");								// 담당자 핸드폰번호
+		Boolean smsYn = (Boolean)map.get("smsYn");										// 담당자 SMS 수신 동의여부
+		String userEmail = (String)map.get("userEmail");								// 담당자 이메일
+		Boolean emailYn = (Boolean)map.get("emailYn");									// 담당자 이메일 수신 동의여부
+		String userFax = (String)map.get("userFax");									// 담당자 팩스번호
+
+		UserVO userVO = new UserVO();
+		userVO.setUserNo(userNo);
+		userVO.setUserName(userName);
+		userVO.setUserTel(userPhone);
+		userVO.setSmsYn(smsYn);
+		userVO.setUserEmail(userEmail);
+		userVO.setEmailYn(emailYn);
+		userVO.setUserFax(userFax);
+		
+		// (2) 업체정보 - 각각 화주/관세사/물류관리자VO에 담을 정보
+		String userTel = (String)map.get("userTel");									// 업체 전화번호
+		int userPost = Integer.valueOf((String) map.get("userPost"));					// 업체 우편번호
+		String userAddr = (String)map.get("userAddr");									// 업체 주소
+		String userDetAddr = (String)map.get("userDetAddr");							// 업체 상세주소
+		List<String> specialtyList = (List<String>)map.get("specialtyList");			// 관세사 주력분야 리스트
+		
+		// 화주/관세사/물류관리자를 구별하기 위해 사용자의 계정권한코드를 확인한다.
+		String authCode = (String)map.get("authCode");
+		
+		// 화주일 경우 화주테이블 정보를 업데이트 하기 위해 화주VO에 정보를 담아 서비스로 전달한다.
+		if(authCode.equals("ROLE_CONSIGNOR")) {
+			ConsignorVO consignorVO = new ConsignorVO();								// 화주 정보를 담을 VO
+			consignorVO.setUserNo(userNo);												// 화주 사용자 식별번호
+			consignorVO.setConsignorTel(userTel);										// 화주 업체 전화번호
+			consignorVO.setConsignorPost(userPost);										// 화주 업체 우편번호
+			consignorVO.setConsignorAddr(userAddr);										// 화주 업체 주소
+			consignorVO.setConsignorDetAddr(userDetAddr);								// 화주 업체 상세주소							
+			if (savedName != null) {
+	            consignorVO.setConsignorProfileImg(savedName);							// 화주 프로필 이미지
+	        }
+			userVO.setConsignorVO(consignorVO);
+			result = myInfoService.myInfoConsignorUpdate(userVO);
+		}
+		// 관세사일 경우 관세사테이블과 주력분야테이블 정보를 업데이트 하기 위해 관세사VO에 정보를 담아 서비스로 전달한다.
+		if(authCode.equals("ROLE_CCA")) {
+			CCAVO ccaVO = new CCAVO();													// 관세사 정보를 담을 VO
+			ccaVO.setUserNo(userNo);													// 관세사 사용자 식별번호
+			ccaVO.setCcaTel(userTel);													// 관세사 업체 전화번호
+			ccaVO.setCcaPost(userPost);													// 관세사 업체 우편번호
+			ccaVO.setCcaAddr(userAddr);													// 관세사 업체 주소
+			ccaVO.setCcaDetAddr(userDetAddr);											// 관세사 업체 상세주소
+			ccaVO.setCcaSpecialtyCodeList(specialtyList);								// 관세사 주력분야 리스트							
+			if (savedName != null) {
+				ccaVO.setCcaProfileImg(savedName);										// 관세사 프로필 이미지
+	        }
+			userVO.setCcaVO(ccaVO);
+			result = myInfoService.myInfoCcaUpdate(userVO);
+		}
+		// 물류관리자일 경우 물류관리자테이블 정보를 업데이트 하기 위해 물류관리자VO에 정보를 담아 서비스로 전달한다.
+		if(authCode.equals("ROLE_LOGISTICS")) {
+			LogistMngVO logistMngVO = new LogistMngVO();								// 물류관리자 정보를 담을 VO
+			logistMngVO.setLogistMngNo(userNo);											// 물류관리자 사용자 식별번호
+			logistMngVO.setLogistMngTel(userTel);										// 물류관리자 업체 전화번호
+			logistMngVO.setLogistMngPost(userPost);										// 물류관리자 업체 우편번호
+			logistMngVO.setLogistMngAddr(userAddr);										// 물류관리자 업체 주소
+			logistMngVO.setLogistMngDetAddr(userDetAddr);								// 물류관리자 업체 상세주소
+			if (savedName != null) {
+				logistMngVO.setLogistMngProfileImg(savedName);							// 물류관리자 프로필 이미지
+	        }
+			userVO.setLogistMngVO(logistMngVO);
+			result = myInfoService.myInfoLogistMngUpdate(userVO);
+		}
+		
+		// 정보 수정 진행 결과를 화면으로 전달한다.
+		if(result.equals(ServiceResult.OK)) {
+			entity = new ResponseEntity<String>(result.toString(), HttpStatus.OK);
+		}else {
+			entity = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+		}
+		
+		return entity;
+	}
+	
+	/** 프로필이미지 출력
+	 * @param fileName 
+	 * @return
+	 * @throws Exception
+	 */
+	@ResponseBody
+	@GetMapping("/displayFile")
+	public ResponseEntity<byte[]> displayFile(String fileName) throws Exception{
+		InputStream in = null;
+		ResponseEntity<byte[]> entity = null;
+		log.info("fileName" + fileName);
+		try {
+			String formatName = fileName.substring(fileName.lastIndexOf(".") + 1);
+			MediaType mType = MediaUtils.getMediaType(formatName);
+			HttpHeaders headers = new HttpHeaders();
+			
+			in = new FileInputStream(fileName);
+			log.info("in : " + in);
+			if (mType != null) {
+				headers.setContentType(mType);
+			}else {
+				fileName = fileName.substring(fileName.indexOf("_") + 1);
+				headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+				headers.add("Content-Disposition", "attachment; filename=\""+
+						new String(fileName.getBytes("UTF-8"), "ISO-8859-1") + "\"");
+			}
+			
+			entity = new ResponseEntity<byte[]>(IOUtils.toByteArray(in), headers, HttpStatus.CREATED);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			entity = new ResponseEntity<byte[]>(HttpStatus.BAD_REQUEST);
+		}finally {
+			in.close();
+		}
+		return entity;
+	}
+	
+	/** 현재 비밀번호 확인 기능 - 로그인사용자의 PW를 입력받고 값이 정확한지 확인한다.
+	 * @param map 로그인사용자의 PW
+	 * @return entity (ResponseEntity<String>) 비밀번호 확인 결과
+	 * @throws Exception
+	 */
+	@PostMapping("/checkPw")
+	public ResponseEntity<String> checkPw(@RequestBody Map<String, Object> map) throws Exception {
+		log.info("실행 {} : 현재 비밀번호 확인 기능");
+		
+		UserVO userVO = new UserVO(); 						// 사용자 정보를 담을 VO
+		userVO.setUserId((String) map.get("userId")); 		// 사용자 Id
+		userVO.setUserPw((String) map.get("userPw")); 		// 사용자 PW
+		
+		// 비밀번호가 정확한지 확인한다.
+		int result = userService.checkPw(userVO);
+		
+		// 비밀번호 검증 결과를 화면으로 전달한다.
+		if(result == 1) {
+			return ResponseEntity.ok("비밀번호 확인 완료");
+		}else {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("잘못된 값입니다. 다시 입력해 주세요.");
+		}
+	}	
+	
+	/** 비밀번호 수정 기능
+	 * @param map 로그인사용자의 식별번호
+	 * @return entity (ResponseEntity<String>) 회원 탈퇴 결과
+	 * @throws Exception
+	 */
+	@PostMapping("/changePw")
+	public ResponseEntity<String> changePw(@RequestBody Map<String, Object> map) throws Exception {
+		log.info("실행 {} : 비밀번호 수정 기능");
+
+		ResponseEntity<String> entity = null;
+		ServiceResult result = null;
+		
+		// 비밀번호 수정을 진행한다.
+		
+		UserVO userVO = new UserVO(); 						// 사용자 정보를 담을 VO
+		userVO.setUserId((String) map.get("userId")); 		// 사용자 Id
+		userVO.setUserPw((String) map.get("userPw")); 		// 사용자 PW
+		
+		// 비밀번호가 정확한지 확인한다.
+		result = userService.changePw(userVO);
+		
+		// 정보 수정 진행 결과를 화면으로 전달한다.
+		if(result.equals(ServiceResult.OK)) {
+			entity = new ResponseEntity<String>(result.toString(), HttpStatus.OK);
+		}else {
+			entity = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+		}
+		
+		return entity;
+	}
+	
+	
+	/** 회원 탈퇴 기능 - 탈퇴 상태로 수정한다.
+	 * @param map 로그인사용자의 식별번호
+	 * @return entity (ResponseEntity<String>) 회원 탈퇴 결과
+	 * @throws Exception
+	 */
+	@PostMapping("/myInfoDelete")
+	public ResponseEntity<String> myInfoDelete(@RequestBody Map<String, Object> map) throws Exception {
+		log.info("실행 {} : 회원 탈퇴 기능");
+
+		ResponseEntity<String> entity = null;
+		ServiceResult result = null;
+		
+		// 회원 탈퇴를 진행한다.
+		String userId = (String) map.get("userId");
+		result = myInfoService.myInfoDelete(userId);
+
+		// 정보 수정 진행 결과를 화면으로 전달한다.
+		if(result.equals(ServiceResult.OK)) {
+			entity = new ResponseEntity<String>(result.toString(), HttpStatus.OK);
+		}else {
+			entity = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+		}
+		
+		return entity;
+	}
+}

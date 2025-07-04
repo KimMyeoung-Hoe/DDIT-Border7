@@ -1,0 +1,272 @@
+
+// 5초마다 한번씩 
+		let myChart = echarts.init(document.getElementById('exchangeChart'));
+		
+		
+		let data =[];
+		let total = {
+						srcNationKrName : "",
+						srcCurrencyName : "",
+						tgtNationKrName : "",
+						tgtCurrencyName : "",
+						rate : "",
+						date : ""
+					};
+					setInterval(rate, 50000);
+					
+			function rate(){
+				$.ajax({
+				    url: "/api/exchangeRate",               
+				    method: "GET",               
+				    dataType: "json",                         
+					success: function(resp){
+						console.log(resp);
+						data = resp.map(obj => { return [new Date(obj.time) , obj.value ]})
+						console.log(data)
+						total.date = resp[resp.length-1].date;
+						total.rate = resp[resp.length-1].value;
+						renderEChart(data)
+						
+	
+
+							console.log(rateContent1)
+					}
+				})
+			}
+			
+			let nationlist=[];
+			
+			
+			let rateContent1 = "";
+			let rateContent2 = "";
+			let srchtml ="";
+			let tgthtml ="";
+			
+			
+		$.when(
+			$.ajax({
+			    url: "/api/nationlist",               
+			    method: "GET",                           
+			    dataType: "json",                         
+				success: function(resp){
+					console.log(resp);
+					
+					for(let i = 0; i<resp.length; i++){
+						
+						if(resp[i].nationNo == "205"){
+							total.srcCurrencyName=resp[i].currencyName;
+							total.srcNationKrName=resp[i].nationKrName;
+							srchtml += `<option value="${resp[i].nationNo}" selected>${resp[i].currencyName}</option>`;
+						}else{
+							srchtml += `<option value="${resp[i].nationNo}">${resp[i].currencyName}</option>`;	
+						}	
+					}
+					
+					console.log("nationlist : ",srchtml);
+					$("#SrcNationList").append(srchtml);
+					
+				}
+			}),
+			
+			
+			$.ajax({
+			    url: "/api/nationlist",               
+			    method: "GET",                           
+			    dataType: "json",                         
+				success: function(resp){
+					console.log(resp);
+					for(let i = 0; i<resp.length; i++){
+						if(resp[i].nationNo == "63"){
+							total.tgtCurrencyName=resp[i].currencyName;
+							total.tgtNationKrName=resp[i].nationKrName;
+							tgthtml += `<option value="${resp[i].nationNo}" selected>${resp[i].currencyName}</option>`;
+						}else{
+							tgthtml += `<option value="${resp[i].nationNo}">${resp[i].currencyName}</option>`;	
+						}
+					}
+					console.log("nationlist : ",tgthtml);
+					$("#TgtNationList").append(tgthtml);
+				}
+			})
+		).done(function() {
+			console.log("리스트 완료")	
+			let initialSource = $("#SrcNationList :selected").val();
+			let initialTarget = $("#TgtNationList :selected").val();
+			
+			nationChange(initialSource, initialTarget);
+		});
+	
+			$("#SrcNationList").change(function() {
+			    let source = $("#SrcNationList :selected").val();
+				let target = $("#TgtNationList :selected").val();
+				nationChange(source, target)
+			  });
+		
+			$("#TgtNationList").change(function() {
+				let source = $("#SrcNationList :selected").val();
+				let target = $("#TgtNationList :selected").val();
+				nationChange(source, target)
+			    
+			  });
+			
+			  
+			  
+			  
+		  function nationChange(source,target) { 
+			      $.ajax({
+			          url: `/api/exchangeRate?source=${source}&target=${target}`,
+			          method: "GET",
+			          dataType: "json",
+			          success: function(resp) {
+						console.log(resp);
+						data = resp.map(obj => { return [new Date(obj.time) , obj.value ]})
+						total.date=resp[resp.length-1].date;
+						total.rate=resp[resp.length-1].value
+						console.log(data)
+						nationUpdate(resp[0].source, resp[0].target)
+						renderEChart(data)
+						updateRateDisplay()
+						
+								
+			          }
+				})
+		};
+		 
+/*		1) name code가 각각 다른 테이블이야 // 백엔드 쪽에서 처릴를 할려 이렇게 하면 4개나 생겨 컬럼? 너무 드럽지 않나?
+		2) 이거를 각각 source랑 target별로 저장해야돼*/
+/*		 rateContent1 = `1 ${nationKrName} ${currencyCode} = ${data[length-1].value} ${nationKrName} ${currencyCode}
+		${data[length-1].date}
+
+		`; */
+		
+		function updateRateDisplay() {
+		    let rateContentHtml = "";
+		    // total 객체에 유효한 데이터가 있을 때만 표시
+		    if (total.rate && total.date && total.srcNationKrName && total.tgtNationKrName) {
+		        rateContentHtml = `1 ${total.srcNationKrName} (${total.srcCurrencyName}) = ${total.rate} ${total.tgtNationKrName} (${total.tgtCurrencyName})<br>
+		                           ${total.date}`;
+		    } else {
+		        rateContentHtml = "환율 정보 없음 또는 로딩 중...";
+		    }
+		    // ".currency" 클래스를 가진 요소에 내용을 삽입 (기존 내용 대체)
+		    // HTML에 <div class="currency" id="currentRateInfo"></div> 와 같이 ID를 부여하는 것이 좋습니다.
+		    $(".currency").html(rateContentHtml);
+		    console.log("화면 업데이트된 환율 정보:", rateContentHtml);
+		}
+		
+		function nationUpdate(source, target){
+			$.ajax({
+					    url: "/api/nationlist",               
+					    method: "GET",                           
+					    dataType: "json",                         
+						success: function(resp){
+							console.log(resp);
+							for(let i = 0; i<resp.length; i++){
+								if(resp[i].currencyCode == source){
+									total.srcCurrencyName=resp[i].currencyName;
+									total.srcNationKrName=resp[i].nationKrName;
+									
+								}else if(resp[i].currencyCode == target){
+									total.tgtCurrencyName=resp[i].currencyName;
+									total.tgtNationKrName=resp[i].nationKrName;
+																		
+								}	
+							}
+							console.log("바뀐 값 : ", total)
+					
+							updateRateDisplay()
+							
+							
+						}
+					})
+		}
+function renderEChart(data) {
+
+	option = {
+		
+	responsive: false, // 사이즈 내 맘대로 조정하기 위해 
+	tooltip: {
+	           trigger: 'axis', // 마우스가 축에 놓였을 때 툴팁 표시
+	           position: function (pt) {
+	               return [pt[0], '10%']; // 툴팁 위치 조정 (예: 마우스 커서 위)
+	           },
+	           // ✨ 핵심: 툴팁에 표시될 내용을 포맷하는 함수
+	           formatter: function (params) {
+				console.log("param: ", params)
+	               // params는 배열로 넘어오는데, 보통 첫 번째 시리즈의 데이터가 필요함
+	               params = params[0];
+	               let date = new Date(params.value[0]); // params.value[0]은 시간 데이터 (new Date로 변환)
+	               let value = params.value[1];         // params.value[1]은 환율 값
+
+	               // echarts.format.formatTime 함수를 사용하여 날짜를 보기 좋게 포맷
+	               let dateStr = echarts.format.formatTime('yyyy-MM-dd hh:mm:ss', date);
+
+	               // 반환할 HTML 문자열
+	               // 여기에 필요한 다른 정보(예: 통화명)도 추가할 수 있습니다.
+	               // 현재 total 객체에 통화 정보가 있으므로 활용합니다.
+	               let srcCurrency = total.srcCurrencyName ? ` (${total.srcCurrencyName})` : '';
+	               let tgtCurrency = total.tgtCurrencyName ? ` (${total.tgtCurrencyName})` : '';
+	               let srcNation = total.srcNationKrName || '송금 국가';
+	               let tgtNation = total.tgtNationKrName || '수취 국가';
+
+
+	               return `시간: ${dateStr}<br>` +
+	                      `환율: 1 ${srcNation}${srcCurrency} = ${value.toFixed(4)} ${tgtNation}${tgtCurrency}`;
+	           },
+	           axisPointer: {
+	               animation: false // 툴팁 커서 애니메이션 비활성화 (선택 사항)
+	           }
+	       },
+	  xAxis: {
+	    type: 'time',
+		  // 데이터의 최대값에 맞춤 (가장 중요)
+	    splitLine: {
+	      show: false
+	    }
+	  },
+	  yAxis: {
+	    type: 'value',
+		min: 'dataMin', // 데이터의 최소값에 맞춤 (가장 중요)
+		max: 'dataMax',
+	    boundaryGap: [0, '100%'],
+	    splitLine: {
+	      show: false
+	    }
+	  },
+	
+	  series: [
+	    {
+	      name: 'Fake Data',
+	      type: 'line',
+	      showSymbol: false,
+	      data: data
+	    }
+	  ]
+	  
+	};
+	myChart.setOption(option, true);
+	}
+/*	setInterval(function () {
+	  for (var i = 0; i < 5; i++) {
+	    data.shift();
+	    data.push(randomData());
+	  }
+	  myChart.setOption({
+	    series: [
+	      {
+	        data: data
+	      }
+	    ]
+	  });
+	  
+		// myChart 인스턴스가 유효한지 확인 후 setOption 호출
+		    if (myChart && data && data.length > 0) { // 데이터가 있을 때만 렌더링
+		        myChart.setOption(option, true); // true 인자를 넣어 이전에 설정된 모든 옵션을 덮어쓰도록 합니다.
+		        console.log("ECharts 옵션이 성공적으로 설정되었습니다.");
+		    } else {
+		        console.warn("차트를 렌더링할 데이터가 없거나 myChart 인스턴스가 유효하지 않습니다.");
+		        // 데이터가 없을 때 차트를 지우거나 빈 상태로 만듭니다.
+		        myChart.clear(); // 기존 차트 지우기
+		    }
+	}*/
+		

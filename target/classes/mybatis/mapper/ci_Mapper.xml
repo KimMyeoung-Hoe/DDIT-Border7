@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.ci.mapper.ICIMapper">
+
+	<insert id="insertCI" useGeneratedKeys="true" parameterType="kr.or.ddit.vo.CIVO">
+		<selectKey keyProperty="ciNo" resultType="int" order="BEFORE">
+			select seq_ci_no.nextval from dual
+		</selectKey>
+		insert into CI(
+			CI_NO, CONSIGNOR_NO, REG_DATE, INVOICE, SHIPPER, 
+			CONSIGNEE, DEPARTURE_DATE, VESSEL, PORT_FROM, PORT_TO, 
+			LC_NO_AND_DATE, BUYER, OTHER_REFERENCES, TDAP, SHIPPING_MARKS, 
+			KIND_OF_PACKAGES, GOODS_DESCRIPTION, QUANTITY, UNITPRICE, AMOUNT, SIGNED_BY
+		)values(
+			#{ciNo}, #{consignorNo}, sysdate, #{invoice}, #{shipper}, 
+			#{consignee}, #{departureDate}, #{vessel}, #{portFrom}, #{portTo}, 
+			#{lcNoAndDate}, #{buyer}, #{otherReferences}, #{tdap}, #{shippingMarks}, 
+			#{kindOfPackages}, #{goodsDescription}, #{quantity}, #{unitprice}, #{amount},
+			#{signedBy}
+		)
+	</insert>
+	
+	<select id="selectCI" parameterType="int" resultType="kr.or.ddit.vo.CIVO">
+		SELECT
+		    CI_NO, CONSIGNOR_NO, REG_DATE, INVOICE, SHIPPER, 
+			CONSIGNEE, DEPARTURE_DATE, VESSEL, PORT_FROM, PORT_TO, 
+			LC_NO_AND_DATE, BUYER, OTHER_REFERENCES, TDAP, SHIPPING_MARKS, 
+			KIND_OF_PACKAGES, GOODS_DESCRIPTION, QUANTITY, UNITPRICE, AMOUNT, SIGNED_BY
+		FROM
+		    CI
+		WHERE CI_NO = #{ciNo}
+	</select>
+	
+	<update id="updateCI" parameterType="kr.or.ddit.vo.CIVO">
+		UPDATE CI SET
+			CONSIGNOR_NO = #{consignorNo}, 
+			REG_DATE = sysdate, 
+			INVOICE = #{invoice}, 
+			SHIPPER = #{shipper}, 
+			CONSIGNEE = #{consignee}, 
+			DEPARTURE_DATE = #{departureDate}, 
+			VESSEL = #{vessel}, 
+			PORT_FROM = #{portFrom}, 
+			PORT_TO = #{portTo}, 
+			LC_NO_AND_DATE = #{lcNoAndDate}, 
+			BUYER = #{buyer}, 
+			OTHER_REFERENCES = #{otherReferences}, 
+			TDAP = #{tdap}, 
+			SHIPPING_MARKS = #{shippingMarks}, 
+			KIND_OF_PACKAGES = #{kindOfPackages}, 
+			GOODS_DESCRIPTION = #{goodsDescription}, 
+			QUANTITY = #{quantity}, 
+			UNITPRICE = #{unitprice}, 
+			AMOUNT = #{amount}, 
+			SIGNED_BY = #{signedBy}
+		WHERE CI_NO = #{ciNo}
+	</update>
+	
+	<update id="updateContractCI" parameterType="hashMap">
+		UPDATE CONTRACT SET
+		    CI_NO = #{ciNo}
+		    , CONTRACT_DATE = SYSDATE
+		    , LAST_STATUS_CODE = CASE
+		        WHEN PL_NO IS NOT NULL AND PL_NO != 0 THEN
+		            CASE
+		                WHEN SUBSTR(#{contractNo}, 1, 3) = 'EXP' THEN 22
+		                WHEN SUBSTR(#{contractNo}, 1, 3) = 'IMP' THEN 1
+		                ELSE LAST_STATUS_CODE
+		            END
+		        ELSE LAST_STATUS_CODE
+		    END
+		WHERE
+		    CONTRACT_NO = #{contractNo}
+	</update>
+	
+</mapper>

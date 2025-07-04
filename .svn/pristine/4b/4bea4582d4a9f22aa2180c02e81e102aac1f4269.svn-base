@@ -1,0 +1,804 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib uri="jakarta.tags.core" prefix="c"%>
+<%@ taglib uri="jakarta.tags.functions" prefix="fn"%>
+<%@ taglib uri="jakarta.tags.fmt" prefix="fmt" %>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>상세 의뢰현황</title>
+<%@ include file="../modules/header.jsp" %>
+<%@ include file="../modules/sidebar.jsp" %>
+<%@ include file="../modules/modal.jsp" %>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="/css/main.css">
+<script type="text/javascript" src="https://map.vworld.kr/js/webglMapInit.js.do?version=3.0&apiKey=B8521EDE-A4E1-33B0-8029-530100FD4344"></script>
+<style>
+/* .info-row:has(.card-title) + .info-row{
+	border-top:none;
+}
+.info-row + .info-row {
+    border-top: 1px solid #000000;
+}
+.info-row {
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    padding: 10px;
+}
+ */
+</style>
+<link rel="stylesheet"
+	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+	<div class="app-container">
+		<main class="main-content-area">
+			<div class="content-header">
+				<!-- 브레드크럼 엘리먼트 -->
+				<div class="breadcrumb-warp">
+					<div class="col-sm-12">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/">Home</a></li>
+							<li class="breadcrumb-item"><a href="/consignor/myContract.do">내 의뢰 현황</a></li>
+							<li class="breadcrumb-item"><a href="#">내 의뢰 상세</a></li>
+						</ol>
+					</div>
+				</div>
+
+				<div class="content-title">내 의뢰 상세</div>
+				<p class="desc">접수한 의뢰의 상세 내역을 볼 수 있습니다.</p>
+			</div>
+			<div class="container section">
+				<!-- Progress Section -->
+				<div class="progress-section">
+					<div class="progress-bar-container">
+						<div class="progress-bar">
+							<c:forEach items="${categoryBar }" var="bar"
+								varStatus="categoryStatus">
+								<c:set var="currentCategoryName"
+									value="${bar.statusCodeMediumCategoryName}" />
+
+								<c:set var="isActive" value="false" />
+
+								<c:forEach items="${contractVo.contractRecordList }"
+									var="record" varStatus="recordStatus">
+									<c:if
+										test="${record.statusCodeMediumCategoryName eq currentCategoryName}">
+										<c:set var="isActive" value="true" />
+									</c:if>
+								</c:forEach>
+
+								<div class="progress-step">
+									<button class="step-circle ${isActive ? 'active' : 'inactive'}">
+										${categoryStatus.index + 1}</button>
+									<span class="step-label">${bar.statusCodeMediumCategoryName}</span>
+									<div class="progress-details"
+										id="details-step-${categoryStatus.index + 1}"
+										style="display: none;">
+										<div
+											style="color: black; font-size: 12px; margin-left: 60px; width: 300px"
+											class="divArea"></div>
+									</div>
+								</div>
+							</c:forEach>
+						</div>
+
+					</div>
+				</div>
+
+				<!-- Content Section -->
+				<div class="content-section">
+					
+					
+					<div class="tabs-container">
+						<!-- <div class="tabs-header">
+							<div class="tab-button active categories-title" data-tab="detail">
+								상세정보</div>
+							<div class="tab-button categories-title" data-tab="document">
+								서류관리</div>
+							<div class="tab-button categories-title" data-tab="progress">
+								진행내역</div>
+						</div> -->
+						<div class="tabs-content-2nd">
+						<div class="tabs-content">
+							<div class="category-options" id="detail">
+								<div class="info-card">
+									<div class="info-row">
+										<span class="card-title">의뢰 정보</span>
+									</div>
+									<div class="info-row">
+										<span class="info-label">계약 번호</span> <span
+											class="info-value">${contractVo.contractNo }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">등록일</span> <span class="info-value">${contractVo.contractDate }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">의뢰 유형</span> <span
+											class="info-value">${contractVo.contractType }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품명</span> <span class="info-value">${contractVo.productVO.productName }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품 원산지</span> <span
+											class="info-value">${contractVo.productVO.productOrigin }</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품 수량</span> <span
+											class="info-value">${contractVo.productVO.productQty }개</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품 중량</span> <span
+											class="info-value">${contractVo.productVO.productWeight } KG</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">물품 부피</span> <span
+											class="info-value">${contractVo.productVO.productVolume} CBM</span>
+									</div>
+									
+									<div class="info-row">
+										<span class="info-label">물품 단가</span> <span
+											class="info-value"><fmt:formatNumber value="${contractVo.productVO.productPrice}" pattern="#,###" /> 원</span>
+									</div>
+									
+									<c:if test="${contractVo.contractType == '수출' }">
+										<c:if test="${contractVo.lastStatusCode == '41'}">
+											<div class="info-row">
+												<span class="info-label">선박 위치<i class="fas fa-ship"></i></span>
+												 <button id="shipBtn"><i class="fas fa-eye"></i></button>
+											</div>
+										</c:if>
+									</c:if>
+								</div>
+								<!-- Manager Information -->
+							
+								<div class="info-card">
+									<div class="info-row">
+										<span class="card-title" style="margin-right: 10px">담당자 정보</span>
+										<button class="" style="border: 1px solid;" id="maskedBtn"><i class="fas fa-eye"></i></button>
+									</div>
+									<div class="info-row">
+										<span class="info-label">관세사</span> <span class="info-value">${contractVo.ccaCompanyName}</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">담당자</span>
+										<div class="info-value">
+											<div style="font-weight: bold; margin-bottom: 10px;"><span id="userName">${contractVo.ccaName }</span></div>
+											<div class="contact-info">
+												<div class="ccaTel">📞 ${contractVo.ccaTel }</div>
+												<div class="userTel">📱 <span id="userTel">${contractVo.ccaUserTel } </span></div>
+												<div class="ccaUserFax">📠 ${contractVo.ccaUserFax }</div>
+												<div class="ccaUserEmail">✉️ ${contractVo.ccaUserEmail }</div>
+											</div>
+										</div>
+									</div>
+											
+								<%-- 	<div class="info-row">
+										<span class="info-label">의뢰인</span> <span class="info-value">${contractVo.consignorCompanyName}</span>
+									</div>
+
+									<div class="info-row">
+										<span class="info-label">담당자</span>
+										<div class="info-value">
+											<div style="font-weight: bold; margin-bottom: 10px;">${contractVo.consignorName }</div>
+											<div class="contact-info"
+												style="font-weight: bold; margin-bottom: 10px;">
+												<div>📞 ${contractVo.consignorTel }</div>
+												<div>📱 ${contractVo.consignorUserTel }</div>
+												<div>📠 ${contractVo.consignorUserFax }</div>
+												<div>✉️ ${contractVo.consignorUserEmail }</div>
+											</div>
+										</div>
+									</div> --%>
+									</div>
+									<div class="info-card">
+										<div class="info-row"> <span class="card-title">서류</span> </div>
+										<div class="section-alert">
+				                            <i class="fas fa-exclamation-triangle"></i>
+				                            <p>서류 수정 불가<br>수출입신고서가 이미 작성되어 CI/PL 서류를 수정할 수 없습니다.</p>
+				                        </div>
+				                        <ul class="file-list">
+				                            <li class="file-item">
+				                                <div class="file-info">
+				                                    <i class="fas fa-file-alt"></i>
+				                                    <div class="file-details">
+				                                        <span class="file-name">상업송장.pdf (CI)</span>
+				                                        <fmt:parseDate value="${contractVo.contractDate }"
+															var="ciDate" pattern="yyyy-MM-dd HH:mm:ss" />
+														<span class="file-meta">최종 업데이트: <fmt:formatDate
+																value="${ciDate }" pattern="yyyy-MM-dd HH:mm:ss" /></span>
+				                                    </div>
+				                                </div>
+				                                <div class="file-actions">
+				                                    <a href="/pdf/download/ci/${contractVo.ciNo }" class="action-button secondary" id="ciDlBtn"><i class="fas fa-download"></i> 다운로드</a>
+				                                    <button class="btn btn-primary" id="ciBtn" value="${contractVo.ciNo }"><i class="fas fa-edit"></i> 상세</button>
+				                                </div>
+				                            </li>
+				                            <li class="file-item">
+				                                <div class="file-info">
+				                                    <i class="fas fa-file-alt"></i>
+				                                    <div class="file-details">
+				                                        <span class="file-name">패킹리스트.pdf (PL)</span>
+				                                        <fmt:parseDate value="${contractVo.contractDate }"
+															var="plDate" pattern="yyyy-MM-dd HH:mm:ss" />
+														<span class="file-meta">최종 업데이트: <fmt:formatDate
+																value="${plDate }" pattern="yyyy-MM-dd HH:mm:ss" /></span>
+				                                    </div>
+				                                </div>
+				                                <div class="file-actions">
+				                                    <a href="/pdf/download/pl/${contractVo.plNo }" class="action-button secondary" id="plDlBtn"><i class="fas fa-download"></i> 다운로드</a>
+				                                    <button class="btn btn-primary" id="plBtn" value="${contractVo.plNo }"><i class="fas fa-edit"></i> 상세</button>
+				                                </div>
+				                            </li>
+				                            
+		                            <c:set var="getStatusCode" value="${contractVo.lastStatusCode }"/>
+									<c:choose>
+										<c:when test="${getStatusCode == 2 || getStatusCode == 3 || getStatusCode == 4 || getStatusCode == 5
+											|| getStatusCode == 23 || getStatusCode == 24 || getStatusCode == 25 || getStatusCode == 26}">
+											거절되어 작성할 수 없습니다. 차단로직
+										</c:when>
+										<c:otherwise>
+				                            <c:choose>
+					                        	<c:when test="${fn:substring(contractVo.contractNo, 0, 3) == 'IMP'}">
+					                        		<li class="file-item">
+						                                <div class="file-info">
+						                                    <i class="fas fa-file-alt"></i>
+						                                    <div class="file-details">
+						                                        <span class="file-name">한글표시사항</span>
+						                                        <span class="file-meta">최종 업데이트:
+							                                        <c:choose>
+																		<c:when test="${empty krNotationVO.regDate}">
+																	        작성되지 않았습니다
+																	    </c:when>
+																	    <c:otherwise>
+																	        <fmt:formatDate value="${krNotationVO.regDate}" pattern="yyyy-MM-dd HH:mm:ss" />
+																	    </c:otherwise>
+																    </c:choose>
+																</span>
+						                                        
+						                                    </div>
+						                                </div>
+						                                <div class="file-actions">
+						                                	<c:choose>
+				                                    			<c:when test="${not empty krNotationVO.packagingMaterialKr}">
+				                                    				<a href="/pdf/download2.do?url=cca/koreanLabelDetail.do?contractNo=${contractVo.contractNo }" class="action-button secondary" id="knDlBtn"><i class="fas fa-download"></i> 다운로드</a>
+								                                    <button class="btn btn-primary" id="kLabelDetailBtn" value="${contractVo.contractNo }"><i class="fas fa-edit"></i> 상세</button>
+				                                     			</c:when>
+																<c:otherwise>
+							                                    	<button class="btn btn-warning" id="kLabelWriteBtn" value="${contractVo.contractNo }"><i class="fas fa-edit"></i> 대기중</button>
+															    </c:otherwise>
+															</c:choose>
+						                                </div>
+						                            </li>
+						                            <li class="file-item">
+						                                <div class="file-info">
+						                                    <i class="fas fa-file-alt"></i>
+						                                    <div class="file-details">
+						                                        <span class="file-name">${contractVo.contractType }신고서</span>
+						                                        <span class="file-meta">최종 업데이트: 
+						                                        	<c:choose>
+																		<c:when test="${empty contractDelNo[0].declDNo}">
+																	        작성되지 않았습니다
+																	    </c:when>
+																	    <c:otherwise>
+																	    	<fmt:parseDate value="${contractDelNo[0].contractFileDate}" var="declDDate" pattern="yyyy-MM-dd" />
+																	        <fmt:formatDate value="${declDDate}" pattern="yyyy-MM-dd HH:mm:ss" />
+																	    </c:otherwise>
+																    </c:choose>
+																</span>
+						                                    </div>
+						                                </div>
+						                                <div class="file-actions">
+						                                	<c:choose>
+						                                		<c:when test="${empty krNotationVO.packagingMaterialKr}">
+								                                    <button class="btn btn-warning" id="" value="${contractDelNo[0].declDNo }"><i class="fas fa-edit"></i> 대기중</button>
+				                                     			</c:when>
+				                                    			<c:when test="${contractDelNo[0].declDNo != null}">
+				                                    				<a href="/pdf/download2.do?url=contract/decl/detail.do?declDNo=${contractDelNo[0].declDNo }"  class="action-button secondary" id="declDlBtn"><i class="fas fa-download"></i> 다운로드</a>
+								                                    <button class="btn btn-primary" id="delDBtn" value="${contractDelNo[0].declDNo }"><i class="fas fa-edit"></i> 상세</button>
+				                                     			</c:when>
+																<c:otherwise>
+							                                    	<button class="btn btn-warning disable"><i class="fas fa-edit"></i> 대기중</button>
+															    </c:otherwise>
+															</c:choose>
+						                                </div>
+						                            </li>
+					                        	</c:when>
+					                        	<c:otherwise>
+					                        		<li class="file-item">
+						                                <div class="file-info">
+						                                    <i class="fas fa-file-alt"></i>
+						                                    <div class="file-details">
+						                                        <span class="file-name">${contractVo.contractType }신고서</span>
+						                                        <span class="file-meta">최종 업데이트: 
+						                                        	<c:choose>
+																		<c:when test="${empty contractDelNo[0].declDNo}">
+																	        작성되지 않았습니다
+																	    </c:when>
+																	    <c:otherwise>
+																	    	<fmt:parseDate value="${contractDelNo[0].contractFileDate}" var="declDDate" pattern="yyyy-MM-dd" />
+																	        <fmt:formatDate value="${declDDate}" pattern="yyyy-MM-dd HH:mm:ss" />
+																	    </c:otherwise>
+																    </c:choose>
+																</span>
+						                                    </div>
+						                                </div>
+						                                <!-- 작업중 start -->
+						                                <div class="file-actions">
+						                                	<c:choose>
+				                                    			<c:when test="${contractDelNo[0].declDNo != null}">
+				                                    				<a href="/pdf/download2.do?url=contract/decl/detail.do?declDNo=${contractDelNo[0].declDNo }"  class="action-button secondary" id="declDlBtn"><i class="fas fa-download"></i> 다운로드</a>
+								                                    <button class="btn btn-primary" id="delDBtn" value="${contractDelNo[0].declDNo }"><i class="fas fa-edit"></i> 상세</button>
+				                                     			</c:when>
+																<c:otherwise>
+							                                    	<button class="btn btn-warning disable"><i class="fas fa-edit"></i> 대기중</button>
+															    </c:otherwise>
+															</c:choose>
+						                                </div>
+						                                <!-- 작업중 end -->
+						                            </li>
+					                        	</c:otherwise>
+					                        </c:choose>
+			                        		
+			                        		<c:if test="${contractVo.contractType == '수입'}">
+			                        		<li class="file-item">
+				                                <div class="file-info">
+				                                    <i class="fas fa-file-alt"></i>
+				                                    <div class="file-details">
+				                                        <span class="file-name">세금고지서</span>
+				                                        
+				                                        <span class="file-meta">최종 업데이트:
+				                                         <c:choose>
+															<c:when test="${empty TaxVO.taxDestDate}">
+														        작성되지 않았습니다
+														    </c:when>
+														    <c:otherwise>
+														    	<fmt:formatDate value="${TaxVO.taxDestDate }" pattern="yyyy-MM-dd HH:mm:ss"/>
+														    </c:otherwise>
+													    </c:choose>
+														</span>
+				                                    </div>
+				                                </div>
+				                                <div class="file-actions">
+				                                	
+				                                	<c:choose>
+		                                    			<c:when test="${not empty TaxVO.taxDestDate }">
+		                                    				<a href="/pdf/download2.do?url=contract/taxDetail.do?declNo=${declNo }"  class="action-button secondary" id="declDlBtn"><i class="fas fa-download"></i> 다운로드</a>
+						                                    <button class="btn btn-primary" id="taxBtn" value="${contractDelNo[0].declDNo }"><i class="fas fa-edit"></i> 상세</button>
+		                                     			</c:when>
+														<c:otherwise>
+					                                    	<button class="btn btn-warning" id="" value="${contractVo.contractNo }"><i class="fas fa-edit"></i> 대기중</button>
+													    </c:otherwise>
+													</c:choose>
+				                                </div>
+				                            </li>
+				                            </c:if>
+				                            
+				                            <li class="file-item">
+				                                <div class="file-info">
+				                                    <i class="fas fa-file-alt"></i>
+				                                    <div class="file-details">
+				                                        <span class="file-name">${contractVo.contractType }신고필증</span>
+				                                        <span class="file-meta">최종 업데이트: 
+				                                        	<c:choose>
+																<c:when test="${empty CDVO.cdDate }">
+															        작성되지 않았습니다
+															    </c:when>
+															    <c:otherwise>
+															    	<fmt:parseDate value="${CDVO.cdDate }" var="cdDate" pattern="yyyy-MM-dd" />
+															        <fmt:formatDate value="${cdDate}" pattern="yyyy-MM-dd HH:mm:ss" />
+															    </c:otherwise>
+														    </c:choose>
+				                                        	
+				                                        </span>
+				                                    </div>
+				                                </div>
+				                                <div class="file-actions">
+				                                	<c:choose>
+		                                    			<c:when test="${not empty CDVO.cdDate }">
+		                                    				<a href="/pdf/download2.do?url=servant/cdDetail.do?cdNo=${CDVO.cdNo }"  class="action-button secondary" id="declDlBtn"><i class="fas fa-download"></i> 다운로드</a>
+						                                    <button class="btn btn-primary" id="cdBtn" value="${CDVO.cdNo }"><i class="fas fa-edit"></i> 상세</button>
+		                                     			</c:when>
+														<c:otherwise>
+					                                    	<button class="btn btn-warning" id="" value="${contractVo.contractNo }"><i class="fas fa-edit"></i> 대기중</button>
+													    </c:otherwise>
+													</c:choose>
+				                                </div>
+				                            </li>
+			                            </c:otherwise>
+								</c:choose>
+				                        </ul>
+									</div>
+								</div>
+							</div>
+							
+								<div class="tabs-content">
+									<div class="info-card">
+										<div class="info-row">
+											<span class="card-title">진행 내역</span>
+										</div>
+										<div>
+											<div class="info-row">
+												<div class="contract-progress-details">
+													<c:forEach items="${contractVo.contractRecordList }"
+														var="list" varStatus="status">
+														<div style="font-weight: bold;" class="dis-f-ai-c">
+															<i class="fas fa-check-circle" style="margin-right: 10px;"></i>
+															${list.statusCodeMediumCategoryName } <span style="margin-left: 10px">${list.statusCodeName }</span>
+														</div>
+														<div style="margin-left: 30px">${list.contractRecordRegDate }</div>
+														<c:if test="${! status.last }">
+															<i class="fa-solid fa-arrow-down"
+																style="margin-left: 60px; margin-bottom: 10px"></i>
+														</c:if>
+													</c:forEach>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+	</div>
+<!-- 선박모달 -->	
+ <div class="modal fade" id="shipMapModal" tabindex="-1" aria-labelledby="shipMapModalLabel">
+  <div class="modal-dialog" style="min-width: 1100px;">
+    <div class="modal-content" style="min-width: 1100px;">
+      <div class="modal-header">
+        <h5 class="modal-title" id="shipMapModalLabel"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="vmap" style="width: 1000px; height: 800px;"></div>
+      </div>
+    </div>
+  </div>
+</div> 
+
+	<script>
+		$(function() {
+			var map = null; 
+			var shipMapModal = new bootstrap.Modal(document.getElementById('shipMapModal'));
+			
+			let listBtn = $("#listBtn");
+			let ciBtn = $("#ciBtn");
+			let plBtn = $("#plBtn");
+			let delDBtn = $("#delDBtn");
+			let shipBtn = $("#shipBtn");
+			let taxBtn = $("#taxBtn");
+			let cdBtn = $("#cdBtn");
+			
+			let contractNo = window.location.pathname.split("/")[3]
+			console.log(contractNo);
+
+			listBtn.on("click", function() {
+				location.href = "/consignor/myContract.do";
+			})
+//-----------------------------------------------------------------------------------------------
+	
+	/**
+	 * VWorld Map을 초기화하고 3D 모델을 로드하는 함수
+	 * @param {number} lon - 경도
+	 * @param {number} lat - 위도
+	 * @param {string} modelUrl - .gltf 또는 .glb 파일의 URL
+	 * @param {string} shipName - 선박 이름
+	 */
+ 	function initMapAndLoadModel(lon, lat, modelUrl, shipName) {
+		const uniqueId = `vmap_${Date.now()}`;
+	    $('#shipMapModalLabel').text(`${shipName} Location`);
+
+	    // #vmap 교체
+	    $('#vmap').replaceWith('<div id="vmap" style="width: 1000px; height: 800px;"></div>');
+
+	    // DOM 교체 후 브라우저가 렌더링을 반영한 다음 프레임에서 실행
+	    const options = {
+	            mapId: "vmap",
+	            initPosition: new vw.CameraPosition(
+	                new vw.CoordZ(lon, lat, 500),
+	                new vw.Direction(0, -15, 0)
+	            ),
+	            logo: true,
+	            navigation: true
+	        };
+
+	        try {
+	            map = new vw.Map();
+	            map.setOption(options);
+	            map.start();
+
+	            // 모델은 조금 더 나중에
+	            setTimeout(() => {
+	                loadShipModel(modelUrl, lon, lat);
+	            }, 1500);
+	        } catch (e) {
+	            console.error("💥 map.start() 내부 오류:", e);
+	            alertify.alert("지도를 초기화하는 중 오류가 발생했습니다.");
+	        }
+
+	}
+
+
+	/**
+	 * 선박 3D 모델을 지도에 로드하는 함수
+	 * @param {string} url - 3D 모델 파일의 URL
+	 * @param {number} lon - 경도
+	 * @param {number} lat - 위도
+	 */
+	function loadShipModel(url, lon, lat) {
+		if (!url) {
+			console.warn("표시할 3D 모델의 URL이 없습니다.");
+			return;
+		}
+
+		var id = "shipModel_" + new Date().getTime(); // 중복되지 않는 고유 ID 생성
+		var point = new vw.CoordZ(lon, lat, 5); // 모델을 표시할 좌표 (고도는 1로 설정)
+		
+		// 모델 크기 옵션 (필요에 따라 값을 조절)
+		var options = { scale: 1000, minimumPixelSize: 150 };
+
+		var modelz = new vw.geom.ModelZ(id, url, point, options);
+		modelz.create();
+
+		// (선택 사항) 모델에 클릭 이벤트를 추가하여 팝업을 띄울 수 있습니다.
+		var eventHandler = function(windowPosition, ecefPosition, cartographic, featureInfo) {
+			if (featureInfo != null) {
+				var html = `<strong>Ship Details</strong><br>위도: ${lat.toFixed(6)}<br>경도: ${lon.toFixed(6)}`;
+				var title = "선박 정보";
+				// 이전 팝업이 있다면 제거
+				if (map.getPopup("shipPopup")) {
+					map.getPopup("shipPopup").destroy();
+				}
+				var pop = new vw.Popup("shipPopup", "vmap", title, html, 250, 150, windowPosition.x, windowPosition.y);
+				pop.create();
+			}
+		};
+		modelz.addEventListener(eventHandler);
+	}
+
+	// fetchShipLocation 함수는 그대로 사용합니다.
+	function fetchShipLocation(shipId, fallbackLat, fallbackLon) {
+		return new Promise((resolve, reject) => { // reject를 추가하여 에러 처리
+			$.ajax({
+				url: "<%=request.getContextPath() %>/logistics/shipLocation.do",
+				type: "post",
+				dataType: "json",
+				data: { shipId: shipId },
+				success: function(result) {
+					if (result && result.values) {
+						resolve({
+							lat: parseFloat(result.values.ship_lat),
+							lon: parseFloat(result.values.ship_lon)
+						});
+					} else {
+						// 성공했지만 데이터가 없는 경우, fallback 값 사용
+						resolve({ lat: parseFloat(fallbackLat), lon: parseFloat(fallbackLon) });
+					}
+				},
+				error: function(err) {
+					console.error("AJAX Error:", err);
+					// AJAX 요청 실패 시, fallback 값 사용
+					resolve({ lat: parseFloat(fallbackLat), lon: parseFloat(fallbackLon) });
+				}
+			});
+		});
+	}
+//----------------------------------------------------------------------------------------------------------
+	// 모달 닫을때 이벤트
+			$('#shipMapModal').on('hidden.bs.modal', function () {
+			    location.href = location.href;
+			});
+//--------------------------------------------------------------------------------------------	
+			//
+			$(document).ready(function() {
+				$(".tab-button").on("click", function() {
+					$(".tab-button").removeClass("active");
+					$(this).addClass("active");
+
+					$(".tab-pane").removeClass("active");
+					var targetTab = $(this).data('tab');
+					$('#' + targetTab).addClass('active');
+
+				})
+				$('.tab-button.active').click();
+			})
+
+			
+			//개인정보 마스킹
+			let maskedBtn = $("#maskedBtn");
+			let userTel = $("#userTel");
+			let userName = $("#userName");
+			let isMasked = true;
+			
+			
+			function maskPhoneNumber(phoneNumber){
+				 if (!phoneNumber || phoneNumber.length < 10) {
+			            return phoneNumber; 
+			        }
+				return phoneNumber.replace(/(\d{3})-?(\d{4})-?(\d{4})/, "$1-****-$3");
+			}
+			
+			function maskName(name){
+				 if (!name || name.length < 2) {
+			            return name; 
+			        }
+				 const firstChar = name.charAt(0);
+			        const lastChar = name.charAt(name.length - 1);
+			        const maskedMiddle = "*".repeat(name.length - 2); // 중간 글자 개수만큼 * 반복
+			        return firstChar + maskedMiddle + lastChar;
+			}
+		
+			const originalPhoneNumber = userTel.text().trim();
+			const originalUserName = userName.text().trim();
+			
+			const maskedPhoneNumber = maskPhoneNumber(originalPhoneNumber);
+			const maskedUserName = maskName(originalUserName);
+			
+			userTel.text(maskedPhoneNumber); //페이지 로딩시 마스킹된거 보이게 ㅇㅇ
+			userName.text(maskedUserName); //페이지 로딩시 마스킹된거 보이게 ㅇㅇ
+			
+			maskedBtn.on("click",function(){
+				isMasked = !isMasked;
+				
+				if(isMasked){
+					userTel.text(maskedPhoneNumber);
+					userName.text(maskedUserName);
+				}else{
+					userTel.text(originalPhoneNumber);
+					userName.text(originalUserName);
+				}
+			})
+			//
+		/* 	$(".step-circle").on("click", function() {
+				let value = $(this).next(".step-label").text(); //버튼의 순서
+				let numValue = $(this).text(); //버튼의 번호
+				console.log(value);
+				console.log(numValue);
+				alertify.alert("콘솔에는 값나옴 ㅇㅇ")
+				
+				let targetDetailsDiv = $("#details-step-" + numValue);
+				 $('.progress-details').not(targetDetailsDiv).slideUp();
+				 
+				 targetDetailsDiv.slideToggle();
+				$.ajax({
+					url : "/consignor/findStatusCode/" + contractNo,
+					type: "get",
+					data : {paramName : value},
+					success : function(result){
+						console.log(result);
+						  let specificDivArea = targetDetailsDiv.find(".divArea");
+						  
+						let html = ``;
+						for (let i = 0 ; i < result.length; i++){
+							html += `
+								<div>
+									\${result[i].statusCodeName}										
+								</div>
+							`;
+						}
+						
+						specificDivArea.html(html);
+					}
+				})
+				
+			}) */
+			
+			ciBtn.on("click",function(){
+				let ciNo = ciBtn.val();
+				console.log("ci클릭" , ciNo);
+				window.open("/ci/detail.do?ciNo="+ciNo
+						, "_blank"
+						, "width=800,height=1000,scrollbars=yes,resizable=yes");
+				//location.href ="/ci/detail.do?ciNo="+ciNo;
+			});
+			
+			plBtn.on("click",function(){
+				let plNo = plBtn.val();
+				console.log("pl클릭",plNo);
+				window.open("/pl/detail.do?plNo="+plNo
+						, "_blank"
+						, "width=800,height=1000,scrollbars=yes,resizable=yes");
+				//location.href ="/pl/detail.do?plNo="+plNo;
+			});
+			
+			delDBtn.on("click",function(){
+				let delDNo = delDBtn.val();
+				console.log("delD클릭",delDNo);
+				window.open("/contract/decl/detail.do?declDNo="+delDNo
+						, "_blank"
+						, "width=800,height=1000,scrollbars=yes,resizable=yes");
+				//location.href = "/contract/decl/detail.do?declDNo="+delDNo;
+			})
+		
+			let kLabelDetailBtn = $("#kLabelDetailBtn");
+			kLabelDetailBtn.on("click",function(){
+				let contractNo = kLabelDetailBtn.val();
+				window.open("/cca/koreanLabelDetail.do?contractNo="+contractNo
+						, "_blank"
+						, "width=800,height=1000,scrollbars=yes,resizable=yes");
+				//location.href = "/cca/koreanLabelDetail.do?contractNo="+contractNo;
+			})
+			/** 세금 고지서 버튼 클릭**/
+			taxBtn.on("click",function(){
+				let taxNo = taxBtn.val();
+				window.open("/contract/taxDetail.do?declNo="+taxNo,
+						"_blank",
+				        "width=800,height=1000,scrollbars=yes,resizable=yes");
+			})
+			
+			/**필증버튼**/
+			cdBtn.on("click",function(){
+				let cdNo = cdBtn.val();
+				window.open("/servant/cdDetail.do?cdNo="+cdNo,
+						"_blank",
+				        "width=800,height=1000,scrollbars=yes,resizable=yes");
+			})
+			
+
+			let ciDlBtn = $("#ciDlBtn");
+			let plDlBtn = $("#plDlBtn");
+			let knDlBtn = $("#knDlBtn");
+			let declDlBtn = $("#declDlBtn");
+			
+//-----------------------------------------------------------------------------------------------
+			//선박위치 조회
+    		shipBtn.on("click",async function(event){
+    			
+    			event.preventDefault();
+    			event.stopPropagation();
+
+    			const shipVO = `${shipVO}`;
+    			var shipId = `${shipVO.shipId}`;
+    			var shipLon = `${shipVO.shipLon}`;
+    			var shipLat = `${shipVO.shipLat}`;
+    			var shipName = `${shipVO.shipName}`;
+    			var ship3dImg = "/ship3dImg/3dModelEx.glb";
+    			
+    			try {
+
+    				// 1. 위경도 값을 비동기적으로 가져옵니다.
+    				const { lat, lon } = await fetchShipLocation(shipId, shipLat, shipLon);
+    				console.log("최종 좌표 -> 위도:", lat, "경도:", lon);
+
+    				// 2. Bootstrap 모달을 엽니다.
+    				shipMapModal.show();
+    				//shipMapModal
+    				// 3. 모달이 완전히 화면에 표시된 후('shown.bs.modal' 이벤트) 지도를 초기화합니다.
+    				//    (div가 화면에 보여야 VWorld가 올바른 크기로 지도를 렌더링할 수 있습니다.)
+    				$('#shipMapModal').off('shown.bs.modal').on('shown.bs.modal', function () {
+    				    $('#vmap').replaceWith('<div id="vmap" style="width: 100%; height: 600px;"></div>');
+
+    				    // 🔐 100ms 지연 후 initMapAndLoadModel 실행
+    				    setTimeout(() => {
+    				        initMapAndLoadModel(lon, lat, ship3dImg, shipName);
+    				    }, 100);
+    				});
+
+
+
+    			} catch (err) {
+    				console.error("위치 정보를 가져오는데 실패했어요.", err);
+    				alertify.alert("선박 위치 정보를 가져오는 데 실패했습니다.");
+    			}
+    			
+    		});
+		
+		})
+	</script>
+</body>
+</html>

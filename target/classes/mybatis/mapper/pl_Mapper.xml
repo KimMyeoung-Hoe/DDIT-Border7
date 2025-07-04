@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.pl.mapper.IPLMapper">
+
+	<insert id="insertPL" useGeneratedKeys="true" parameterType="kr.or.ddit.vo.PLVO">
+		<selectKey keyProperty="plNo" resultType="int" order="BEFORE">
+			select seq_PL_no.nextval from dual
+		</selectKey>
+		insert into PL(
+			PL_NO, CONSIGNOR_NO, REG_DATE, INVOICE, SHIPPER, 
+			CONSIGNEE, NOTIFY_PARTY, DEPARTURE_DATE, VESSEL, PORT_FROM, 
+			PORT_TO, BUYER, OTHER_REFERENCES, SHIPPING_MARKS, KIND_OF_PACKAGES, 
+			GOODS_DESCRIPTION, QONW, GROSS_WEIGHT, MEASUREMENT, SIGNED_BY
+		)values(
+			#{plNo}, #{consignorNo}, sysdate, #{invoice}, #{shipper}, 
+			#{consignee}, #{notifyParty}, #{departureDate}, #{vessel}, #{portFrom}, 
+			#{portTo}, #{buyer}, #{otherReferences}, #{shippingMarks}, #{kindOfPackages}, 
+			#{goodsDescription}, #{qonw}, #{grossWeight}, #{measurement}, #{signedBy}
+		)
+	</insert>
+	
+	<select id="selectPL" parameterType="int" resultType="kr.or.ddit.vo.PLVO">
+		SELECT
+		    PL_NO, CONSIGNOR_NO, REG_DATE, INVOICE, SHIPPER, 
+			CONSIGNEE, NOTIFY_PARTY, DEPARTURE_DATE, VESSEL, PORT_FROM, 
+			PORT_TO, BUYER, OTHER_REFERENCES, SHIPPING_MARKS, KIND_OF_PACKAGES, 
+			GOODS_DESCRIPTION, QONW, GROSS_WEIGHT, MEASUREMENT, SIGNED_BY
+		FROM
+		    PL
+		where PL_NO = #{plNo}
+	</select>
+	
+	<update id="updatePL" parameterType="kr.or.ddit.vo.PLVO">
+		update PL set
+			CONSIGNOR_NO = #{consignorNo}, 
+			REG_DATE = sysdate, 
+			INVOICE = #{invoice}, 
+			SHIPPER = #{shipper}, 
+			CONSIGNEE = #{consignee}, 
+			NOTIFY_PARTY = #{notifyParty},
+			DEPARTURE_DATE = #{departureDate}, 
+			VESSEL = #{vessel}, 
+			PORT_FROM = #{portFrom}, 
+			PORT_TO = #{portTo}, 
+			BUYER = #{buyer}, 
+			OTHER_REFERENCES = #{otherReferences}, 
+			SHIPPING_MARKS = #{shippingMarks}, 
+			KIND_OF_PACKAGES = #{kindOfPackages}, 
+			GOODS_DESCRIPTION = #{goodsDescription}, 
+			QONW = #{qonw}, 
+			GROSS_WEIGHT = #{grossWeight}, 
+			MEASUREMENT = #{measurement}, 
+			SIGNED_BY = #{signedBy}
+		where PL_NO = #{plNo}
+	</update>
+	
+	<update id="updateContractPL" parameterType="hashMap">
+		UPDATE CONTRACT SET
+		    PL_NO = #{plNo}
+		    , CONTRACT_DATE = SYSDATE
+		    , LAST_STATUS_CODE = CASE
+		        WHEN CI_NO IS NOT NULL AND CI_NO != 0 THEN
+		            CASE
+		                WHEN SUBSTR(#{contractNo}, 1, 3) = 'EXP' THEN 22
+		                WHEN SUBSTR(#{contractNo}, 1, 3) = 'IMP' THEN 1
+		                ELSE LAST_STATUS_CODE
+		            END
+		        ELSE LAST_STATUS_CODE
+		    END
+		WHERE
+		    CONTRACT_NO = #{contractNo}
+	</update>
+	
+</mapper>

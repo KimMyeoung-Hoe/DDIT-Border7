@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="kr.or.ddit.mapper.IConsignorMapper">
+  
+ 	<sql id="contractSearch">
+	     <if test="searchType != null and searchType != ''">
+        AND t.contract_type = #{searchType}
+	    </if>
+	
+	    <if test="searchWord != null and searchWord != ''">
+	        AND (
+	               t.contract_no LIKE '%' || #{searchWord} || '%'
+	            OR a.cca_name LIKE '%' || #{searchWord} || '%'
+	        )
+	    </if>
+	
+	    <if test="searchStatus != null and searchStatus != ''">
+	        AND s.status_code_name LIKE '%' || #{searchStatus} || '%'
+	    </if>
+	
+	    <if test="searchCategory != null and searchCategory != ''">
+	        AND s.status_code_medium_category_name LIKE '%' || #{searchCategory} || '%'
+	    </if>
+	</sql>
+  
+  <resultMap type="kr.or.ddit.vo.ContractVO" id="contractVOResultMap">
+  		<id property="contractNo" column="CONTRACT_NO"/>
+  		<result property="consignorNo" column="CONSIGNOR_NO"/>
+  		<result property="ccaNo" column="CCA_NO"/>
+  		<result property="productNo" column="PRODUCT_NO"/>
+  		<result property="ciNo" column="CI_NO"/>
+  		<result property="plNo" column="PL_NO"/>
+  		<result property="contractType" column="CONTRACT_TYPE"/>
+  		<result property="contractDate" column="CONTRACT_DATE"/>
+  		<result property="comFileNo" column="COM_FILE_NO"/>
+  		<result property="lastStatusCode" column="LAST_STATUS_CODE"/>
+  		<result property="ccaName" column="CCA_NAME"/>
+  		<result property="consignorName" column="CONSIGNOR_NAME"/>
+  		<result property="consignorCompanyName" column="CONSIGNOR_COMPANY_NAME"/>
+	    <result property="consignorTel" column="CONSIGNOR_TEL"/>
+	    <result property="consignorUserTel" column="CONSIGNOR_USER_TEL"/>
+	    <result property="consignorUserFax" column="CONSIGNOR_USER_FAX"/>
+	    <result property="consignorUserEmail" column="CONSIGNOR_USER_EMAIL"/>
+	    <result property="ccaCompanyName" column="CCA_COMPANY_NAME"/>
+	    <result property="ccaTel" column="CCA_TEL"/>
+	    <result property="ccaUserTel" column="CCA_USER_TEL"/>
+	    <result property="ccaUserFax" column="CCA_USER_FAX"/>
+	    <result property="ccaUserEmail" column="CCA_USER_EMAIL"/>
+	    
+		<association property="productVO" javaType="kr.or.ddit.vo.ProductVO">
+			      <id property="productNo" column="PRODUCT_NO"/> 
+			      <result property="consignorNo" column="PRODUCT_CONSIGNOR_NO"/>
+			      <result property="hsCode" column="HS_CODE"/>
+			      <result property="productName" column="PRODUCT_NAME"/>
+			      <result property="productOrigin" column="PRODUCT_ORIGIN"/>
+			      <result property="productQty" column="PRODUCT_QTY"/>
+			      <result property="productWeight" column="PRODUCT_WEIGHT"/>
+			      <result property="productVolume" column="PRODUCT_VOLUME"/>
+			      <result property="productPrice" column="PRODUCT_PRICE"/>
+	    </association>
+  		
+  		<collection property="contractFileList" resultMap="contractFileMap"/>
+  		<collection property="contractRecordList" resultMap="contractStatusMap"/>
+  </resultMap>
+  
+  
+  <resultMap type="kr.or.ddit.vo.ContractRecord" id="contractStatusMap">
+  	 <result property="contractStatusCode" column="CONTRACT_STATUS_CODE"/>
+     <result property="contractRecordRegDate" column="CONTRACT_RECORD_REG_DATE"/>
+     <result property="statusCodeMediumCategoryName" column="STATUS_CODE_MEDIUM_CATEGORY_NAME"/>
+     <result property="statusCodeName" column="STATUS_CODE_NAME"/>
+  </resultMap>
+  
+  <resultMap type="kr.or.ddit.vo.ContractFileAttachVO" id="contractFileMap">
+  	<result property="contractFileAttachNo" column="CONTRACT_FILE_ATTACH_NO"/>
+  	<result property="contractFileNo" column="CONTRACT_FILE_NO"/>
+ <!--  	<result property="contractNo" column="CONTRACT_NO"/> -->
+  	<result property="contractFileType" column="CONTRACT_FILE_TYPE"/>
+  	<result property="contractFileOriginalName" column="CONTRACT_FILE_ORIGINAL_NAME"/>
+  	<result property="contractFileExtension" column="CONTRACT_FILE_EXTENSION"/>
+  	<result property="contractFileSize" column="CONTRACT_FILE_SIZE"/>
+  	<result property="contractFilePath" column="CONTRACT_FILE_PATH"/>
+  	<result property="contractFileSavedName" column="CONTRACT_FILE_SAVED_NAME"/>
+  	<result property="contractFileDate" column="CONTRACT_FILE_DATE"/>
+  	<result property="contractFileYn" column="CONTRACT_FILE_YN"/>
+  </resultMap>
+  	
+  	<select id="selectUserNo" parameterType="string" resultType="int">
+  		select user_no
+        from user_tb
+        where user_id = #{userId}
+  	</select>
+  
+  
+  	<select id="selectContract" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+  		   select b.*      
+			  from 
+			       ( with c_a as(
+                          select user_no ,cca_name
+                            from cca
+		                       ),
+		                 c_b as(
+		                           select user_no , consignor_name
+		                             from consignor
+		                       )
+		                select count(t.contract_no)
+		                  from contract t
+		                  join
+		                       c_a a on a.user_no = t.cca_no
+		                  join
+		                       c_b b on b.user_no = t.consignor_no
+		                  left join
+		                           status_code s on s.status_code = t.last_status_code  
+		                  where 
+		                       consignor_no =#{userNo}
+		                    and
+                      			last_status_code is not null
+			              <include refid="contractSearch"/>
+			         )b      
+  	</select>
+  	
+  	
+  	<select id="selectContractList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultMap="contractVOResultMap">
+  		select b.*      
+		    from
+	        (
+	          select
+	            a.*,row_number() over (
+	            						<choose>
+	            							<when test="sortDirection == '오름'">
+	            								order by a.contract_date asc
+	            							</when>
+	            							<when test="sortDirection == '내림'">
+	            								order by a.contract_date desc
+	            							</when>
+	            							<otherwise>
+	            								order by a.contract_date desc
+	            							</otherwise>
+	            						</choose>
+	            						) rnum
+	          from
+	            (  
+		       with c_a as(
+                          select user_no ,cca_name
+                            from cca
+                       ),
+                 c_b as(
+                           select user_no , consignor_name
+                             from consignor
+                       )
+                select
+                         t.contract_no,
+                           a.cca_name,
+                           b.consignor_name,
+                           t.last_status_code,
+                           s.status_code_medium_category_name,
+                           s.status_code_name,
+                           t.contract_type,
+                           t.contract_date
+                  from contract t
+                  join
+                       c_a a on a.user_no = t.cca_no
+                  join
+                       c_b b on b.user_no = t.consignor_no
+                  left join
+                           status_code s on s.status_code = t.last_status_code  
+                  where 
+                       consignor_no = #{userNo}
+                    and
+                       last_status_code is not null   
+		              <include refid="contractSearch"/>
+		                ) a
+			        )b
+			      <![CDATA[
+					where 
+						b.rnum >= #{startRow}
+					and
+						b.rnum <= #{endRow}	
+					]]>	 	
+  	</select>
+  	
+  	<select id="detailContract" parameterType="string" resultMap="contractVOResultMap">
+			  with c_a as (
+              select
+                  c.contract_no,
+                  p.product_no,
+                  p.consignor_no,
+                  p.hs_code,
+                  p.product_name,
+                  p.product_origin,
+                  p.product_qty,
+                  p.product_weight,
+                  p.product_volume,
+                  p.product_price
+              from contract c
+              join
+                  product p on c.product_no = p.product_no
+              where
+                  c.contract_no = #{contractNo}
+          ),
+          c_c as (
+              select
+                  c.contract_no,
+                  r.contract_status_code,
+                  r.contract_record_reg_date,
+                  s.status_code_medium_category_name,
+                  s.status_code_name
+              from contract c
+              join
+                  contract_record r on r.contract_no = c.contract_no
+              join
+                  status_code s on s.status_code = r.contract_status_code
+              where
+                  c.contract_no =  #{contractNo}
+              order by 3
+          )
+          select
+              t.contract_no,
+              t.consignor_no,
+              u_con.user_name as consignor_name,
+              con_detail.consignor_name as consignor_company_name,
+              con_detail.consignor_tel as consignor_tel,
+              u_con.user_tel as consignor_user_tel,
+              u_con.user_fax as consignor_user_fax,
+              u_con.user_email as consignor_user_email,
+              t.cca_no,
+              u_cca.user_name as cca_name,
+              cca_detail.cca_name as cca_company_name,
+              cca_detail.cca_tel,
+              u_cca.user_tel as cca_user_tel,
+              u_cca.user_fax as cca_user_fax,
+              u_cca.user_email as cca_user_email,
+              t.contract_type,
+              t.contract_date,
+              t.com_file_no,
+              t.last_status_code,
+              a.product_no,
+              a.consignor_no,
+              a.hs_code,
+              a.product_name,
+              a.product_origin,
+              a.product_qty,
+              a.product_weight,
+              a.product_volume,
+              a.product_price,
+              c.contract_status_code,
+              c.contract_record_reg_date,
+              c.status_code_medium_category_name,
+              c.status_code_name,
+              t.ci_no,
+              t.pl_no
+          from contract t
+          join
+              c_a a on a.contract_no = t.contract_no
+          join
+              c_c c on c.contract_no = t.contract_no
+          join
+              user_tb u_con on u_con.user_no = t.consignor_no
+          join
+              user_tb u_cca on u_cca.user_no = t.cca_no
+          JOIN
+              cca cca_detail ON cca_detail.user_no = t.cca_no
+          join
+              consignor con_detail on con_detail.user_no = t.consignor_no    
+          where
+              t.contract_no =  #{contractNo}
+              
+              
+  	</select>
+  	
+  	
+  	<select id="categoryBar" parameterType="string" resultType="kr.or.ddit.vo.ContractRecord">
+  		 select  
+  		 		distinct status_code_medium_category_name
+   	       from 
+   	       		status_code
+    	  where 
+    	  		status_code_big_category in (
+                                         	 select contract_type
+                                          	   from contract
+                                           	  where  contract_no = #{contractNo}
+                                      )
+  	</select>
+  	
+  	
+  	<select id="findStatusCode" parameterType="string" resultType="kr.or.ddit.vo.ContractRecord">
+  		   select 
+  		   		status_code_name
+		     from 
+		     	status_code
+		    where 
+		    	status_code_big_category in (
+		                                          select contract_type
+		                                            from contract
+		                                            where  contract_no = #{contractNo}
+		                                      )
+		      and status_code_medium_category_name = #{statusCodeMediumCategoryName}
+  	</select>
+  	
+  	
+  	<select id="selectDeclNo" parameterType="string" resultType="kr.or.ddit.vo.ContractFileAttachVO">
+  		   select contract_file_attach_no
+                    ,contract_file_no
+                    ,f.contract_no
+                    ,contract_file_type
+                    ,contract_file_original_name
+                    ,contract_file_extension
+                    ,contract_file_size
+                    ,contract_file_path
+                    ,contract_file_saved_name
+                    ,contract_file_date
+                    ,contract_file_yn
+                    ,d.decl_d_no
+                from contract_file_attach f
+                 join decl_d d on d.contract_no = f.contract_no
+                where f.contract_no = #{contractNo}
+  	</select>
+  	
+  	
+  	<select id="selectShip" parameterType="String" resultType="kr.or.ddit.vo.ShipsVO">
+  		select 
+  			*
+  		  from(
+		  		select
+		  			e.SHIP_NO
+				   ,e.SHIP_NAME
+				   ,e.SHIP_TYPE
+				   ,e.SHIP_GT
+				   ,e.SHIP_YN
+				   ,e.SHIP_IMG
+				   ,e.SHIP_3D_IMG
+				   ,e.SHIP_CALLNAME
+				   ,e.SHIP_ID
+				   ,e.SHIP_LON
+				   ,e.SHIP_LAT 
+		  		  from
+		  		  	CONTRACT a
+		  		  LEFT JOIN
+		  		  	STOWAGE b ON a.CONTRACT_NO = b.CONTRACT_NO
+		  		  LEFT JOIN
+		  		  	CONTAINER_DETAIL c ON b.STOWAGE_NO = c.STOWAGE_NO
+		  		  LEFT JOIN
+		  		  	SHIP_SCHEDULE d ON d.SHIP_SCHEDULE_NO = c.SHIP_SCHEDULE_NO
+		  		  LEFT JOIN	
+		  		  	SHIPS e ON e.SHIP_NO = d.SHIP_NO 		
+		  		  where
+		  		  	a.CONTRACT_NO = #{contractNo}
+		  		)
+		  	where 
+		  		rownum = 1	
+  	</select>
+  	
+  	
+  	
+  	
+  </mapper>

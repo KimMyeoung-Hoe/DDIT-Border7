@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.user.mapper.IUserMapper">
+
+	<select id="selectUserNo" parameterType="string" resultType="int">
+	/** userId에 해당하는 userNo를 추출 **/
+  		select user_no
+        from user_tb
+        where user_id = #{userId}
+  	</select>
+
+	<select id="selectUserId" parameterType="int" resultType="string">
+	/** userId에 해당하는 userNo를 추출 **/
+  		select user_id
+        from user_tb
+        where user_no = #{userNo}
+  	</select>
+
+	<select id="login" parameterType="UserVO" resultType="UserVO">
+		select
+			USER_NO
+			, AUTH_CODE
+			, USER_ID
+			, USER_PW
+			, USER_STATUS
+		from USER_TB
+		where USER_ID = #{userId}
+	</select>
+	
+	<select id="readByUserInfo" parameterType="string" resultType="UserVO">
+		SELECT
+		    u.USER_NO,
+		    u.AUTH_CODE,
+		    u.USER_ID,
+		    u.USER_PW,
+		    u.USER_NAME,
+		    u.USER_TEL,
+		    u.SMS_YN,
+		    u.USER_FAX,
+		    u.USER_EMAIL,
+		    u.REG_DATE,
+		    u.USER_STATUS,
+		    u.WITHDRAW_DATE,
+		    u.USER_ENABLE,
+		    u.EMAIL_YN,
+		    COALESCE(c.CCA_PROFILE_IMG, co.CONSIGNOR_PROFILE_IMG, lm.LOGIST_MNG_PROFILE_IMG) AS PROFILE_IMG,
+		    COALESCE(rec.UNREAD_MAIL_COUNT, 0) AS UNREAD_MAIL_COUNT
+		FROM
+		    USER_TB u
+		LEFT JOIN
+		    CCA c ON u.USER_NO = c.USER_NO
+		LEFT JOIN
+		    CONSIGNOR co ON u.USER_NO = co.USER_NO
+		LEFT JOIN
+		    LOGIST_MNG lm ON u.USER_NO = lm.USER_NO
+		LEFT JOIN (
+		    SELECT
+		        USER_NO,
+		        COUNT(RECIP_NO) AS UNREAD_MAIL_COUNT
+		    FROM
+		        RECIP
+		    WHERE
+		        READ_YN = 0
+		    GROUP BY
+		        USER_NO
+		) rec ON u.USER_NO = rec.USER_NO
+		WHERE
+		    u.USER_ID = #{userId}
+	</select>
+	
+	<select id="findId" parameterType="UserVO" resultType="String">
+		select USER_ID
+ 		  from USER_TB
+	 	 where USER_NAME = #{userName} 
+		   and USER_EMAIL= #{userEmail}
+	</select>
+	
+	<select id="findpw" parameterType="UserVO" resultType="String">
+		select count(*)
+ 		  from USER_TB
+	 	 where USER_ID = #{userId} 
+	 	   and USER_NAME = #{userName} 
+		   and USER_EMAIL= #{userEmail}
+	</select>
+	
+	<update id="updatePw" parameterType="UserVO" >
+		update USER_TB
+		   set USER_PW = #{userPw}
+		 where USER_ID = #{userId} 
+	</update>
+	
+	<insert id="registUser" parameterType="UserVO" useGeneratedKeys="true">
+		<selectKey keyProperty="userNo" resultType="int" order="BEFORE">
+			select SEQ_USER_TB_NO.nextval from dual
+		</selectKey>
+		insert into USER_TB(
+			USER_NO, AUTH_CODE, USER_ID, USER_PW, USER_NAME, USER_TEL, SMS_YN, USER_FAX, USER_EMAIL, REG_DATE
+		) values (
+			#{userNo},#{authCode},#{userId},#{userPw},#{userName},#{userTel},#{sms},#{userFax},#{userEmail},sysdate
+		)
+	</insert>
+	
+	<insert id="registCCA" parameterType="UserVO">
+		insert into CCA(
+			USER_NO, CCA_REGISTRATION_NUMBER, CCA_NAME, CCA_POST, CCA_ADDR, CCA_DET_ADDR
+		  , CCA_TEL, CCA_PROFILE_IMG, CCA_SANCTION_SCORE
+		)values(
+			#{userNo},#{ccaVO.ccaRegistrationNumber},#{ccaVO.ccaName},#{ccaVO.ccaPost},#{ccaVO.ccaAddr},#{ccaVO.ccaDetAddr}
+		  , #{ccaVO.ccaTel},#{ccaVO.ccaProfileImg},0
+		)
+	</insert>
+	
+	<insert id="registConsignor" parameterType="UserVO">
+		insert into CONSIGNOR(
+			USER_NO, BUSINESS_NUMBER, CONSIGNOR_NAME, CONSIGNOR_POST, CONSIGNOR_ADDR, CONSIGNOR_DET_ADDR
+		  , CONSIGNOR_TEL, CONSIGNOR_CUSTOMS_CODE, CONSIGNOR_PROFILE_IMG
+		)values(
+		
+			#{userNo}, #{consignorVO.businessNumber},#{consignorVO.consignorName},#{consignorVO.consignorPost},#{consignorVO.consignorAddr},#{consignorVO.consignorDetAddr}
+		  , #{consignorVO.consignorTel},#{consignorVO.consignorCustomsCode} ,#{consignorVO.consignorProfileImg}
+		)
+	</insert>
+	
+	<insert id="registLogistics" parameterType="UserVO">
+		insert into LOGIST_MNG(
+			USER_NO, BUSINESS_NUMBER, LOGIST_MNG_NAME, LOGIST_MNG_POST, LOGIST_MNG_ADDR
+		   ,LOGIST_MNG_DET_ADDR, LOGIST_MNG_TEL, LOGIST_MNG_PROFILE_IMG
+		)values(
+			#{userNo},#{logistMngVO.businessNumber},#{logistMngVO.logistMngName},#{logistMngVO.logistMngPost},#{logistMngVO.logistMngAddr}
+		   ,#{logistMngVO.logistMngDetAddr},#{logistMngVO.logistMngTel},#{logistMngVO.logistMngProfileImg}	
+		)		
+	</insert>
+	
+	<select id="cntConsignor" resultType="int">
+		SELECT count(*)
+		  FROM CONSIGNOR
+	</select>
+	
+	<select id="checkId" resultType="int">
+		select count(*)
+		  from USER_TB
+		 where USER_ID = #{userId}
+	</select>
+	
+	<select id="checkPw" resultType="int">
+		/** 사용자가 입력한 현재비밀번호가 일치하는지 확인 **/
+		select count(*)
+		from USER_TB
+		where USER_NO = #{userNo}
+		and USER_PW = #{userPw}
+	</select>
+</mapper>

@@ -1,0 +1,37 @@
+package kr.or.ddit.webSockect;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+public class SocketController {
+
+    @GetMapping("/usertest/list.do")
+	public String tests(Model model) {
+		return "contract/test";
+	}
+    
+    @GetMapping("/consultant.do")
+	public String contractList(String targetKey,Model model) {
+    	log.info("targetKey : {}" +targetKey);
+    	model.addAttribute("nobang",targetKey);
+		return "contract/consultant";
+	}
+    @GetMapping("/test3")
+    public String testtest(String targetKey,Model model) {
+    	log.info("targetKey : {}" +targetKey);
+    	model.addAttribute("nobang",targetKey);
+    	return "contract/test";
+    }
+    /*
+    @GetMapping("/consultantConnect.do")
+	public String consultant(String targetKey,Model model) {
+    	log.info("targetKey : {}" +targetKey);
+    	model.addAttribute("nobang",targetKey);
+		return "contract/consultant";
+	}*/
+}

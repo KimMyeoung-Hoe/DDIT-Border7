@@ -1,0 +1,22 @@
+package kr.or.ddit.mapper;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Mapper;
+
+import kr.or.ddit.vo.ContractVO;
+
+@Mapper
+public interface IMainMapper {
+
+	int selectExportCount(); //수출개수
+
+	int selectImportCount(); // 수입개수
+
+	int selectHsCodeCount();// hs코드 개수
+
+	int selectContractCount(); // 최근 7일 등록건수
+
+	List<ContractVO> ccaContractList(int ccaNo);//ccaContract 5개 가져올거임 ㅇㅇ
+
+}

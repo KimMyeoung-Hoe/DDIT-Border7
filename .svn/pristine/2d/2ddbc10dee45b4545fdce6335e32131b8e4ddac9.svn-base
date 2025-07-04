@@ -1,0 +1,650 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.contract.mapper.IContractMapper">
+	
+	<select id="hsCodeSearch" parameterType="hashMap" resultType="kr.or.ddit.vo.HsCodeVO">
+		select
+			HS_CODE
+			, HS_REG_DATE
+			, HS_END_DATE
+			, HS_KR_NAME
+			, HS_EN_NAME
+			, HS_QTY
+			, HS_WEIGHT
+			, HS_EXPORT_NATURE_CODE
+			, HS_IMPORT_NATURE_CODE
+			, HS_NCC
+			, HS_NCC_NAME
+			, HS_TARIFF_RATE_TYPE
+			, HS_TARIFF_RATE
+		from hs_code
+		where 1=1
+			<if test="hsSearchType == '' || hsSearchType == null ">and HS_CODE like '%'||#{hsSearchWord}||'%'</if>
+			<if test="hsSearchType == 'code'">and HS_CODE like #{hsSearchWord}||'%'</if>
+			<if test="hsSearchType == 'krName'">and HS_KR_NAME like '%'||#{hsSearchWord}||'%'</if>
+			order by HS_CODE desc
+	</select>
+	
+	<select id="checkContract" parameterType="int" resultType="kr.or.ddit.vo.ContractVO">
+		SELECT 
+			CONTRACT_NO
+			, CONSIGNOR_NO
+			, CCA_NO
+			, PRODUCT_NO
+			, CI_NO
+			, PL_NO
+			, CONTRACT_TYPE
+			, CONTRACT_DATE
+			, COM_FILE_NO
+			, LAST_STATUS_CODE
+			, CONTRACT_APPROVAL_YN
+			, CONTRACT_RECEPT_DATE
+		FROM USER_TB u
+			LEFT OUTER JOIN CONTRACT c ON (u.USER_NO = c.CONSIGNOR_NO)
+		WHERE u.USER_NO = ${userNo}
+			AND c.LAST_STATUS_CODE IS NULL
+	</select>
+	
+	<insert id="insertProduct" parameterType="kr.or.ddit.vo.ProductVO" useGeneratedKeys="true" >
+		<selectKey keyProperty="productNo" resultType="int" order="BEFORE">
+			SELECT SEQ_PRODUCT_NO.NEXTVAL FROM DUAL
+		</selectKey>
+		insert into	PRODUCT(
+			PRODUCT_NO
+			, CONSIGNOR_NO
+			, HS_CODE
+			, PRODUCT_NAME
+			, PRODUCT_ORIGIN
+			, PRODUCT_QTY
+			, PRODUCT_WEIGHT
+			, PRODUCT_VOLUME
+			, PRODUCT_PRICE
+		)values(
+			#{productNo}
+			, #{consignorNo}
+			, #{hsCode}
+			, #{productName}
+			, #{productOrigin}
+			, #{productQty}
+			, #{productWeight}
+			, #{productVolume}
+			, #{productPrice}
+		)
+	</insert>
+	
+	<insert id="insertContract" parameterType="kr.or.ddit.vo.ContractVO" useGeneratedKeys="false" >
+	    <selectKey keyProperty="contractNo" resultType="string" order="BEFORE">
+	        SELECT
+	            CASE
+	                WHEN #{contractType} = '수출' THEN
+	                    'EXP-' || EXTRACT(YEAR FROM CURRENT_DATE) || '-' ||
+	                    (SELECT
+	                        LPAD( TO_CHAR(COALESCE(MAX(TO_NUMBER(SUBSTR(A.AA, -5))), 0) + 1), 5, '0' )
+	                    FROM
+	                        (SELECT SUBSTR(CONTRACT_NO,-5) as AA
+	                        FROM CONTRACT
+	                        WHERE CONTRACT_NO LIKE 'EXP-'||EXTRACT(YEAR FROM CURRENT_DATE)||'-%') A)
+	                WHEN #{contractType} = '수입' THEN
+	                    'IMP-' || EXTRACT(YEAR FROM CURRENT_DATE) || '-' ||
+	                    (SELECT
+	                        LPAD( TO_CHAR(COALESCE(MAX(TO_NUMBER(SUBSTR(A.AA, -5))), 0) + 1), 5, '0' )
+	                    FROM
+	                        (SELECT SUBSTR(CONTRACT_NO,-5) as AA
+	                        FROM CONTRACT
+	                        WHERE CONTRACT_NO LIKE 'IMP-'||EXTRACT(YEAR FROM CURRENT_DATE)||'-%') A)
+	                ELSE NULL
+	            END AS contractNo
+	        FROM DUAL
+	    </selectKey>
+	    INSERT INTO CONTRACT (
+	        CONTRACT_NO
+	        , CONSIGNOR_NO
+	        , CCA_NO
+	        , PRODUCT_NO
+	        , CI_NO
+	        , PL_NO
+	        , CONTRACT_TYPE
+	        , CONTRACT_DATE
+	        , COM_FILE_NO
+	    ) VALUES (
+	        #{contractNo}
+	        , #{consignorNo}
+	        , #{ccaNo}
+	        , #{productNo}
+	        , #{ciNo}
+	        , #{plNo}
+	        , #{contractType}
+	        , sysdate
+	        , #{comFileNo}
+	    )
+	</insert>
+	
+	<update id="updateProduct" parameterType="kr.or.ddit.vo.ProductVO">
+		UPDATE PRODUCT
+		SET
+			 HS_CODE = #{hsCode}
+		    , PRODUCT_NAME = #{productName}
+		    , PRODUCT_ORIGIN = #{productOrigin}
+		    , PRODUCT_QTY = #{productQty}
+		    , PRODUCT_WEIGHT = #{productWeight}
+		    , PRODUCT_VOLUME = #{productVolume}
+		    , PRODUCT_PRICE = #{productPrice}
+		WHERE
+		    PRODUCT_NO = #{productNo}
+	</update>
+	
+	<update id="updateContract" parameterType="kr.or.ddit.vo.ContractVO">
+	    UPDATE CONTRACT
+	    SET
+	          CONSIGNOR_NO = #{consignorNo}
+	        , CCA_NO = #{ccaNo}
+	        , PRODUCT_NO = #{productNo}
+	        , CI_NO = #{ciNo}
+	        , PL_NO = #{plNo}
+	        , CONTRACT_DATE = #{contractDate}  
+	        , COM_FILE_NO = #{comFileNo}
+	    WHERE
+	        CONTRACT_NO = #{contractNo}
+	</update>
+	
+	<resultMap type="kr.or.ddit.vo.ContractVO" id="ContractMap">
+		<id property="contractNo" column="CONTRACT_NO"/>
+		<result property="consignorNo" column="CONSIGNOR_NO"/>
+		<result property="ccaNo" column="CCA_NO"/>
+		<result property="productNo" column="PRODUCT_NO"/>
+		<result property="ciNo" column="CI_NO"/>
+		<result property="plNo" column="PL_NO"/>
+		<result property="contractType" column="CONTRACT_TYPE"/>
+		<result property="contractDate" column="CONTRACT_DATE"/>
+		<result property="contractReceptDate" column="CONTRACT_RECEPT_DATE"/>
+		<result property="contractApprovalYn" column="CONTRACT_APPROVAL_YN"/>
+		<result property="comFileNo" column="COM_FILE_NO"/>
+		<result property="lastStatusCode" column="LAST_STATUS_CODE"/>
+		<result property="hsTariffRate" column="HS_TARIFF_RATE"/>
+		<result property="ccaName" column="CCA_NAME"/>
+		<association property="productVO" resultMap="productMap"></association>
+		<association property="ciVO" resultMap="ciMap"/>
+		<association property="plVO" resultMap="plMap"/>
+		<association property="consignorVO" resultMap="consignorMap"></association>
+		<association property="ccaVO" resultMap="ccaMap"></association>
+		<association property="declDVO" resultMap="declDMap"></association>
+	</resultMap>
+	
+	<resultMap type="kr.or.ddit.vo.ProductVO" id="productMap">
+		<id property="productNo" column="PRODUCT_NO"/>
+		<result property="consignorNo" column="CONSIGNOR_NO"/>
+		<result property="hsCode" column="HS_CODE"/>
+		<result property="productName" column="PRODUCT_NAME"/>
+		<result property="productOrigin" column="PRODUCT_ORIGIN"/>
+		<result property="productQty" column="PRODUCT_QTY"/>
+		<result property="productWeight" column="PRODUCT_WEIGHT"/>
+		<result property="productVolume" column="PRODUCT_VOLUME"/>
+		<result property="productPrice" column="PRODUCT_PRICE"/>
+	</resultMap>
+	
+	<resultMap type="kr.or.ddit.vo.CIVO" id="ciMap">
+		<id property="ciNo" column="CI_NO"/>
+	    <result property="consignorNo" column="CI_CONSIGNOR_NO"/>
+	    <result property="regDate" column="CI_REG_DATE"/>
+	    <result property="invoice" column="CI_INVOICE"/>
+	    <result property="shipper" column="CI_SHIPPER"/>
+	    <result property="consignee" column="CI_CONSIGNEE"/>
+	    <result property="departureDate" column="CI_DEPARTURE_DATE"/>
+	    <result property="vessel" column="CI_VESSEL"/>
+	    <result property="portFrom" column="CI_PORT_FROM"/>
+	    <result property="portTo" column="CI_PORT_TO"/>
+	    <result property="lcNoAndDate" column="CI_LC_NO_AND_DATE"/>
+	    <result property="buyer" column="CI_BUYER"/>
+	    <result property="otherReferences" column="CI_OTHER_REFERENCES"/>
+	    <result property="tdap" column="CI_TDAP"/>
+	    <result property="shippingMarks" column="CI_SHIPPING_MARKS"/>
+	    <result property="kindOfPackages" column="CI_KIND_OF_PACKAGES"/>
+	    <result property="goodsDescription" column="CI_GOODS_DESCRIPTION"/>
+	    <result property="quantity" column="CI_QUANTITY"/>
+	    <result property="unitprice" column="CI_UNITPRICE"/>
+	    <result property="amount" column="CI_AMOUNT"/>
+	    <result property="signedBy" column="CI_SIGNED_BY"/>
+	</resultMap>
+	
+	<resultMap type="kr.or.ddit.vo.PLVO" id="plMap">
+		<id property="plNo" column="PL_NO"/>
+	    <result property="consignorNo" column="PL_CONSIGNOR_NO"/>
+	    <result property="regDate" column="PL_REG_DATE"/>
+	    <result property="invoice" column="PL_INVOICE"/>
+	    <result property="shipper" column="PL_SHIPPER"/>
+	    <result property="consignee" column="PL_CONSIGNEE"/>
+	    <result property="notifyParty" column="PL_NOTIFY_PARTY"/>
+	    <result property="departureDate" column="PL_DEPARTURE_DATE"/>
+	    <result property="vessel" column="PL_VESSEL"/>
+	    <result property="portFrom" column="PL_PORT_FROM"/>
+	    <result property="portTo" column="PL_PORT_TO"/>
+	    <result property="buyer" column="PL_BUYER"/>
+	    <result property="otherReferences" column="PL_OTHER_REFERENCES"/>
+	    <result property="shippingMarks" column="PL_SHIPPING_MARKS"/>
+	    <result property="kindOfPackages" column="PL_KIND_OF_PACKAGES"/>
+	    <result property="goodsDescription" column="PL_GOODS_DESCRIPTION"/>
+	    <result property="qonw" column="PL_QONW"/>
+	    <result property="grossWeight" column="PL_GROSS_WEIGHT"/>
+	    <result property="measurement" column="PL_MEASUREMENT"/>
+	    <result property="signedBy" column="PL_SIGNED_BY"/>
+	</resultMap>
+	
+	<resultMap type="kr.or.ddit.vo.ConsignorVO" id="consignorMap">
+		<id property="userNo" column="USER_NO"/>
+		<result property="businessNumber" column="BUSINESS_NUMBER"/>
+		<result property="consignorName" column="CONSIGNOR_NAME"/>
+		<result property="consignorPost" column="CONSIGNOR_POST"/>
+		<result property="consignorAddr" column="CONSIGNOR_ADDR"/>
+		<result property="consignorDetAddr" column="CONSIGNOR_DET_ADDR"/>
+		<result property="consignorTel" column="CONSIGNOR_TEL"/>
+		<result property="consignorCustomsCode" column="CONSIGNOR_CUSTOMS_CODE"/>
+		<result property="consignorProfileImg" column="CONSIGNOR_PROFILE_IMG"/>
+	</resultMap>
+
+	<resultMap type="kr.or.ddit.vo.CCAVO" id="ccaMap">
+		<id property="userNo" column="USER_NO"/>
+		<result property="ccaRegistrationNumber" column="CCA_REGISTRATION_NUMBER"/>
+		<result property="ccaName" column="CCA_NAME"/>
+		<result property="ccaPost" column="CCA_POST"/>
+		<result property="ccaAddr" column="CCA_ADDR"/>
+		<result property="ccaDetAddr" column="CCA_DET_ADDR"/>
+		<result property="ccaTel" column="CCA_TEL"/>
+		<result property="ccaProfileImg" column="CCA_PROFILE_IMG"/>
+		<result property="userSanctionScore" column="USER_SANCTION_SCORE"/>
+	</resultMap>
+	
+	<resultMap type="kr.or.ddit.vo.DeclDVO" id="declDMap">
+		<id property="declDNo" column="DECL_D_NO"/>
+		<result property="contractNo" column="CONTRACT_NO"/>
+		<result property="declDDate" column="DECL_D_DATE"/>
+		<result property="customsAuthority" column="CUSTOMS_AUTHORITY"/>
+		<result property="acceptDate" column="ACCEPT_DATE"/>
+		<result property="blNo" column="BL_NO"/>
+		<result property="limitOnBoard" column="LIMIT_ON_BOARD"/>
+		<result property="remarks" column="REMARKS"/>
+		<result property="customsValue" column="CUSTOMS_VALUE"/>
+		<result property="totalCost" column="TOTAL_COST"/>
+		<result property="portFrom" column="PORT_FROM"/>
+		<result property="portTo" column="PORT_TO"/>
+	</resultMap>
+	
+	<select id="selectContract" parameterType="String" resultMap="ContractMap">
+		SELECT
+		    C.CONTRACT_NO
+		    , C.CONSIGNOR_NO
+		    , C.CCA_NO
+		    , C.PRODUCT_NO
+		    , C.CI_NO
+		    , C.PL_NO
+		    , C.CONTRACT_TYPE
+		    , C.CONTRACT_DATE
+		    , C.COM_FILE_NO
+		    , C.LAST_STATUS_CODE
+		    , P.CONSIGNOR_NO
+		    , P.HS_CODE
+		    , P.PRODUCT_NAME
+		    , P.PRODUCT_ORIGIN
+		    , P.PRODUCT_QTY
+		    , P.PRODUCT_WEIGHT
+		    , P.PRODUCT_VOLUME
+		    , P.PRODUCT_PRICE
+		    , CCA.CCA_NAME
+		FROM CONTRACT C 
+			LEFT OUTER JOIN PRODUCT P ON(C.PRODUCT_NO = P.PRODUCT_NO)
+			LEFT OUTER JOIN CCA CCA ON(C.CCA_NO = CCA.USER_NO)
+		WHERE C.CONTRACT_NO = #{contractNo}
+	</select>
+	
+	<select id="declDCehck" parameterType="String" resultType="int">
+		SELECT count(C.CONTRACT_NO)
+		FROM CONTRACT C
+		LEFT JOIN
+		    DECL_D D ON C.CONTRACT_NO = D.CONTRACT_NO
+		WHERE D.CONTRACT_NO = #{contractNo}
+	</select>
+	
+	<select id="selectdecld" parameterType="kr.or.ddit.vo.ContainerVO" resultMap="ContractMap">
+		SELECT
+		      C.CONTRACT_NO
+		    , C.CONSIGNOR_NO
+		    , C.CCA_NO
+		    , C.PRODUCT_NO
+		    , C.CI_NO
+		    , C.PL_NO
+		    , C.CONTRACT_TYPE
+		    , C.CONTRACT_DATE
+		    , C.COM_FILE_NO
+		    , C.LAST_STATUS_CODE
+		    , C.CONTRACT_APPROVAL_YN
+		    , C.CONTRACT_RECEPT_DATE
+		    
+		    , P.PRODUCT_NO
+		    , P.CONSIGNOR_NO
+		    , P.HS_CODE
+		    , P.PRODUCT_NAME
+		    , P.PRODUCT_ORIGIN
+		    , P.PRODUCT_QTY
+		    , P.PRODUCT_WEIGHT
+		    , P.PRODUCT_VOLUME
+		    , P.PRODUCT_PRICE
+		    
+		    , CI.CI_NO
+		    , CI.CONSIGNOR_NO AS CI_CONSIGNOR_NO -- 별칭 추가
+		    , CI.REG_DATE AS CI_REG_DATE
+		    , CI.INVOICE AS CI_INVOICE
+		    , CI.SHIPPER AS CI_SHIPPER
+		    , CI.CONSIGNEE AS CI_CONSIGNEE
+		    , CI.DEPARTURE_DATE AS CI_DEPARTURE_DATE
+		    , CI.VESSEL AS CI_VESSEL
+		    , CI.PORT_FROM AS CI_PORT_FROM
+		    , CI.PORT_TO AS CI_PORT_TO
+		    , CI.LC_NO_AND_DATE AS CI_LC_NO_AND_DATE
+		    , CI.BUYER AS CI_BUYER
+		    , CI.OTHER_REFERENCES AS CI_OTHER_REFERENCES
+		    , CI.TDAP AS CI_TDAP
+		    , CI.SHIPPING_MARKS AS CI_SHIPPING_MARKS
+		    , CI.KIND_OF_PACKAGES AS CI_KIND_OF_PACKAGES
+		    , CI.GOODS_DESCRIPTION AS CI_GOODS_DESCRIPTION
+		    , CI.QUANTITY AS CI_QUANTITY
+		    , CI.UNITPRICE AS CI_UNITPRICE
+		    , CI.AMOUNT AS CI_AMOUNT
+		    , CI.SIGNED_BY AS CI_SIGNED_BY
+		
+		    , PL.PL_NO
+		    , PL.CONSIGNOR_NO AS PL_CONSIGNOR_NO -- 별칭 추가
+		    , PL.REG_DATE AS PL_REG_DATE
+		    , PL.INVOICE AS PL_INVOICE
+		    , PL.SHIPPER AS PL_SHIPPER
+		    , PL.CONSIGNEE AS PL_CONSIGNEE
+		    , PL.NOTIFY_PARTY AS PL_NOTIFY_PARTY
+		    , PL.DEPARTURE_DATE AS PL_DEPARTURE_DATE
+		    , PL.VESSEL AS PL_VESSEL
+		    , PL.PORT_FROM AS PL_PORT_FROM
+		    , PL.PORT_TO AS PL_PORT_TO
+		    , PL.BUYER AS PL_BUYER
+		    , PL.OTHER_REFERENCES AS PL_OTHER_REFERENCES
+		    , PL.SHIPPING_MARKS AS PL_SHIPPING_MARKS
+		    , PL.KIND_OF_PACKAGES AS PL_KIND_OF_PACKAGES
+		    , PL.GOODS_DESCRIPTION AS PL_GOODS_DESCRIPTION
+		    , PL.QONW AS PL_QONW
+		    , PL.GROSS_WEIGHT AS PL_GROSS_WEIGHT
+		    , PL.MEASUREMENT AS PL_MEASUREMENT
+		    , PL.SIGNED_BY AS PL_SIGNED_BY
+		    
+		    , CONS.USER_NO
+		    , CONS.BUSINESS_NUMBER
+		    , CONS.CONSIGNOR_NAME
+		    , CONS.CONSIGNOR_POST
+		    , CONS.CONSIGNOR_ADDR
+		    , CONS.CONSIGNOR_DET_ADDR
+		    , CONS.CONSIGNOR_TEL
+		    , CONS.CONSIGNOR_CUSTOMS_CODE
+		    , CONS.CONSIGNOR_PROFILE_IMG
+		    
+		    , CCA.USER_NO
+		    , CCA.CCA_REGISTRATION_NUMBER
+		    , CCA.CCA_NAME
+		    , CCA.CCA_POST
+		    , CCA.CCA_ADDR
+		    , CCA.CCA_DET_ADDR
+		    , CCA.CCA_TEL
+		    , CCA.CCA_PROFILE_IMG
+		    , CCA.CCA_SANCTION_SCORE
+		    , CCA.CCA_SANCTION_COUNT
+		    , CCA.CCA_DECL_COUNT
+		    
+		    , D_D.DECL_D_NO
+		    , D_D.CONTRACT_NO
+		    , D_D.DECL_D_DATE
+		    , D_D.CUSTOMS_AUTHORITY
+		    , D_D.ACCEPT_DATE
+		    , D_D.BL_NO
+		    , D_D.LIMIT_ON_BOARD
+		    , D_D.REMARKS
+		    , D_D.CUSTOMS_VALUE
+		    , D_D.TOTAL_COST
+		    
+		    , HS.HS_TARIFF_RATE
+		FROM CONTRACT C
+		LEFT OUTER JOIN PRODUCT P ON(C.PRODUCT_NO = P.PRODUCT_NO)
+		LEFT OUTER JOIN CI CI ON(C.CI_NO = CI.CI_NO)
+		LEFT OUTER JOIN PL PL ON(C.PL_NO = PL.PL_NO)
+		LEFT OUTER JOIN CONSIGNOR CONS ON(C.CONSIGNOR_NO = CONS.USER_NO)
+		LEFT OUTER JOIN CCA CCA ON(C.CCA_NO = CCA.USER_NO)
+		LEFT OUTER JOIN DECL_D D_D ON(C.CONTRACT_NO = D_D.CONTRACT_NO)
+		LEFT OUTER JOIN HS_CODE HS ON(P.HS_CODE = HS.HS_CODE)
+		WHERE C.CONTRACT_NO = #{contractNo}
+	</select>
+	
+	<!-- 통관의뢰 계약서 일련번호 넣기 -->
+	<insert id="insertDeclD" parameterType="kr.or.ddit.vo.DeclDVO" useGeneratedKeys="false" >
+		<selectKey keyProperty="declDNo" resultType="string" order="BEFORE">
+			SELECT
+			    CASE
+			        WHEN SUBSTR(#{contractNo},0,3) = 'EXP' THEN
+			            'ED-' || EXTRACT(YEAR FROM CURRENT_DATE) || '-' ||
+			            (SELECT
+			                LPAD( TO_CHAR(COALESCE(MAX(TO_NUMBER(SUBSTR(A.AA, -5))), 0) + 1), 5, '0' )
+			            FROM
+			                (SELECT SUBSTR(DECL_D_NO,-5) as AA
+			                FROM DECL_D
+			                WHERE DECL_D_NO LIKE 'ED-'||EXTRACT(YEAR FROM CURRENT_DATE)||'-%') A)
+			        WHEN SUBSTR(#{contractNo},0,3) = 'IMP' THEN
+			            'ID-' || EXTRACT(YEAR FROM CURRENT_DATE) || '-' ||
+			            (SELECT
+			                LPAD( TO_CHAR(COALESCE(MAX(TO_NUMBER(SUBSTR(A.AA, -5))), 0) + 1), 5, '0' )
+			            FROM
+			                (SELECT SUBSTR(DECL_D_NO,-5) as AA
+			                FROM DECL_D
+			                WHERE DECL_D_NO LIKE 'ID-'||EXTRACT(YEAR FROM CURRENT_DATE)||'-%') A)
+			        ELSE NULL
+			    END AS declDNo
+			FROM DUAL
+		</selectKey>
+			INSERT INTO DECL_D (
+		        DECL_D_NO
+		        , CONTRACT_NO
+		        , DECL_D_DATE
+		        , CUSTOMS_VALUE
+		        , TOTAL_COST
+		        , PORT_FROM
+		        , PORT_TO
+		        
+		    ) VALUES (
+		        #{declDNo}
+		        , #{contractNo}
+		        , sysdate
+		        , #{customsValue}
+		        , #{totalCost}
+		        , #{portFrom}
+		        , #{portTo}
+		    )
+	</insert>
+	
+	<!-- 
+	map{contractNo=asfdf,attachedFileNo=afsdfsd}
+	public void updateContractAttachment(Map<String,Object> map) -->
+	<!-- 통관의뢰의 파일추가하기 -->
+	<update id="updateContractAttachment" parameterType="hashMap">
+		UPDATE CONTRACT
+        	SET COM_FILE_NO = #{attachedFileNo}
+        	, LAST_STATUS_CODE = CASE
+		                WHEN #{statusCode} = 6 THEN 7
+		                WHEN #{statusCode} = 27 THEN 28
+		                ELSE LAST_STATUS_CODE
+		    	END
+        WHERE CONTRACT_NO = #{contractNo}
+	</update>
+	
+	<!-- ci/pl 작성시 통관의뢰의 현재 상태 코드값 가져오기 -->
+	<select id="getStatusCode" resultType="int">
+		SELECT NVL(LAST_STATUS_CODE, 0) AS LAST_STATUS_CODE
+		FROM CONTRACT
+		WHERE CONTRACT_NO = #{contractNo}
+	</select>
+	
+	<!-- 통관의뢰 이력 추가 -->
+	<insert id="insertContractRecord" parameterType="hashMap">
+		INSERT INTO CONTRACT_RECORD (
+			CONTRACT_RECORD_NO
+			, CONTRACT_NO
+			, CONTRACT_STATUS_CODE
+			, CONTRACT_RECORD_REG_DATE
+	    ) VALUES (
+	    	SEQ_CONTRACT_RECORD_NO.NEXTVAL
+	    	, #{contractNo}
+	    	, #{statusCode}
+	    	, sysdate
+	    )
+	</insert>
+	
+	
+	<select id="selectdeclD" parameterType="String" resultType="kr.or.ddit.vo.DeclDVO">
+		SELECT 
+			DECL_D_NO
+			, CONTRACT_NO
+			, DECL_D_DATE
+			, CUSTOMS_AUTHORITY
+			, ACCEPT_DATE
+			, BL_NO
+			, LIMIT_ON_BOARD
+		FROM DECL_D
+		WHERE DECL_D_NO = #{declDNo}
+	</select>
+	
+	<update id="updateDeclD" parameterType="kr.or.ddit.vo.DeclDVO">
+		UPDATE DECL_D
+		<set>
+	        <if test="customsAuthority != null and customsAuthority != ''">
+	            CUSTOMS_AUTHORITY = #{customsAuthority},
+	        </if>
+	        <if test="acceptDate != null">
+	            ACCEPT_DATE = #{acceptDate},
+	        </if>
+	        <if test="blNo != null and blNo != ''">
+	            BL_NO = #{blNo},
+	        </if>
+	        <if test="limitOnBoard != null and limitOnBoard != ''">
+	            LIMIT_ON_BOARD = #{limitOnBoard},
+	        </if>
+	        <if test="remarks != null and remarks != ''">
+	            REMARKS = #{remarks},
+	        </if>
+	    </set>
+		WHERE DECL_D_NO = #{declDNo}
+	</update>
+	
+	<select id="selectDecl" resultType="kr.or.ddit.vo.DeclVO">
+		SELECT 
+			DECL_NO
+			, SERVANT_NO
+			, DECL_RECEPT_DATE
+			, DECL_ANTC_DATE
+			, DECL_REAL_DATE
+			, DECL_YN
+			, DECL_D_NO
+		FROM DECL
+		WHERE DECL_D_NO = #{contractNo}
+	</select>
+	
+	<insert id="insertDecl" parameterType="kr.or.ddit.vo.DeclVO">
+		insert into	DECL(
+		    DECL_NO, DECL_D_NO, SERVANT_NO, DECL_RECEPT_DATE, DECL_ANTC_DATE
+		)values(
+		    DECL_NO_SEQ.NEXTVAL, #{declDNo}, #{servantNo}, sysdate, sysdate + 20
+		)
+	</insert>
+	
+	<update id="updateDecl" parameterType="kr.or.ddit.vo.DeclVO">
+		UPDATE DECL SET
+			DECL_D_NO = #{declDNo}
+			, SERVANT_NO = #{servantNo}
+			, DECL_RECEPT_DATE = SYSDATE
+			, DECL_ANTC_DATE = SYSDATE + 20
+		WHERE
+			DECL_NO = #{declNo}
+	</update>
+	
+	<delete id="contractDel" parameterType="String">
+		DELETE CONTRACT WHERE CONTRACT_NO = #{contractNo}
+	</delete>
+	
+	<resultMap id="texDetailMap" type="kr.or.ddit.vo.TaxVO">
+		<result property="taxNo" column="TAX_NO"/>
+		<result property="declNo" column="DECL_NO"/>
+		<result property="taxAmount" column="TAX_AMOUNT"/>
+		<result property="taxDestDate" column="TAX_DEST_DATE"/>
+	    <result property="taxDeadlineDate" column="TAX_DEADLINE_DATE"/>
+	    <result property="taxYn" column="TAX_YN"/>
+	    <result property="taxRealAmount" column="TAX_REAL_AMOUNT"/>
+	    <result property="taxRealDate" column="TAX_REAL_DATE"/>
+	    
+	    <result property="servantName" column="SERVANT_NAME"/>
+	    <result property="servantTel" column="SERVANT_TEL"/>
+	    <result property="ccaName" column="CCA_NAME"/>
+		<result property="consignorName" column="CONSIGNOR_NAME"/>
+		<result property="businessNumber" column="BUSINESS_NUMBER"/>
+		
+	    <result property="contractNo" column="CONTRACT_NO"/>
+	    <result property="declDNo" column="DECL_D_NO"/>
+	</resultMap>
+	
+	<select id="taxDetail" parameterType="String" resultMap="texDetailMap">
+		/** 세금 정보 구하기 **/
+		SELECT
+		    TAX_NO
+		    , TAX_AMOUNT
+		    , TAX_DEST_DATE
+		    , TAX_DEADLINE_DATE
+		    , TAX_YN
+		    , TAX_REAL_AMOUNT
+		    , TAX_REAL_DATE
+		    , u.USER_NO as "SERVANT_NAME"
+		    , t.DEPT_TEL as "SERVANT_TEL"
+		    , a.cca_name as "CCA_NAME"
+		    , a.CCA_REGISTRATION_NUMBER as "CCA_REGISTRATION_NUMBER"
+		    , g.consignor_name as "CONSIGNOR_NAME"
+		    , g.business_number as "BUSINESS_NUMBER"
+		    , c.contract_no as "CONTRACT_NO"
+		    , d.decl_no as "DECL_NO"
+		FROM TAX t
+		JOIN DECL d ON t.decl_no = d.decl_no
+		JOIN DECL_D dd ON d.decl_d_no = dd.decl_d_no
+		JOIN CONTRACT c ON dd.contract_no = c.contract_no
+		JOIN USER_TB u ON d.servant_no = u.user_no
+		JOIN PUBLIC_SERVANT p ON u.user_no = p.servant_no
+		JOIN DEPT t ON p.dept_code = t.dept_code
+		JOIN CCA a ON c.cca_no = a.user_no
+		JOIN CONSIGNOR g ON c.consignor_no = g.user_no
+		WHERE t.DECL_NO = #{declNo}
+	</select>
+	
+	<update id="updateTax" parameterType="kr.or.ddit.vo.TaxVO">
+		/** 세금 납부여부, 실제납부금액, 납부일시 업데이트 **/
+		UPDATE TAX SET
+			TAX_YN = 1
+			, TAX_REAL_AMOUNT = #{taxRealAmount}
+			, TAX_REAL_DATE = SYSDATE
+		WHERE
+			TAX_NO = #{taxNo}
+	</update>
+	
+	<update id="updateStatusCode" parameterType="kr.or.ddit.vo.TaxVO">
+		/** 관세대리업무 진행코드 업데이트 **/
+		UPDATE CONTRACT SET
+			LAST_STATUS_CODE = 18
+		WHERE
+			CONTRACT_NO = #{contractNo}
+	</update>
+	
+	<insert id="insertContractRecode" parameterType="kr.or.ddit.vo.DeclVO">
+		insert into	CONTRACT_RECORD(
+		    CONTRACT_RECORD_NO
+		    , CONTRACT_NO
+		    , CONTRACT_STATUS_CODE
+		    , CONTRACT_RECORD_REG_DATE
+		)values(
+		    SEQ_CONTRACT_RECORD_NO.NEXTVAL, #{contractNo}, 18, sysdate
+		)
+	</insert>
+</mapper>

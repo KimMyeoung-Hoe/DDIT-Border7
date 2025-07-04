@@ -1,0 +1,155 @@
+package kr.or.ddit.servant.service;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.or.ddit.vo.BwVO;
+import kr.or.ddit.vo.BwhVO;
+import kr.or.ddit.vo.CDVO;
+import kr.or.ddit.vo.DeclVO;
+import kr.or.ddit.vo.HCVO;
+import kr.or.ddit.vo.PaginationInfoVO;
+import kr.or.ddit.vo.SanctionVO;
+import kr.or.ddit.vo.UserVO;
+import kr.or.ddit.vo.WhSetionVO;
+
+public interface IServantService {
+
+//	int selectWorkCount(String token);
+//
+//	List<DeclVO> selectWorkList(PaginationInfoVO<DeclVO> pagingVO, String token);
+
+	// 보세창고 리스트
+	public List<BwhVO> bwhList();
+	public List<BwVO> bwList(int bwhNo);
+	public List<WhSetionVO> whSection(int bwhNo);
+	public List<BwVO> whSectionHistory(int whSectionNo);
+	public int InsertBw(BwVO bw);
+	public int deleteBw(int bwNo);
+	public List<DeclVO> bwAwaitReceive(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public List<BwVO> bwAwaitshipment(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public List<WhSetionVO> AllwhSection();
+	
+	/**
+	 * 통관 신고 업무 상세페이지를 출력하는 서비스입니다.
+	 * @param customsNo
+	 * @return
+	 */
+	public Map<String, Object> customsDetail(Map<String, Object> customsNo);
+	
+	/**
+	 * 조회된 전체 목록 수
+	 * @param pagingVO
+	 * @return
+	 */
+	public int selectCustomsCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+
+	/**
+	 * 
+	 * @param pagingVO
+	 * @return
+	 */
+	public List<Map<String, Object>> selectCustomsList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	
+	
+	/**
+	 * 조회된 전체 목록 수
+	 * @param pagingVO
+	 * @return
+	 */
+	public int selectCustomsAllCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	
+	/**
+	 * 
+	 * @param pagingVO
+	 * @return
+	 */
+	public List<Map<String, Object>> selectCustomsAllList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	
+	/**
+	 * 조회된 전체 목록 수
+	 * @param pagingVO
+	 * @return
+	 */
+	public int selectCustomsHistoryCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	
+	/**
+	 * 
+	 * @param pagingVO
+	 * @return
+	 */
+	public List<Map<String, Object>> selectCustomsHistoryList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public int exaAppro(int status, String declDNo, String contractNo);
+	public int exaReject(String declNo, int status, String contractNo, int servantNo);
+	public int inpAppl(int status, String consignorName, String declNo, String contractNo);
+	public int bwhAppl(int status, String declNo, String contractNo);
+	public int qrnAppl(int status, String declNo, String contractNo, int servantNo);
+	public int txWriteCheck(String declNo);
+	public int txWrite(String contractNo, String declNo, int prodNo, int totalCost, int status);
+	public int cdAppl(int status, String contractNo);
+
+	public List<DeclVO> contractList();
+	
+	public void conRecordIst(Map<String, Object> param);
+	public void conLastStatCodeUpd(Map<String, Object> param);
+	
+	public List<UserVO> userMngList();
+	public UserVO userMngDetail(int userNo);
+	
+	/** 검사검역 */
+	/** 검사검역 목록 전체 개수 조회 (페이징 및 검색용)*/
+	public int selectInspectReviewCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public int selectInspectReviewAllCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	/** 검사검역 목록 조회 (페이징 및 검색용)*/
+	public List<Map<String, Object>> selectInspectReviewList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public List<Map<String, Object>> selectInspectReviewAllList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public Map<String, Object> selectInspectReviewDetail(String declNo);
+	/** 결과 저장 */
+	public int updateInspectResult(HCVO hcVO, List<String> targetDiseases);
+	public List<Map<String, Object>> getDiseaseNamesByCodes(List<String> targetDiseases);
+	public Map<String, Object> getInspectResult(String hcNo);
+	
+	/** 검사검역 이력 */
+	public int selectInspectHistoryCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public List<Map<String, Object>> selectInspectHistoryList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	Map<String, Object> getTaxBill(String declNo);
+	
+	/**신고 필증*/
+	public int insertCD(CDVO cdVO);
+	public int updateEndDecl(String contractNo);
+	
+	/** QRCode 생성 및 저장 */
+	//public String generateSaveQRCodeInspection(Map<String, Object> qrDataMap);
+	public Map<String, String> generateSaveQRCodeInspection(Map<String, Object> qrDataMap);
+	
+	
+	/** 제재이력(제재건별) 전체 COUNT */
+	public int selectSanctionSAllCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	/** 제재이력(제재건별) 전체 목록 조회 */
+	public List<Map<String, Object>> selectSanctionSList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	/** 제재이력(관세사별) 전체 COUNT */
+	public int selectSanctionCAllCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	/** 제재이력 전체 목록 조회 */
+	public List<Map<String, Object>> selectSanctionCList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	/** 제재이력 상세 조회 */
+	public int selectSanctionDetailCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public List<Map<String, Object>> selectSanctionDetail(PaginationInfoVO<Map<String, Object>> pagingVO);
+	
+	/** 이용자계정 관리 */
+	public int selectUserMngCount(PaginationInfoVO<UserVO> pagingVO);
+	public List<UserVO> selectUserMngList(PaginationInfoVO<UserVO> pagingVO);
+	public int userMngUpdate(UserVO userVO, MultipartFile profileImageFile, String uploadPath) throws Exception;
+	
+	public int shipmentTotalRecode(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public int ReceiveTotalRecode(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public List<BwVO> bwAwaiteAll(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public int AllTotalRecode(PaginationInfoVO<Map<String, Object>> pagingVO);
+	
+	/** 공무원 계정 관리 */
+	public int selectServantMngCount(PaginationInfoVO<UserVO> pagingVO);
+	public List<UserVO> selectServantMngList(PaginationInfoVO<UserVO> pagingVO);
+	public UserVO selectServantMngDetail(int userNo);
+	public int updateServantMng(UserVO userVO);
+}

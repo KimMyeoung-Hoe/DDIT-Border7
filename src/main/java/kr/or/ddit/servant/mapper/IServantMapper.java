@@ -1,0 +1,194 @@
+package kr.or.ddit.servant.mapper;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.ibatis.annotations.Mapper;
+
+import kr.or.ddit.vo.BwVO;
+import kr.or.ddit.vo.BwhVO;
+import kr.or.ddit.vo.CCAVO;
+import kr.or.ddit.vo.CDVO;
+import kr.or.ddit.vo.CurrentBwVO;
+import kr.or.ddit.vo.ConsignorVO;
+import kr.or.ddit.vo.DeclVO;
+import kr.or.ddit.vo.HCVO;
+import kr.or.ddit.vo.LogistMngVO;
+import kr.or.ddit.vo.PaginationInfoVO;
+import kr.or.ddit.vo.QrntVO;
+import kr.or.ddit.vo.SanctionVO;
+import kr.or.ddit.vo.TaxVO;
+import kr.or.ddit.vo.UserVO;
+import kr.or.ddit.vo.WhSetionVO;
+
+@Mapper
+public interface IServantMapper {
+
+	public int getUserId(String userId);
+	
+	public List<BwhVO> bwhSectionList();
+	public List<BwVO> bwList(int bwhNo);
+
+	public List<DeclVO> contractList();
+	
+	public List<WhSetionVO> whSection(int bwhNo);
+	public List<BwVO> whSectionHistory(int whSectionNo);
+	
+	public List<DeclVO> selectWorkList (String userId);
+	public int selectWorkCount(String userId);
+	public int customsStatusCode(String declDNo);
+	public String getDeclDToDecl(String declDNo);
+	
+	public Map<String, Object> customsExa(String declNo);
+	public Map<String, Object> customsInp(String declNo);
+	public Map<String, Object> customsBwh(String declNo);
+	public Map<String, Object> customsQrn(String declNo);
+	public Map<String, Object> customsTax(String declNo);
+	
+	public int selectCustomsCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public int selectCustomsAllCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public List<Map<String, Object>> selectCustomsList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public List<Map<String, Object>> selectCustomsAllList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public int selectCustomsHistoryCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public List<Map<String, Object>> selectCustomsHistoryList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public int txWriteCheck(String declNo);
+	
+	public List<BwhVO> bwhList();
+	public List<BwVO> bwAwaitshipment(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public List<WhSetionVO> AllwhSection();
+	public int InsertBw(BwVO bw);
+	public int deleteBw(int bwNo);
+	
+
+	public List<DeclVO> bwAwaitReceive(PaginationInfoVO<Map<String, Object>> pagingVO);
+
+	public void conRecordIst(Map<String, Object> param);
+
+	public void conLastStatCodeUpd(Map<String, Object> param);
+
+	public List<UserVO> userMngList();
+	public UserVO userMngDetail(int userNo);
+
+	/** 검사검역 */
+	public int selectInspectReviewCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public int selectInspectReviewAllCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	
+	public List<Map<String, Object>> selectInspectReviewAllList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public List<Map<String, Object>> selectInspectReviewList(PaginationInfoVO<Map<String, Object>> pagingVO);
+
+	public Map<String, Object> insertExa(String declDNo);
+
+	public int insertContractRecord(Map<String, Object> customsDetailVO);
+
+	public int updateContract(Map<String, Object> customsDetailVO);
+
+	public int selectOneInprName();
+
+	public int insertInpn(Map<String, Object> inpDetailVO);
+
+	public int selectBwhCount(String declNo);
+
+	public int insertQrnAppl(QrntVO qrntVO);
+	
+	public int getTarif(int prodNo);
+
+	public String selectQrntType(String contractNo);
+
+	public int insertHcAppl(QrntVO qrntVO);
+
+	public Map<String, Object> selectInspectReviewDetail(String declNo);
+	
+	// HS코드로 질병 목록 조회
+	public List<Map<String, Object>> selectDiseaseListByHsCode(String hsCode);
+
+	/** 결과페이지 */
+	public int updateHcResult(HCVO hcVO);
+	public int updateQrntResult(HCVO hcVO);
+	public void deleteHcDis(String hcNo);
+	public int insertHcDis(Map<String, Object> params);
+	// 질병이름 보여주기
+	public List<Map<String, Object>> selectDiseaseNamesByCodes(List<String> targetDiseases);
+
+	public Map<String, Object> selectInspectResult(String hcNo);
+	public List<Map<String, Object>> selectDiseaseNamesByHcNo(String hcNo);
+
+	/** 완료(데이터 삽입, 업데이트,  등) */
+	public String selectContractNoByDeclNo(String declNo);
+	public int selectLastStatusCode(String contractNo);
+	public void updateContractStatus(Map<String, Object> contractParams);
+	public void insertContractStatusRecord(Map<String, Object> contractParams);
+
+	public int selectInspectHistoryCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public List<Map<String, Object>> selectInspectHistoryList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	
+	public int insertTax(TaxVO taxVO);
+
+	/** 신고 필증 **/
+	public int insertCD(CDVO cdVO);
+
+	public int updateEndDecl(String contractNo);
+
+	public int exaSanct(SanctionVO sanctionVO);
+	public int exaSanct2(SanctionVO sanctionVO);
+	
+	/** 제재이력(제재건별) 전체 COUNT */
+	public int selectSanctionSAllCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	/** 제재이력(제재건별) 전체 목록 */
+	public List<Map<String, Object>> selectSanctionSList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	/** 제재이력(관세사별) 전체 COUNT */
+	public int selectSanctionCAllCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	/** 제재이력(관세사별) 전체 목록 */
+	public List<Map<String, Object>> selectSanctionCList(PaginationInfoVO<Map<String, Object>> pagingVO);
+	/** 제재이력(관세사별) 상세 */
+	public int selectSanctionDetailCount(PaginationInfoVO<Map<String, Object>> pagingVO);
+	public List<Map<String, Object>> selectSanctionDetail(PaginationInfoVO<Map<String, Object>> pagingVO);
+	/** 사용자 계정 COUNT*/
+	public int selectUserMngCount(PaginationInfoVO<UserVO> pagingVO);
+	/** 사용자 계정 리스트 */
+	public List<UserVO> selectUserMngList(PaginationInfoVO<UserVO> pagingVO);
+
+
+	public int shipmentTotalRecode(PaginationInfoVO<Map<String, Object>> pagingVO);
+
+	public int ReceiveTotalRecode(PaginationInfoVO<Map<String, Object>> pagingVO);
+
+	public List<BwVO> bwAwaiteAll(PaginationInfoVO<Map<String, Object>> pagingVO);
+
+	public int AllTotalRecode(PaginationInfoVO<Map<String, Object>> pagingVO);
+
+	public int selectContractToCCA(String contractNo);
+
+	public int imposeSanctCCA(CCAVO ccavo);
+
+	public int updateRealDate(String declNo);
+	
+	public int qrntServantNo(String declNo);
+
+	/** 사용자 정보 수정 */
+	public UserVO userMngUpdate(int userNo);
+	public int updateUserMng(UserVO userVO);
+	public int updateCcaDetail(CCAVO ccaVO);
+	public int updateConsignorDetail(ConsignorVO consignorVO);
+	public int updateLogistMngDetail(LogistMngVO logistMngVO);
+	public void deleteCcaSpecialty(int userNo);
+	public void insertCcaSpecialty(Map<String, Object> specialtyMap);
+	
+	/** 공무원 계정 관리*/
+	public int selectServantMngCount(PaginationInfoVO<UserVO> pagingVO);
+	public List<UserVO> selectServantMngList(PaginationInfoVO<UserVO> pagingVO);
+	public UserVO selectServantMngDetail(int userNo);
+	public int updateServantMng(UserVO userVO);
+
+	public void BwDpDateUpdate(BwVO updateBwVO);
+
+	public void whSectionUpdate(BwVO updateBwVO);
+
+	public int selectDeclNo(String declDNo);
+
+	public Date selectCDDate(int declNo);
+
+	public String getdeclNo(String declNo);
+
+
+}

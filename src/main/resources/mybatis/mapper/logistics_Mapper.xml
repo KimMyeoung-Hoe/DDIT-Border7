@@ -1,0 +1,1348 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="kr.or.ddit.user.mapper.ILogisticsMapper">
+
+  <resultMap id="whDetailResultMap" type="kr.or.ddit.vo.WhDetailVO">
+    <id property="whDetailNo" column="WH_DETAIL_NO"/>
+    <result property="whLoadingDate" column="WH_LOADING_DATE"/>
+    <result property="whDetailStatusCode" column="WH_DETAIL_STATUS_CODE"/>
+    <result property="stowageNo" column="STOWAGE_NO"/>
+    <result property="whDetailStowageQty" column="WH_DETAIL_STOWAGE_QTY"/>
+    <result property="whNo" column="WH_NO"/>
+
+    <association property="warehouseVO" javaType="kr.or.ddit.vo.WarehouseVO">
+      <id property="whNo" column="WH_NO"/>
+      <result property="whName" column="WH_NAME"/>
+      <result property="logistMngNo" column="LOGIST_MNG_NO"/>
+      <result property="whAddr" column="WH_ADDR"/>
+      <result property="whDetailAddr" column="WH_DETAIL_ADDR"/>
+      <result property="whVolume" column="WH_VOLUME"/>
+      <result property="whType" column="WH_TYPE"/>
+      <result property="whUseYn" column="WH_USE_YN"/>
+    </association>
+
+
+    <association property="productVO" javaType="kr.or.ddit.vo.ProductVO">
+      <id property="productNo" column="PRODUCT_NO"/>
+      <result property="productName" column="PRODUCT_NAME"/>
+      <result property="productQty" column="PRODUCT_QTY"/>
+      <result property="productVolume" column="PRODUCT_VOLUME"/>
+      <result property="productPrice" column="PRODUCT_PRICE"/>      
+    </association>
+    
+    <association property="cdVO" javaType="kr.or.ddit.vo.CDVO">
+    	<id property="cdNo" column="CD_NO" />
+    	<result property="cdDate" column="CD_DATE" />
+    	<result property="cdValidityYn" column="CD_VALIDITY_YN" />
+    </association>
+    
+    <association property="stowageVO" javaType="kr.or.ddit.vo.StowageVO">
+		<id property="stowageNo" column="STOWAGE_NO"/>
+		<result property="stowageDate" column="STOWAGE_DATE"/>
+        <result property="contractNo" column="CONTRACT_NO"/>
+	</association>
+
+    <collection property="comFileDetailList" ofType="kr.or.ddit.vo.ComFileDetailVO">
+      <id property="comFileNo" column="COM_FILE_NO"/>
+      <result property="comFileDetailType" column="COM_FILE_DETAIL_TYPE"/>
+      <result property="comFileDetailOriginalName" column="COM_FILE_DETAIL_ORIGINAL_NAME"/>
+      <result property="comFileDetailSize" column="COM_FILE_DETAIL_SIZE"/>
+      <result property="comFileDetailSavePath" column="COM_FILE_DETAIL_SAVE_PATH"/>
+      <result property="comFileDetailSaveName" column="COM_FILE_DETAIL_SAVE_NAME"/>
+    </collection>
+  </resultMap>
+    
+    
+	<select id="containerListAll" resultType="kr.or.ddit.vo.ContainerVO">
+  		select 
+  			   CONTAINER_NO
+  		     , CONTAINER_NAME
+  		     , CONTAINER_LOCATION
+  		     , SZTP_CODE
+  		     , HAZARD_DAMAGE_INFO
+  		     , CONTAINER_PRICE
+  		     , CONTAINER_SIZE
+  		     , CONTAINER_TYPE
+  		     , CONTAINER_USE_YN		  
+  		     , LOGIST_MNG_NO		 
+  	      from 
+  	      	CONTAINER 
+  	</select>
+	
+  	<select id="containerList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="kr.or.ddit.vo.ContainerVO">
+  		
+  		select
+  			*
+  		  from(	
+	  		select 
+	  			ROWNUM RN
+	  		   ,TB.*
+	  		  from(
+		  		select 
+		  		
+		  			   CONTAINER_NO
+		  		     , CONTAINER_NAME
+		  		     , CONTAINER_LOCATION
+		  		     , SZTP_CODE
+		  		     , HAZARD_DAMAGE_INFO
+		  		     , CONTAINER_PRICE
+		  		     , CONTAINER_SIZE
+		  		     , CONTAINER_TYPE
+		  		     , CONTAINER_USE_YN		  
+		  		     , LOGIST_MNG_NO		     
+		  		   
+		  	      from 
+		  	      	CONTAINER 
+		  	     where 
+		  	     	LOGIST_MNG_NO = #{userNo}
+		  	     	<if test="searchWord != null and searchWord != ''">
+		  		 		AND ${searchType} LIKE '%' || #{searchWord} || '%'
+		  		 	</if>
+		  	     order by
+		 	     	<choose>
+		  				<when test="sortColumn != null and sortColumn != ''">
+		  					${sortColumn}
+		  				</when>
+		  				<otherwise>
+		  					CONTAINER_NO
+		  				</otherwise>
+		  			</choose>
+	  	     	)TB )
+	  	  WHERE RN BETWEEN #{startRow} AND #{endRow}
+	  	      
+  	</select>
+  	
+  	<select id="getContainerCount" resultType="int" parameterType="kr.or.ddit.vo.PaginationInfoVO">
+		select 
+  			count(*)
+  	      from 
+  	      	CONTAINER 
+  	     where 
+  	     	LOGIST_MNG_NO = #{userNo}
+  	     	<if test="searchWord != null and searchWord != ''">
+		  		AND ${searchType} LIKE '%' || #{searchWord} || '%'
+		  	</if>
+  	</select>
+  	
+	<select id="warehouseBasicInfo" parameterType="int" resultType="kr.or.ddit.vo.WarehouseVO">
+		select 
+  			 WH_NO
+		    ,WH_NAME
+			,WH_REG_DATE
+			,WH_POST
+			,WH_ADDR
+			,WH_DETAIL_ADDR
+			,WH_TYPE
+			,WH_VOLUME
+			,WH_USE_YN
+			,WH_PRICE
+  		  from 
+  		  	WH
+  		 where 
+  		 	WH_NO = #{whNo}
+	</select>  	
+  	
+  	<select id="warehouseList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="WarehouseVO">
+  		select
+  			*
+  		  from(	
+	  		select 
+	  			ROWNUM RN
+	  		   ,TB.*
+	  		  from( 
+		  		select 
+		  			 a.WH_NO
+				    ,a.WH_NAME
+					,a.WH_REG_DATE
+					,a.WH_POST
+					,a.WH_ADDR
+					,a.WH_DETAIL_ADDR
+					,a.WH_TYPE
+					,a.WH_VOLUME
+					,a.CLOSURE_YN
+					,a.WH_USE_YN
+					,a.WH_PRICE
+		  		  from 
+		  		  	WH a
+		  		  join
+		  		  	USER_TB b on b.USER_NO = a.LOGIST_MNG_NO 
+		  		 where 
+		  		 	b.USER_ID = #{userId}
+				   and
+				   	a.CLOSURE_YN = 0
+				   	<if test="searchWord != null and searchWord != ''">
+		  		 		AND ${searchType} LIKE '%' || #{searchWord} || '%'
+		  		 	</if>
+				 order by
+				 	<choose>
+		  				<when test="sortColumn != null and sortColumn != ''">
+		  					${sortColumn}
+		  				</when>
+		  				<otherwise>
+		  					a.WH_REG_DATE DESC
+		  				</otherwise>
+		  			</choose>
+			  	) TB )
+		  	WHERE RN BETWEEN #{startRow} AND #{endRow}
+		  		 	
+  	</select>
+  	
+  	<select id="getWhCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+  		select 
+  			count(*)
+  		  from 
+  		  	WH a
+  		  join
+  		  	USER_TB b on b.USER_NO = a.LOGIST_MNG_NO 
+  		 where 
+  		 	b.USER_ID = #{userId}
+		   and
+		   	a.CLOSURE_YN = 0
+		   	<if test="searchWord != null and searchWord != ''">
+  		 		AND ${searchType} LIKE '%' || #{searchWord} || '%'
+  		 	</if>
+  	</select>
+  	
+  	<insert id="registWh" parameterType="kr.or.ddit.vo.WarehouseVO">
+  		insert into 
+  			WH(
+			 WH_NO
+	    	,WH_NAME
+			,WH_REG_DATE
+			,WH_POST
+			,WH_ADDR
+			,WH_DETAIL_ADDR
+			,WH_TYPE
+			,WH_VOLUME
+			,WH_PRICE
+			,LOGIST_MNG_NO
+  		)values(
+			SEQ_WH_NO.NEXTVAL
+		   ,#{whName}
+		   ,sysdate
+		   ,#{whPost}
+		   ,#{whAddr}
+		   ,#{whDetailAddr}
+		   ,#{whType}
+		   ,#{whVolume}
+		   ,#{whPrice}
+		   ,#{logistMngNo}
+  		)	
+  	</insert>
+  	
+  	<select id="warehouseListAll" parameterType="WarehouseVO">
+  		select *
+  		  from WH
+  	</select>
+  	
+  	<select id="warehouseDetail" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultMap="whDetailResultMap">
+  		SELECT 
+  			 * 
+  		  FROM (
+  		  	SELECT 
+  		  		ROWNUM RN 
+  		  	   ,I.* 
+  		  	from(
+		  		SELECT
+		  			 a.WH_LOADING_DATE
+		  			,a.WH_DETAIL_STATUS_CODE
+		  			,a.WH_DETAIL_NO
+		  			,a.STOWAGE_NO
+		  			,a.WH_DETAIL_STOWAGE_QTY
+		  			,a.WH_NO
+		  			
+		  			,b.LOGIST_MNG_NO
+		  			,b.WH_NAME
+		  			,b.WH_ADDR
+		  			,b.WH_DETAIL_ADDR
+		  			,b.WH_TYPE
+		  			,b.WH_VOLUME
+		  			,b.WH_USE_YN
+		  			
+		  			,d.STOWAGE_DATE
+		  			,d.CONTRACT_NO
+		  			
+		  			,f.PRODUCT_NO 
+		  			,f.PRODUCT_NAME 
+		  			,f.PRODUCT_QTY
+		  			,f.PRODUCT_VOLUME
+		  			,f.PRODUCT_PRICE
+		  			
+		  			,h.COM_FILE_NO
+		  			,h.COM_FILE_DETAIL_TYPE
+		  			,h.COM_FILE_DETAIL_ORIGINAL_NAME
+		  			,h.COM_FILE_DETAIL_SIZE
+		  			,h.COM_FILE_DETAIL_SAVE_PATH
+		  			,h.COM_FILE_DETAIL_SAVE_NAME
+		  			
+		  			,l.CD_NO
+		  			,l.CD_DATE
+		  			,l.CD_VALIDITY_YN
+		  		  FROM 
+		  		  	WH_DETAIL a
+		  		  JOIN
+		  		  	WH b ON a.WH_NO = b.WH_NO
+		  		  JOIN
+		  		  	STOWAGE d ON a.STOWAGE_NO = d.STOWAGE_NO
+		  		  LEFT JOIN
+		  		  	CONTRACT e ON d.CONTRACT_NO = e.CONTRACT_NO
+		  		  LEFT JOIN
+		  		  	PRODUCT f ON e.PRODUCT_NO = f.PRODUCT_NO
+		  		  LEFT JOIN
+		  		  	COM_FILE g ON e.COM_FILE_NO = g.COM_FILE_NO
+		  		  LEFT JOIN
+		  		    COM_FILE_DETAIL h ON g.COM_FILE_NO = h.COM_FILE_NO			
+		  		  LEFT JOIN
+		  		  	DECL_D j ON e.CONTRACT_NO = j.CONTRACT_NO
+		  		  LEFT JOIN
+		  		  	DECL k ON j.DECL_D_NO = k.DECL_D_NO
+		  		  LEFT JOIN
+		  		  	CD l ON k.DECL_NO = l.DECL_NO		  		
+		  		 WHERE 
+		  		 	a.WH_NO = #{whNo} 
+		  		 	<if test="searchWord != null and searchWord != ''">
+		  		 		AND ${searchType} LIKE '%' || #{searchWord} || '%'
+		  		 	</if>
+		  		 ORDER BY 
+		  			<choose>
+		  				<when test="sortColumn != null and sortColumn != ''">
+		  					${sortColumn}
+		  				</when>
+		  				<otherwise>
+		  					a.WH_LOADING_DATE DESC
+		  				</otherwise>
+		  			</choose>	
+		  		 ) I )   
+	  		WHERE RN BETWEEN #{startRow} AND #{endRow}
+  	</select>
+  	
+  	<select id="getWhDetailCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+  		SELECT COUNT(*)
+  		  FROM 
+  		  	WH_DETAIL a
+  		  JOIN
+  		  	WH b ON a.WH_NO = b.WH_NO
+  		  LEFT JOIN
+  		  	STOWAGE d ON a.STOWAGE_NO = d.STOWAGE_NO
+  		  LEFT JOIN
+  		  	CONTRACT e ON d.CONTRACT_NO = e.CONTRACT_NO
+  		  LEFT JOIN
+  		  	PRODUCT f ON e.PRODUCT_NO = f.PRODUCT_NO
+  		  LEFT JOIN
+  		  	COM_FILE g ON e.COM_FILE_NO = g.COM_FILE_NO
+  		  LEFT JOIN
+  		    COM_FILE_DETAIL h ON g.COM_FILE_NO = h.COM_FILE_NO
+  		  LEFT JOIN
+  		  	DECL_D j ON e.CONTRACT_NO = j.CONTRACT_NO
+  		  LEFT JOIN
+  		  	DECL k ON j.DECL_D_NO = k.DECL_D_NO
+  		  LEFT JOIN
+  		  	CD l ON k.DECL_NO = l.DECL_NO	  					
+  		 WHERE 
+  		 	a.WH_NO = #{whNo}
+  		 	<if test="searchWord != null and searchWord != ''">
+  		 		AND ${searchType} LIKE '%' || #{searchWord} || '%'
+  		 	</if>
+  	</select>
+  	
+	<update id="updateWhDetailStatus" parameterType="kr.or.ddit.vo.WhDetailVO" statementType="CALLABLE">
+	    {CALL UPDATE_WH_DETAIL_STATUS(
+	        #{whDetailNo, jdbcType=NUMERIC, mode=IN},
+	        #{whDetailStatusCode, jdbcType=VARCHAR, mode=IN},
+	        #{carrier, jdbcType=VARCHAR, mode=IN},
+	        #{result, jdbcType=NUMERIC, mode=OUT}
+	    )}
+	</update>
+
+  	
+    <update id="updateWhDetail" parameterType="kr.or.ddit.vo.WhDetailVO">
+  		update 
+  			WH_DETAIL
+  		   set 
+  		   	WH_DETAIL_STATUS_CODE = #{whDetailStatusCode}
+  		   ,WH_LOADING_DATE = 
+            CASE
+            	WHEN #{whDetailStatusCode} = '입고완료' THEN SYSDATE
+            	ELSE WH_LOADING_DATE
+            END
+            	
+  		 where
+  		 	WH_DETAIL_NO = #{whDetailNo}
+  	</update>
+
+  	<update id="updateWh" parameterType="kr.or.ddit.vo.WarehouseVO">
+  		update
+  			WH
+  		   set
+  		   	WH_NAME = #{whName}
+  		   ,WH_TYPE	= #{whType}
+  		   ,WH_VOLUME = #{whVolume}
+  		   ,WH_USE_YN = #{whUseYn}
+  		   ,WH_PRICE = #{whPrice}
+  		 where
+  		 	WH_NO = #{whNo}
+  	</update>
+  	
+  	<update id="deleteWh" parameterType="kr.or.ddit.vo.WarehouseVO">
+  		update
+  			WH
+  		   set
+  		   	CLOSURE_YN = #{closureYn}
+  		 where
+  		 	WH_NO = #{whNo}	
+  	</update>
+  	
+  	<resultMap id="shipScheduleResultMap" type="kr.or.ddit.vo.ShipScheduleVO">
+	    <id property="shipScheduleNo" column="SHIP_SCHEDULE_NO"/>
+	    <result property="portFrom" column="PORT_FROM"/>
+	    <result property="portTo" column="PORT_TO"/>
+	    <result property="shipScheduleDeparture" column="SHIP_SCHEDULE_DEPARTURE"/>
+	    <result property="shipScheduleArrival" column="SHIP_SCHEDULE_ARRIVAL"/>
+	    <result property="portFromName" column="PORT_FROM_NAME"/>
+	    <result property="portToName" column="PORT_TO_NAME"/>
+	    
+	    <association property="shipsVO" javaType="kr.or.ddit.vo.ShipsVO">
+	    	<id property="shipNo" column="SHIP_NO" />
+		    <result property="shipName" column="SHIP_NAME"/>
+		    <result property="shipType" column="SHIP_TYPE"/>
+		    <result property="shipGt" column="SHIP_GT"/>
+		    <result property="shipImg" column="SHIP_IMG"/>
+		    <result property="ship3DImg" column="SHIP_3D_IMG"/>
+		    <result property="shipCallname" column="SHIP_CALLNAME"/>
+		</association>
+	</resultMap>
+  	
+  	<select id="selectShipSheduleList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultMap="shipScheduleResultMap">
+  	select
+  			*
+  		  from(
+	  		select
+	  			ROWNUM RN
+	  		   ,TB.*
+	  		  from( 	
+		  		select
+		  		    a.PORT_FROM
+		  		   ,a.PORT_TO
+		  		   ,a.SHIP_SCHEDULE_DEPARTURE
+		  		   ,a.SHIP_SCHEDULE_ARRIVAL
+		  		   ,a.SHIP_SCHEDULE_NO
+		  		   
+		  		   ,b.SHIP_NO
+		  		   ,b.SHIP_NAME
+		  		   ,b.SHIP_TYPE
+		  		   ,b.SHIP_GT
+		  		   ,b.SHIP_IMG
+		  		   ,b.SHIP_3D_IMG
+		  		   ,b.SHIP_CALLNAME
+		  		   
+		  		   ,pf.PORT_NAME AS PORT_FROM_NAME
+		  		   ,pt.PORT_NAME AS PORT_TO_NAME
+		  		   
+		  		  from
+		  		 	SHIP_SCHEDULE a  		  	 
+		  		  join
+		  		  	SHIPS b ON a.SHIP_NO = b.SHIP_NO
+		  		  join
+		  		    PORT pf ON a.PORT_FROM	= pf.PORT_NO
+		  		  join
+		  		  	PORT pt ON a.PORT_TO = pt.PORT_NO 
+		  		 where
+		  		 	a.SHIP_AVAILABLE_YN = 1
+		  		 	<if test="searchType != null and searchType != '' and searchWord != null and searchWord != ''">
+					    AND ${searchType} LIKE '%' || #{searchWord} || '%'
+					</if>
+  		 		 order by
+		  			<choose>
+		  				<when test="sortColumn != null and sortColumn != ''">
+		  					${sortColumn}
+		  				</when>
+		  				<otherwise>
+		  					a.SHIP_SCHEDULE_DEPARTURE
+		  				</otherwise>
+		  			</choose>	
+		  		 ) TB )   
+	  		WHERE RN BETWEEN #{startRow} AND #{endRow}
+  	
+  	</select>
+  	
+  	
+  	<select id="selectShipList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultMap="shipScheduleResultMap">
+  		select
+  			*
+  		  from(
+	  		select
+	  			ROWNUM RN
+	  		   ,TB.*
+	  		  from( 	
+		  		select
+		  		    a.PORT_FROM
+		  		   ,a.PORT_TO
+		  		   ,a.SHIP_SCHEDULE_DEPARTURE
+		  		   ,a.SHIP_SCHEDULE_ARRIVAL
+		  		   ,a.SHIP_SCHEDULE_NO
+		  		   
+		  		   ,b.SHIP_NO
+		  		   ,b.SHIP_NAME
+		  		   ,b.SHIP_TYPE
+		  		   ,b.SHIP_GT
+		  		   ,b.SHIP_IMG
+		  		   ,b.SHIP_3D_IMG
+		  		   ,b.SHIP_CALLNAME
+		  		   
+		  		   ,pf.PORT_NAME AS PORT_FROM_NAME
+		  		   ,pt.PORT_NAME AS PORT_TO_NAME
+		  		   
+		  		  from
+		  		 	SHIP_SCHEDULE a  		  	 
+		  		  join
+		  		  	SHIPS b ON a.SHIP_NO = b.SHIP_NO
+		  		  join
+		  		    PORT pf ON a.PORT_FROM	= pf.PORT_NO
+		  		  join
+		  		  	PORT pt ON a.PORT_TO = pt.PORT_NO 
+		  		 where
+		  		 	a.SHIP_AVAILABLE_YN = 1
+		  		 	<if test="searchType != null and searchType != '' and searchWord != null and searchWord != ''">
+					    AND ${searchType} LIKE '%' || #{searchWord} || '%'
+					</if>
+  		 		 order by
+		  			<choose>
+		  				<when test="sortColumn != null and sortColumn != ''">
+		  					${sortColumn}
+		  				</when>
+		  				<otherwise>
+		  					a.SHIP_SCHEDULE_DEPARTURE
+		  				</otherwise>
+		  			</choose>	
+		  		 ) TB )   
+	  		WHERE RN BETWEEN #{startRow} AND #{endRow}
+  	</select>
+  	
+  	<select id="selectShipCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+  		select
+	  		count(*)
+	  		  from
+	  		 	SHIP_SCHEDULE a  		  	 
+	  		  join
+	  		  	SHIPS b ON a.SHIP_NO = b.SHIP_NO
+	  		  join
+	  		    PORT pf ON a.PORT_FROM	= pf.PORT_NO
+	  		  join
+	  		  	PORT pt ON a.PORT_TO = pt.PORT_NO 
+	  		 where
+	  		 	a.SHIP_AVAILABLE_YN = 1
+	  		 	<if test="searchType != null and searchType != '' and searchWord != null and searchWord != ''">
+				    AND ${searchType} LIKE '%' || #{searchWord} || '%'
+				</if>
+
+  	</select>
+  	
+  	<insert id="registContainer" parameterType="kr.or.ddit.vo.ContainerVO" >
+  		insert into 
+  			CONTAINER(
+  				CONTAINER_NO
+  			   ,CONTAINER_NAME
+  			   ,CONTAINER_LOCATION
+  			   ,SZTP_CODE
+  			   ,CONTAINER_SIZE
+  			   ,CONTAINER_TYPE
+  			   ,CONTAINER_PRICE
+  			   ,CONTAINER_USE_YN
+  			   ,LOGIST_MNG_NO
+  			   	 
+       )values(
+  		  		SEQ_CONTAINER_NO.NEXTVAL
+  		  	   ,#{containerName}
+  		  	   ,#{containerLocation}
+  		  	   ,#{sztpCode}
+  		  	   ,#{containerSize}
+  		  	   ,#{containerType}
+  		  	   ,#{containerPrice}
+  		  	   ,#{containerUseYn}
+  		  	   ,#{logistMngNo}
+  	   )		
+  	
+  	</insert>
+  	
+	<resultMap id="containerDetailResultMap" type="kr.or.ddit.vo.ContainerDetailVO">
+        <id property="containerDetailNo"      column="CONTAINER_DETAIL_NO"/>
+        <result property="shipScheduleNo"     column="SHIP_SCHEDULE_NO"/>
+        <result property="stowageNo"          column="STOWAGE_NO"/>
+        <result property="containerNo"        column="CONTAINER_NO"/>
+        <result property="containerLoadingDate" column="CONTAINER_LOADING_DATE"/>
+        <result property="containerDetailStatusCode" column="CONTAINER_DETAIL_STATUS_CODE"/>
+        <result property="containerReleaseDate" column="CONTAINER_RELEASE_DATE"/>
+        <result property="containerDetailStowageQty"      column="CONTAINER_DETAIL_STOWAGE_QTY"/>
+        <result property="exportCarrier"      column="EXPORT_CARRIER"/>
+        <result property="portFromName" column="PORT_FROM_NAME"/>
+		<result property="portToName" column="PORT_TO_NAME"/>
+        
+
+        <association property="productVO" javaType="kr.or.ddit.vo.ProductVO">
+            <id property="productNo" column="PRODUCT_NO"/>
+            <result property="productName"  column="PRODUCT_NAME"/>
+            <result property="productQty"   column="PRODUCT_QTY"/>
+            <result property="productWeight"   column="PRODUCT_WEIGHT"/>
+            <result property="productVolume" column="PRODUCT_VOLUME"/>
+            <result property="productPrice" column="PRODUCT_PRICE"/>
+            </association>
+
+        <association property="stowageVO" javaType="kr.or.ddit.vo.StowageVO">
+            <id property="stowageNo" column="STOWAGE_NO"/>
+            <result property="stowageDate" column="STOWAGE_DATE"/>
+            <result property="contractNo" column="CONTRACT_NO"/>
+            </association>
+
+        <association property="shipsVO" javaType="kr.or.ddit.vo.ShipsVO">
+            <id property="shipNo" column="SHIP_NO"/>
+            <result property="shipLon" column="SHIP_LON"/>
+            <result property="shipLat" column="SHIP_LAT"/>
+            <result property="shipId" column="SHIP_ID"/>
+            <result property="shipName" column="SHIP_NAME"/>
+            <result property="shipImg" column="SHIP_IMG"/>
+            <result property="ship3dImg" column="SHIP_3D_IMG"/>
+            <result property="shipType" column="SHIP_TYPE"/>
+            <result property="shipGt" column="SHIP_GT"/>
+            <result property="nationNo" column="NATION_NO"/>
+            <result property="shipYn" column="SHIP_YN" jdbcType="INTEGER"/>
+            </association>
+
+        <association property="shipScheduleVO" javaType="kr.or.ddit.vo.ShipScheduleVO">
+            <id property="shipScheduleNo" column="SHIP_SCHEDULE_NO"/>
+            <result property="portFrom" column="PORT_FROM"/>
+            <result property="portTo" column="PORT_TO"/>
+            <result property="shipScheduleDeparture" column="SHIP_SCHEDULE_DEPARTURE"/>
+            <result property="shipScheduleArrival" column="SHIP_SCHEDULE_ARRIVAL"/>
+            <result property="shipAvailableYn" column="SHIP_AVAILABLE_YN" jdbcType="INTEGER"/>
+            </association>
+
+    </resultMap>
+  	
+  	<select id="containerDetail" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultMap="containerDetailResultMap">
+  		select
+  			*
+  		  from(
+  		  	select 
+  		  		ROWNUM RN
+  		  		,I.*
+			  from(	
+		  		select
+		  			 a.CONTAINER_DETAIL_NO
+		  			,a.SHIP_SCHEDULE_NO
+		  			,a.STOWAGE_NO
+		            ,a.CONTAINER_NO
+		            ,a.CONTAINER_LOADING_DATE
+		            ,a.CONTAINER_DETAIL_STATUS_CODE
+		            ,a.CONTAINER_DETAIL_STOWAGE_QTY
+		            ,pf.PORT_NAME AS PORT_FROM_NAME
+					,pt.PORT_NAME AS PORT_TO_NAME
+		            
+		            
+		            
+		            ,b.PORT_FROM 
+		            ,b.PORT_TO
+		            ,b.SHIP_SCHEDULE_DEPARTURE
+		            ,b.SHIP_SCHEDULE_ARRIVAL
+		            ,b.SHIP_AVAILABLE_YN 
+		            
+		            ,c.SHIP_ID
+		            ,c.SHIP_LON
+		            ,c.SHIP_LAT
+		            ,c.SHIP_NAME 
+		            ,c.SHIP_IMG
+		            ,c.SHIP_3D_IMG 
+		            ,c.SHIP_TYPE
+		            ,c.SHIP_GT
+		            ,c.SHIP_YN
+		            
+		            ,d.STOWAGE_DATE
+		            ,d.CONTRACT_NO         
+
+		            ,f.PRODUCT_NAME
+		            ,f.PRODUCT_QTY
+		            ,f.PRODUCT_VOLUME
+		            ,f.PRODUCT_PRICE
+		            ,f.PRODUCT_WEIGHT
+		            
+		  		    ,i.CD_VALIDITY_YN	
+		  		  from
+		  			CONTAINER_DETAIL a
+		  		  LEFT JOIN
+		  			SHIP_SCHEDULE b ON b.SHIP_SCHEDULE_NO = a.SHIP_SCHEDULE_NO
+		  		  LEFT JOIN
+		  		  	PORT pf ON pf.PORT_NO = b.PORT_FROM
+		  		  LEFT JOIN
+		  		  	PORT pt ON pt.PORT_NO = b.PORT_TO
+		  		  LEFT JOIN
+		  		  	SHIPS c ON c.SHIP_NO = b.SHIP_NO
+		  		  LEFT JOIN
+		  		  	STOWAGE d ON a.STOWAGE_NO = d.STOWAGE_NO
+		  		  LEFT JOIN
+		  		  	CONTRACT e ON e.CONTRACT_NO = d.CONTRACT_NO
+		  		  LEFT JOIN
+		  		  	PRODUCT f ON f.PRODUCT_NO = e.PRODUCT_NO
+		  		  LEFT JOIN
+		  		    DECL_D g ON g.CONTRACT_NO = e.CONTRACT_NO
+		  		  LEFT JOIN
+		  		  	DECL h ON h.DECL_D_NO = g.DECL_D_NO
+		  		  LEFT JOIN
+		  		  	CD i ON i.DECL_NO = h.DECL_NO
+		  		  where
+		  		  	a.CONTAINER_NO = #{containerNo}
+		  		  		<if test="searchWord != null and searchWord != ''">
+		  		 		AND ${searchType} LIKE '%' || #{searchWord} || '%'
+		  		 	</if>
+		  		 ORDER BY 
+		  			<choose>
+		  				<when test="sortColumn != null and sortColumn != ''">
+		  					${sortColumn}
+		  				</when>
+		  				<otherwise>
+		  					a.CONTAINER_DETAIL_NO DESC
+		  				</otherwise>
+		  			</choose>	
+        		) I )  
+    WHERE RN BETWEEN #{startRow} AND #{endRow}	 		 			 				 	
+  	</select>
+  	
+  	<select	id="getContainerDetailCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+  		select
+  			count(*)
+  		  from
+  			CONTAINER_DETAIL a
+  		  LEFT JOIN
+  			SHIP_SCHEDULE b ON b.SHIP_SCHEDULE_NO = a.SHIP_SCHEDULE_NO
+  		  LEFT JOIN
+  		  	PORT pf ON pf.PORT_NO = b.PORT_FROM
+  		  LEFT JOIN
+  		  	PORT pt ON pt.PORT_NO = b.PORT_TO
+  		  LEFT JOIN
+  		  	SHIPS c ON c.SHIP_NO = b.SHIP_NO
+  		  LEFT JOIN
+  		  	STOWAGE d ON a.STOWAGE_NO = d.STOWAGE_NO
+  		  LEFT JOIN
+  		  	CONTRACT e ON e.CONTRACT_NO = d.CONTRACT_NO
+  		  LEFT JOIN
+  		  	PRODUCT f ON f.PRODUCT_NO = e.PRODUCT_NO
+  		  LEFT JOIN
+  		    DECL_D g ON g.CONTRACT_NO = e.CONTRACT_NO
+  		  LEFT JOIN
+  		  	DECL h ON h.DECL_D_NO = g.DECL_D_NO
+  		  LEFT JOIN
+  		  	CD i ON i.DECL_NO = h.DECL_NO
+  		 where
+  		  	a.CONTAINER_NO = #{containerNo}
+  		  	<if test="searchWord != null and searchWord != ''">
+  		 		AND ${searchType} LIKE '%' || #{searchWord} || '%'
+  		 	</if>
+  	</select>
+  	
+  	 <resultMap id="stowageResultMap" type="kr.or.ddit.vo.StowageVO">
+        <id property="stowageNo" column="STOWAGE_NO"/>
+        <result property="contractNo" column="CONTRACT_NO"/>
+        <result property="stowageType" column="STOWAGE_TYPE"/>
+        <result property="stowageDate" column="STOWAGE_DATE"/>
+        <result property="stowageStatusCode" column="STOWAGE_STATUS_CODE"/>
+        <result property="cdValidityYn" column="CD_VALIDITY_YN"/>
+
+        <association property="shipScheduleVO" javaType="kr.or.ddit.vo.ShipScheduleVO">
+            <result property="shipScheduleNo" column="SHIP_SCHEDULE_NO"/>
+            <result property="portFrom" column="PORT_FROM"/>
+            <result property="portTo" column="PORT_TO"/>
+            <result property="shipScheduleDeparture" column="SHIP_SCHEDULE_DEPARTURE"/>
+            <result property="shipScheduleArrival" column="SHIP_SCHEDULE_ARRIVAL"/>
+            <result property="shipAvailableYn" column="SHIP_AVAILABLE_YN" jdbcType="INTEGER"/>
+            <result property="shipNo" column="SHIP_NO"/>
+        </association>
+
+        <association property="shipsVO" javaType="kr.or.ddit.vo.ShipsVO">
+            <result property="shipNo" column="SHIP_NO"/>
+            <result property="shipName" column="SHIP_NAME"/>
+            <result property="shipImg" column="SHIP_IMG"/>
+            <result property="ship3dImg" column="SHIP_3D_IMG"/>
+            <result property="shipType" column="SHIP_TYPE"/>
+            <result property="shipGt" column="SHIP_GT"/>
+            <result property="nationNo" column="NATION_NO"/>
+            <result property="shipId" column="SHIP_ID"/>
+            <result property="shipYn" column="SHIP_YN" jdbcType="INTEGER"/>
+            <result property="shipLat" column="SHIP_LAT"/>
+            <result property="shipLon" column="SHIP_LON"/>
+        </association>
+
+        <association property="productVO" javaType="kr.or.ddit.vo.ProductVO">
+            <result property="productNo" column="PRODUCT_NO"/>
+            <result property="productName" column="PRODUCT_NAME"/>
+            <result property="productQty" column="PRODUCT_QTY"/>
+            <result property="productVolume" column="PRODUCT_VOLUME"/>
+            <result property="productPrice" column="PRODUCT_PRICE"/>
+        </association>
+
+        <association property="containerVO" javaType="kr.or.ddit.vo.ContainerVO">
+            <id property="containerNo" column="CONTAINER_NO"/>
+            <result property="containerName" column="CONTAINER_NAME"/>
+            <result property="containerLocation" column="CONTAINER_LOCATION"/>
+            <result property="sztpCode" column="SZTP_CODE"/>
+            <result property="containerPrice" column="CONTAINER_PRICE"/>
+            <result property="containerUseYn" column="CONTAINER_USE_YN" jdbcType="INTEGER"/>
+            <result property="shipScheduleNo" column="SHIP_SCHEDULE_NO"/>
+        </association>
+        
+        <association property="warehouseVO" javaType="kr.or.ddit.vo.WarehouseVO">
+        	<id property="whNo" column="WH_NO"/>
+        	<result property="whName" column="WH_NAME" />
+        	<result property="whRegDate" column="WH_REG_DATE" />
+        	<result property="whAddr" column="WH_ADDR" />
+        	<result property="whDetailAddr" column="WH_DETAIL_ADDR" />
+        	<result property="whVolume" column="WH_VOLUME" />
+        	<result property="whPrice" column="WH_PRICE" />
+        </association>
+        
+        <collection property="containerDetailList" ofType="kr.or.ddit.vo.ContainerDetailVO">
+	        <result property="containerDetailNo" column="CONTAINER_DETAIL_NO"/>
+	        <result property="containerDetailStatusCode" column="CONTAINER_DETAIL_STATUS_CODE"/>
+	        <result property="containerLoadingDate" column="CONTAINER_LOADING_DATE"/>
+	        <result property="containerNo" column="CONTAINER_NO"/>
+	        <result property="containerDetailStowageQty" column="CONTAINER_DETAIL_STOWAGE_QTY"/>
+		</collection>
+		 
+		 <collection property="whDetailList" ofType="kr.or.ddit.vo.WhDetailVO">
+		 	<result property="whLoadingDate" column="WH_LOADING_DATE" />
+		 	<result property="whDetailStatusCode" column="WH_DETAIL_STATUS_CODE" />
+		 </collection>
+		 
+    </resultMap>
+  	
+  	
+  	
+  	
+  	<select id="stowageList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultMap="stowageResultMap">
+  		select
+  			*
+  		  from(
+	  		select
+	  			ROWNUM RN
+	  		   ,TB.*
+	  		  from(
+		  		select
+		  			 a.STOWAGE_NO
+		  			,a.CONTRACT_NO
+	                ,a.STOWAGE_TYPE
+	                ,a.STOWAGE_DATE
+					
+	                ,b.CONTAINER_DETAIL_STATUS_CODE
+	                ,b.CONTAINER_LOADING_DATE
+	                ,b.CONTAINER_DETAIL_STOWAGE_QTY  
+	
+	                ,c.PORT_FROM
+	                ,c.PORT_TO
+	                ,c.SHIP_SCHEDULE_DEPARTURE
+	                ,c.SHIP_SCHEDULE_ARRIVAL
+	                ,c.SHIP_AVAILABLE_YN
+	
+	                ,d.SHIP_NAME
+	                ,d.SHIP_TYPE
+	                ,d.SHIP_GT
+	                ,d.SHIP_IMG
+	                ,d.SHIP_3D_IMG
+	                ,d.SHIP_YN
+	                ,d.SHIP_ID
+	                ,d.SHIP_LAT
+	                ,d.SHIP_LON
+					
+	                ,f.PRODUCT_NAME
+	                ,f.PRODUCT_QTY
+	                ,f.PRODUCT_VOLUME
+	                ,f.PRODUCT_PRICE
+
+	                ,i.CD_VALIDITY_YN
+					
+					,j.CONTAINER_NO
+	                ,j.CONTAINER_NAME 
+	                ,j.CONTAINER_LOCATION
+	                ,j.SZTP_CODE
+	                ,j.CONTAINER_PRICE
+	                ,j.CONTAINER_USE_YN
+					
+					,k.WH_LOADING_DATE
+					,k.WH_DETAIL_STATUS_CODE
+					
+					,l.WH_NO
+					,l.WH_REG_DATE
+					,l.WH_NAME
+					,l.WH_ADDR
+					,l.WH_DETAIL_ADDR
+					,l.WH_VOLUME
+					,l.WH_PRICE
+					
+		  		  from
+		  			STOWAGE a
+		  		  LEFT JOIN
+		  		  	CONTAINER_DETAIL b ON a.STOWAGE_NO = b.STOWAGE_NO
+		  		  LEFT JOIN
+		  		  	SHIP_SCHEDULE c ON b.SHIP_SCHEDULE_NO = c.SHIP_SCHEDULE_NO
+		  		  LEFT JOIN
+		  		  	SHIPS d ON c.SHIP_NO = d.SHIP_NO
+		  		  LEFT JOIN
+		  		  	CONTRACT e ON a.CONTRACT_NO = e.CONTRACT_NO
+		  		  LEFT JOIN
+		  		  	PRODUCT f ON f.PRODUCT_NO = e.PRODUCT_NO
+		  		  LEFT JOIN
+		  		    DECL_D g ON g.CONTRACT_NO = e.CONTRACT_NO
+		  		  LEFT JOIN
+		  		  	DECL h ON h.DECL_D_NO = g.DECL_D_NO
+		  		  LEFT JOIN
+		  		  	CD i ON i.DECL_NO = h.DECL_NO	
+		  		  LEFT JOIN
+		  		  	CONTAINER j ON j.CONTAINER_NO = b.CONTAINER_NO
+		  		  LEFT jOIN
+		  		  	WH_DETAIL k ON k.STOWAGE_NO = a.STOWAGE_NO
+		  		  LEFT JOIN
+		  		  	WH l ON l.WH_NO = k.WH_NO			
+		  		 where
+		  		 	j.LOGIST_MNG_NO = #{userNo}
+		  		 	or
+  		 			l.LOGIST_MNG_NO = #{userNo}
+  		 			 <if test="searchType != null and searchWord != null and searchWord != ''">
+			            <choose>
+			                <when test="searchType == 'f.PRODUCT_NAME'">
+			                    AND f.PRODUCT_NAME LIKE CONCAT('%', #{searchWord}, '%')
+			                </when>
+			                <when test="searchType == 'a.STOWAGE_DATE'">
+			                    AND a.STOWAGE_DATE LIKE CONCAT('%', #{searchWord}, '%')
+			                </when>
+			                <when test="searchType == 'a.STOWAGE_TYPE'">
+			                    AND a.STOWAGE_TYPE LIKE CONCAT('%', #{searchWord}, '%')
+			                </when>
+			            </choose>
+			        </if>
+			
+					<if test="waitting != null and waitting != ''">
+					    <choose>
+					        <when test="waitting.contains('container')">
+					            AND b.CONTAINER_DETAIL_STATUS_CODE IS NOT NULL AND b.CONTAINER_DETAIL_STATUS_CODE = '입고대기'
+					        </when>
+					        <otherwise>
+					            AND WH_DETAIL_STATUS_CODE IS NOT NULL AND k.WH_DETAIL_STATUS_CODE = '입고대기'
+					        </otherwise>
+					    </choose>
+					</if>
+		  		 ORDER BY 
+		  			<choose>
+						<when test="sortColumn.contains('DETAIL_STATUS_CODE')">
+				            CASE
+				                WHEN k.WH_DETAIL_STATUS_CODE = '입고대기' THEN 1
+				                WHEN b.CONTAINER_DETAIL_STATUS_CODE = '입고대기' THEN 1				                
+				                WHEN k.WH_DETAIL_STATUS_CODE = '입고완료' THEN 2
+				                WHEN b.CONTAINER_DETAIL_STATUS_CODE = '입고완료' THEN 2
+				                WHEN k.WH_DETAIL_STATUS_CODE = '출고완료' THEN 3
+				                WHEN b.CONTAINER_DETAIL_STATUS_CODE = '출고완료' THEN 3
+				                ELSE 99 
+				            END
+				            <if test="sortColumn.contains('DESC')">DESC</if>
+				            <if test="sortColumn.contains('ASC')">ASC</if>
+				        </when>
+		  				<when test="sortColumn != null and sortColumn != ''">
+		  					${sortColumn}
+		  				</when>
+		  				<otherwise>
+		  					a.STOWAGE_DATE DESC
+		  				</otherwise>
+		  			</choose>
+		  			) TB )
+		 WHERE RN BETWEEN #{startRow} AND #{endRow}										
+  	</select>
+  	
+  	<select id="getStowageCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+  	
+  		select
+  			count(*)
+  	      from
+  			STOWAGE a
+  		  LEFT JOIN
+  		  	CONTAINER_DETAIL b ON a.STOWAGE_NO = b.STOWAGE_NO
+  		  LEFT JOIN
+  		  	SHIP_SCHEDULE c ON b.SHIP_SCHEDULE_NO = c.SHIP_SCHEDULE_NO
+  		  LEFT JOIN
+  		  	SHIPS d ON c.SHIP_NO = d.SHIP_NO
+  		  LEFT JOIN
+  		  	CONTRACT e ON a.CONTRACT_NO = e.CONTRACT_NO
+  		  LEFT JOIN
+  		  	PRODUCT f ON f.PRODUCT_NO = e.PRODUCT_NO
+  		  LEFT JOIN
+  		    DECL_D g ON g.CONTRACT_NO = e.CONTRACT_NO
+  		  LEFT JOIN
+  		  	DECL h ON h.DECL_D_NO = g.DECL_D_NO
+  		  LEFT JOIN
+  		  	CD i ON i.DECL_NO = h.DECL_NO	
+  		  LEFT JOIN
+  		  	CONTAINER j ON j.CONTAINER_NO = b.CONTAINER_NO
+ 		  LEFT jOIN
+  		  	WH_DETAIL k ON a.STOWAGE_NO = k.STOWAGE_NO
+  		  LEFT JOIN
+  		  	WH l ON k.WH_NO = l.WH_NO		
+  		 where
+  		 	j.LOGIST_MNG_NO = #{userNo}
+  		 	or
+  		 	l.LOGIST_MNG_NO = #{userNo}
+  		 	<if test="searchWord != null and searchWord != ''">
+		  		 AND ${searchType} LIKE '%' || #{searchWord} || '%'
+		  	</if>
+  	</select>
+  	
+  	<select id="containerBasicInfo" parameterType="int" resultType="kr.or.ddit.vo.ContainerVO">
+  		
+  		select
+  			container_no
+  		   ,logist_mng_no
+  		   ,container_name
+  		   ,container_location
+  		   ,sztp_code
+  		   ,hazard_damage_info
+  		   ,container_size
+  		   ,container_type
+  		   ,container_price
+  		   ,container_use_yn 	
+  		  from
+  		  	CONTAINER
+  		 where	
+  		  	CONTAINER_NO = #{containerNo}
+  		
+  	</select>
+  	
+  	<update id="updateContainerDetailStatus" parameterType="kr.or.ddit.vo.ContainerDetailVO" statementType="CALLABLE">
+	    {CALL UPDATE_CONTAINER_DETAIL_STATUS(
+	        #{containerDetailNo, jdbcType=NUMERIC, mode=IN},
+	        #{containerDetailStatusCode, jdbcType=VARCHAR, mode=IN},
+	        #{carrier, jdbcType=VARCHAR, mode=IN},
+	        #{result, jdbcType=NUMERIC, mode=OUT}
+	    )}
+	</update>
+
+  	
+    <update id="updateContainerDetail" parameterType="kr.or.ddit.vo.ContainerDetailVO">
+  		update 
+  			CONTAINER_DETAIL
+  		   set 
+  		   	CONTAINER_DETAIL_STATUS_CODE = #{containerDetailStatusCode}
+  		   ,CONTAINER_LOADING_DATE = 
+            CASE
+            	WHEN #{containerDetailStatusCode} = '입고완료' THEN SYSDATE
+            	ELSE CONTAINER_LOADING_DATE
+            END
+            	
+  		 where
+  		 	CONTAINER_DETAIL_NO = #{containerDetailNo}
+  	</update>
+  	
+  	<update id="updateContainer" parameterType="kr.or.ddit.vo.ContainerVO">
+  		update
+  			CONTAINER
+  		   set
+  			CONTAINER_NAME = #{containerName}
+  			,CONTAINER_LOCATION = #{containerLocation}
+  			,CONTAINER_PRICE = #{containerPrice}
+  			,CONTAINER_USE_YN = #{containerUseYn}
+  		 where
+  		 	CONTAINER_NO = #{containerNo}	
+  	</update>
+  	
+  	<select id="getStowageContainerCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+ 		select
+ 			count(*)
+ 		  from
+ 			STOWAGE a
+ 		  LEFT JOIN
+ 		  	CONTAINER_DETAIL b ON a.STOWAGE_NO = b.STOWAGE_NO
+ 		  LEFT JOIN
+ 		  	SHIP_SCHEDULE c ON b.SHIP_SCHEDULE_NO = c.SHIP_SCHEDULE_NO
+ 		  LEFT JOIN
+ 		  	SHIPS d ON c.SHIP_NO = d.SHIP_NO
+ 		  LEFT JOIN
+ 		  	CONTRACT e ON a.CONTRACT_NO = e.CONTRACT_NO
+ 		  LEFT JOIN
+ 		  	PRODUCT f ON f.PRODUCT_NO = e.PRODUCT_NO
+ 		  LEFT JOIN
+ 		    DECL_D g ON g.CONTRACT_NO = e.CONTRACT_NO
+ 		  LEFT JOIN
+ 		  	DECL h ON h.DECL_D_NO = g.DECL_D_NO
+ 		  LEFT JOIN
+ 		  	CD i ON i.DECL_NO = h.DECL_NO	
+ 		  LEFT JOIN
+ 		  	CONTAINER j ON j.CONTAINER_NO = b.CONTAINER_NO
+
+ 		 where
+ 		 	j.LOGIST_MNG_NO = #{userNo}
+	 			 <if test="searchType != null and searchWord != null and searchWord != ''">
+            <choose>
+                <when test="searchType == 'f.PRODUCT_NAME'">
+                    AND f.PRODUCT_NAME LIKE CONCAT('%', #{searchWord}, '%')
+                </when>
+                <when test="searchType == 'a.STOWAGE_DATE'">
+                    AND a.STOWAGE_DATE LIKE CONCAT('%', #{searchWord}, '%')
+                </when>
+                <when test="searchType == 'a.STOWAGE_TYPE'">
+                    AND a.STOWAGE_TYPE LIKE CONCAT('%', #{searchWord}, '%')
+                </when>
+            </choose>
+        </if>
+
+		<if test="waitting != null and waitting != ''">
+			AND b.CONTAINER_DETAIL_STATUS_CODE IS NOT NULL AND b.CONTAINER_DETAIL_STATUS_CODE = '입고대기'
+		</if>
+  	</select>
+  	
+  	<select id="stowageContainerList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultMap="stowageResultMap">
+  		
+  		select
+  			*
+  		  from(
+	  		select
+	  			ROWNUM RN
+	  		   ,TB.*
+	  		  from(
+		  		select
+		  			 a.STOWAGE_NO
+		  			,a.CONTRACT_NO
+	                ,a.STOWAGE_TYPE
+	                ,a.STOWAGE_DATE
+					
+	                ,b.CONTAINER_DETAIL_STATUS_CODE
+	                ,b.CONTAINER_LOADING_DATE
+	                ,b.CONTAINER_DETAIL_STOWAGE_QTY  
+	
+	                ,c.PORT_FROM
+	                ,c.PORT_TO
+	                ,c.SHIP_SCHEDULE_DEPARTURE
+	                ,c.SHIP_SCHEDULE_ARRIVAL
+	                ,c.SHIP_AVAILABLE_YN
+	
+	                ,d.SHIP_NAME
+	                ,d.SHIP_TYPE
+	                ,d.SHIP_GT
+	                ,d.SHIP_IMG
+	                ,d.SHIP_3D_IMG
+	                ,d.SHIP_YN
+	                ,d.SHIP_ID
+	                ,d.SHIP_LAT
+	                ,d.SHIP_LON
+					
+	                ,f.PRODUCT_NAME
+	                ,f.PRODUCT_QTY
+	                ,f.PRODUCT_VOLUME
+	                ,f.PRODUCT_PRICE
+
+	                ,i.CD_VALIDITY_YN
+					
+					,j.CONTAINER_NO
+	                ,j.CONTAINER_NAME 
+	                ,j.CONTAINER_LOCATION
+	                ,j.SZTP_CODE
+	                ,j.CONTAINER_PRICE
+	                ,j.CONTAINER_USE_YN
+					
+		  		  from
+		  			STOWAGE a
+		  		  LEFT JOIN
+		  		  	CONTAINER_DETAIL b ON a.STOWAGE_NO = b.STOWAGE_NO
+		  		  LEFT JOIN
+		  		  	SHIP_SCHEDULE c ON b.SHIP_SCHEDULE_NO = c.SHIP_SCHEDULE_NO
+		  		  LEFT JOIN
+		  		  	SHIPS d ON c.SHIP_NO = d.SHIP_NO
+		  		  LEFT JOIN
+		  		  	CONTRACT e ON a.CONTRACT_NO = e.CONTRACT_NO
+		  		  LEFT JOIN
+		  		  	PRODUCT f ON f.PRODUCT_NO = e.PRODUCT_NO
+		  		  LEFT JOIN
+		  		    DECL_D g ON g.CONTRACT_NO = e.CONTRACT_NO
+		  		  LEFT JOIN
+		  		  	DECL h ON h.DECL_D_NO = g.DECL_D_NO
+		  		  LEFT JOIN
+		  		  	CD i ON i.DECL_NO = h.DECL_NO	
+		  		  LEFT JOIN
+		  		  	CONTAINER j ON j.CONTAINER_NO = b.CONTAINER_NO
+		
+		  		 where
+		  		 	j.LOGIST_MNG_NO = #{userNo}
+  		 			 <if test="searchType != null and searchWord != null and searchWord != ''">
+			            <choose>
+			                <when test="searchType == 'f.PRODUCT_NAME'">
+			                    AND f.PRODUCT_NAME LIKE CONCAT('%', #{searchWord}, '%')
+			                </when>
+			                <when test="searchType == 'a.STOWAGE_DATE'">
+			                    AND a.STOWAGE_DATE LIKE CONCAT('%', #{searchWord}, '%')
+			                </when>
+			                <when test="searchType == 'a.STOWAGE_TYPE'">
+			                    AND a.STOWAGE_TYPE LIKE CONCAT('%', #{searchWord}, '%')
+			                </when>
+			            </choose>
+			        </if>
+			
+					<if test="waitting != null and waitting != ''">
+						AND b.CONTAINER_DETAIL_STATUS_CODE IS NOT NULL AND b.CONTAINER_DETAIL_STATUS_CODE = '입고대기'
+					</if>
+		  		 ORDER BY 
+		  			<choose>
+						<when test="sortColumn.contains('DETAIL_STATUS_CODE')">
+				            CASE
+				                
+				                WHEN b.CONTAINER_DETAIL_STATUS_CODE = '입고대기' THEN 1				                
+				                
+				                WHEN b.CONTAINER_DETAIL_STATUS_CODE = '입고완료' THEN 2
+				                
+				                WHEN b.CONTAINER_DETAIL_STATUS_CODE = '출고완료' THEN 3
+				                
+				                ELSE 99 
+				            END
+				            <if test="sortColumn.contains('DESC')">DESC</if>
+				            <if test="sortColumn.contains('ASC')">ASC</if>
+				        </when>
+		  				<when test="sortColumn != null and sortColumn != ''">
+		  					${sortColumn}
+		  				</when>
+		  				<otherwise>
+		  					a.STOWAGE_DATE DESC
+		  				</otherwise>
+		  			</choose>
+		  			) TB )
+		 WHERE RN BETWEEN #{startRow} AND #{endRow}										
+  	</select>
+  	
+  	<select id="getStowageWhCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+  		select
+			count(*)
+		  from
+			STOWAGE a
+		  LEFT JOIN
+		  	CONTRACT e ON a.CONTRACT_NO = e.CONTRACT_NO
+		  LEFT JOIN
+		  	PRODUCT f ON f.PRODUCT_NO = e.PRODUCT_NO
+		  LEFT JOIN
+		    DECL_D g ON g.CONTRACT_NO = e.CONTRACT_NO
+		  LEFT JOIN
+		  	DECL h ON h.DECL_D_NO = g.DECL_D_NO
+		  LEFT JOIN
+		  	CD i ON i.DECL_NO = h.DECL_NO	
+		  LEFT jOIN
+		  	WH_DETAIL k ON k.STOWAGE_NO = a.STOWAGE_NO
+		  LEFT JOIN
+		  	WH l ON l.WH_NO = k.WH_NO			
+		 where
+ 			l.LOGIST_MNG_NO = #{userNo}
+ 			 <if test="searchType != null and searchWord != null and searchWord != ''">
+           <choose>
+               <when test="searchType == 'f.PRODUCT_NAME'">
+                   AND f.PRODUCT_NAME LIKE CONCAT('%', #{searchWord}, '%')
+               </when>
+               <when test="searchType == 'a.STOWAGE_DATE'">
+                   AND a.STOWAGE_DATE LIKE CONCAT('%', #{searchWord}, '%')
+               </when>
+               <when test="searchType == 'a.STOWAGE_TYPE'">
+                   AND a.STOWAGE_TYPE LIKE CONCAT('%', #{searchWord}, '%')
+               </when>
+           </choose>
+       </if>
+
+	<if test="waitting != null and waitting != ''">
+		AND k.WH_DETAIL_STATUS_CODE IS NOT NULL AND k.WH_DETAIL_STATUS_CODE = '입고대기'
+	</if>
+  	
+  	</select>
+  	
+  	<select id="stowageWhList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultMap="stowageResultMap">
+  		select
+  			*
+  		  from(
+	  		select
+	  			ROWNUM RN
+	  		   ,TB.*
+	  		  from(
+		  		select
+		  			 a.STOWAGE_NO
+		  			,a.CONTRACT_NO
+	                ,a.STOWAGE_TYPE
+	                ,a.STOWAGE_DATE			
+					
+	                ,f.PRODUCT_NAME
+	                ,f.PRODUCT_QTY
+	                ,f.PRODUCT_VOLUME
+	                ,f.PRODUCT_PRICE
+
+	                ,i.CD_VALIDITY_YN
+	                
+					,k.WH_LOADING_DATE
+					,k.WH_DETAIL_STATUS_CODE
+					
+					,l.WH_NO
+					,l.WH_REG_DATE
+					,l.WH_NAME
+					,l.WH_ADDR
+					,l.WH_DETAIL_ADDR
+					,l.WH_VOLUME
+					,l.WH_PRICE
+					
+		  		  from
+		  			STOWAGE a
+		  		  LEFT JOIN
+		  		  	CONTRACT e ON a.CONTRACT_NO = e.CONTRACT_NO
+		  		  LEFT JOIN
+		  		  	PRODUCT f ON f.PRODUCT_NO = e.PRODUCT_NO
+		  		  LEFT JOIN
+		  		    DECL_D g ON g.CONTRACT_NO = e.CONTRACT_NO
+		  		  LEFT JOIN
+		  		  	DECL h ON h.DECL_D_NO = g.DECL_D_NO
+		  		  LEFT JOIN
+		  		  	CD i ON i.DECL_NO = h.DECL_NO	
+		  		  LEFT jOIN
+		  		  	WH_DETAIL k ON k.STOWAGE_NO = a.STOWAGE_NO
+		  		  LEFT JOIN
+		  		  	WH l ON l.WH_NO = k.WH_NO			
+		  		 where
+  		 			l.LOGIST_MNG_NO = #{userNo}
+  		 			 <if test="searchType != null and searchWord != null and searchWord != ''">
+			            <choose>
+			                <when test="searchType == 'f.PRODUCT_NAME'">
+			                    AND f.PRODUCT_NAME LIKE CONCAT('%', #{searchWord}, '%')
+			                </when>
+			                <when test="searchType == 'a.STOWAGE_DATE'">
+			                    AND a.STOWAGE_DATE LIKE CONCAT('%', #{searchWord}, '%')
+			                </when>
+			                <when test="searchType == 'a.STOWAGE_TYPE'">
+			                    AND a.STOWAGE_TYPE LIKE CONCAT('%', #{searchWord}, '%')
+			                </when>
+			            </choose>
+			        </if>
+			
+					<if test="waitting != null and waitting != ''">
+						AND k.WH_DETAIL_STATUS_CODE IS NOT NULL AND k.WH_DETAIL_STATUS_CODE = '입고대기'
+					</if>
+		  		 ORDER BY 
+		  			<choose>
+						<when test="sortColumn.contains('DETAIL_STATUS_CODE')">
+				            CASE
+				                WHEN k.WH_DETAIL_STATUS_CODE = '입고대기' THEN 1
+				                				                
+				                WHEN k.WH_DETAIL_STATUS_CODE = '입고완료' THEN 2
+				                
+				                WHEN k.WH_DETAIL_STATUS_CODE = '출고완료' THEN 3
+				                
+				                ELSE 99 
+				            END
+				            <if test="sortColumn.contains('DESC')">DESC</if>
+				            <if test="sortColumn.contains('ASC')">ASC</if>
+				        </when>
+		  				<when test="sortColumn != null and sortColumn != ''">
+		  					${sortColumn}
+		  				</when>
+		  				<otherwise>
+		  					a.STOWAGE_DATE DESC
+		  				</otherwise>
+		  			</choose>
+		  			) TB )
+		 WHERE RN BETWEEN #{startRow} AND #{endRow}										
+  	</select>
+  	
+  </mapper>
+  
+  

@@ -1,0 +1,139 @@
+package kr.or.ddit.service;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+
+import java.util.ArrayList;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.mapper.IStatisticsMapper;
+import kr.or.ddit.vo.HsCodeVO;
+import kr.or.ddit.vo.HsStatResult;
+import kr.or.ddit.vo.PeriodStat;
+import kr.or.ddit.vo.UserVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class StatisticsServiceImpl implements IStatisticsService {
+
+	@Autowired
+	private IStatisticsMapper statisticsMapper;
+	
+	@Override
+	public List<Map<String, Object>> hsCodeQrntAgree(Map<String, Object> startEnd) {
+		List<Map<String, Object>>  qrntAgreeList = new ArrayList<Map<String, Object>>();
+//		HS_CODE
+//		TOTAL_QRNT
+//		PASS_COUNT
+//		PASS_RATE_PERCENT
+		qrntAgreeList = statisticsMapper.qrntAgree(startEnd);
+		log.info("hsCodeQrntAgree() -> qrntAgreeList : {}", qrntAgreeList);
+		return qrntAgreeList;
+	}
+
+	@Override
+	public List<Map<String, Object>> hsCodeQrntDisAgree(Map<String, Object> startEnd) {
+		List<Map<String, Object>> qrntDisAgreeList = new ArrayList<Map<String, Object>>();
+
+//		HS_CODE
+//		TOTAL_QRNT
+//		PASS_COUNT
+//		PASS_RATE_PERCENT
+		qrntDisAgreeList = statisticsMapper.qrntDisAgree(startEnd);
+		log.info("hsCodeQrntAgree() -> qrntDisAgreeList : {}", qrntDisAgreeList);
+		return qrntDisAgreeList;
+	}
+
+	@Override//제재내역 통계
+	public List<Map<String,Object>>  selectSanctionList(int sanctionCode) {
+		return statisticsMapper.selectSanctionList(sanctionCode);
+	}
+
+	@Override
+	public Map<HsCodeVO, Map<String, PeriodStat>> myStatisticsHsCodeAndPeriod(UserVO user) {
+		
+		List<HsStatResult> rawList;
+
+		
+		if(user.getAuthCode().equals("ROLE_LOGISTICS")) {
+			rawList = statisticsMapper.logisticsStatisticsHsCodeAndPeriod(user.getUserNo());
+		}else if(user.getAuthCode().equals("ROLE_CONSIGNOR")) {
+			rawList = statisticsMapper.consignorStatisticsHsCodeAndPeriod(user.getUserNo());
+		}else if(user.getAuthCode().equals("ROLE_CCA")) {
+			rawList = statisticsMapper.ccaStatisticsHsCodeAndPeriod(user.getUserNo());
+		}else {
+			rawList = Collections.EMPTY_LIST;
+		}
+		
+		return rawList.stream()
+			    .collect(Collectors.groupingBy(
+			        HsStatResult::getHsCode,
+			        Collectors.groupingBy(
+			            HsStatResult::getPeriod,
+			            Collectors.collectingAndThen(
+			                Collectors.toList(),
+			                periodEntries -> {
+			                    // 여러 결과가 하나의 기간 내에 있으면 여기서 집계
+			                    PeriodStat stat = new PeriodStat();
+			                    for (HsStatResult item : periodEntries) {
+			                        stat.add(item); // 또는 값을 누적하는 메서드 정의
+			                    }
+			                    return stat;
+			                }
+			            )
+			        )
+			    ));
+
+
+		
+	}
+
+	@Override
+	public Map<HsCodeVO, Map<String, PeriodStat>> allStatisticsHsCodeAndPeriod() {
+		
+		List<HsStatResult> rawList;
+		
+		rawList = statisticsMapper.allStatisticsHsCodeAndPeriod();
+		
+		return rawList.stream()
+			    .collect(Collectors.groupingBy(
+			        HsStatResult::getHsCode,
+			        Collectors.groupingBy(
+			            HsStatResult::getPeriod,
+			            Collectors.collectingAndThen(
+			                Collectors.toList(),
+			                periodEntries -> {
+			                    // 여러 결과가 하나의 기간 내에 있으면 여기서 집계
+			                    PeriodStat stat = new PeriodStat();
+			                    for (HsStatResult item : periodEntries) {
+			                        stat.add(item); // 또는 값을 누적하는 메서드 정의
+			                    }
+			                    return stat;
+			                }
+			            )
+			        )
+			    ));
+	}
+	@Override //공무원의 업무처리량 통계 리스트
+	public List<Map<String, Object>> servantWorkCount() {
+		return statisticsMapper.servantWorkCount();
+	}
+	
+	@Override // 민원항목 * 기간 민원발생건수 통계
+	public List<Map<String, Object>> selectAppealList(String appealType) {
+		return statisticsMapper.selectAppealList(appealType);
+	}
+
+	@Override
+	public List<Map<String, Object>> selectUserCountList() {
+		return statisticsMapper.selectUserCountList();
+	}
+}

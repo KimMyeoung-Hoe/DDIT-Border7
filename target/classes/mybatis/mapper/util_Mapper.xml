@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.util.mapper.IUtilMapper">
+
+	<select id="selectCD" parameterType="String" resultType="kr.or.ddit.vo.CDVO">
+		SELECT 
+			CD_NO
+			, DECL_NO
+			, CD_DATE
+			, CD_VALIDITY_YN
+			, SEAL_NO
+		FROM CD
+		WHERE DECL_NO = #{declNo}
+	</select>
+	
+	<select id="getContractNoToCdNo" parameterType="String" resultType="String">
+		SELECT
+		    DECLD.CONTRACT_NO
+		FROM CD CD
+		    LEFT OUTER JOIN DECL DECL ON (CD.DECL_NO = DECL.DECL_NO)
+		    LEFT OUTER JOIN DECL_D DECLD ON (DECL.DECL_D_NO = DECLD.DECL_D_NO)
+		WHERE CD_NO = #{cdNo }
+	</select>
+
+</mapper>

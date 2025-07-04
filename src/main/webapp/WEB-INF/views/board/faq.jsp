@@ -1,0 +1,110 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>키워드 배지 생성기</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .badge-container {
+            margin-top: 15px;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            min-height: 50px;
+            display: flex;
+            flex-wrap: wrap; /* 배지가 여러 개일 때 다음 줄로 넘어가도록 */
+            gap: 5px; /* 배지들 사이 간격 */
+        }
+        .badge-keyword {
+            cursor: pointer; /* 클릭 가능하게 */
+            padding-right: 0.65em; /* 닫기 버튼 공간 확보 */
+        }
+        .badge-keyword .btn-close {
+            font-size: 0.6em; /* 닫기 버튼 크기 조절 */
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container mt-5">
+        <h2>키워드 배지 입력</h2>
+
+        <div class="mb-3">
+            <label for="keywordInput" class="form-label">키워드 입력:</label>
+            <input type="text" class="form-control" id="keywordInput" placeholder="키워드를 입력하고 Enter를 누르세요.">
+        </div>
+
+        <div class="badge-container" id="keywordBadges">
+        	
+            </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // 키워드 입력 필드에서 Enter 키를 눌렀을 때
+            $('#keywordInput').on('keypress', function(e) {
+                if (e.which === 13) { // Enter 키 코드
+                    e.preventDefault(); // 기본 Enter 동작(폼 제출 등) 방지
+                    addKeywordBadge();
+                }
+            });
+
+            // 배지 추가 함수
+            function addKeywordBadge() {
+                const keywordInput = $('#keywordInput');
+                let keyword = keywordInput.val().trim(); // 입력 값 가져와서 공백 제거
+                console.log(keyword);
+
+                if (keyword) { // 키워드가 비어있지 않다면
+                    // 이미 추가된 키워드인지 확인 (중복 방지)
+                    let isDuplicate = false;
+                    $('#keywordBadges .badge-keyword span').each(function() {
+                        if ($(this).text() === keyword) {
+                            isDuplicate = true;
+                            return false; // each 루프 종료
+                        }
+                    });
+
+                    if (isDuplicate) {
+                    	alertify.alert("이미 추가된 키워드입니다.");
+                        keywordInput.val(''); // 입력 필드 초기화
+                        return;
+                    }
+
+                    // 새로운 배지 요소 생성
+                    // 부트스트랩 5에서는 bg-primary, text-white 등이 사용됩니다.
+                    const badgeHtml = `
+                        <span class="badge bg-primary text-white badge-keyword">
+                            <span>\${keyword}</span>
+                            <button type="button" class="btn-close btn-close-white" aria-label="Close"></button>
+                        </span>
+                    `;
+
+                    // 배지 컨테이너에 추가
+                    $('#keywordBadges').append(badgeHtml);
+
+                    // 입력 필드 초기화
+                    keywordInput.val('');
+
+                    // 추가된 배지의 닫기 버튼에 클릭 이벤트 리스너 추가
+                    $('#keywordBadges .badge-keyword .btn-close').off('click').on('click', function() {
+                        $(this).closest('.badge-keyword').remove(); // 해당 배지 제거
+                    });
+                }
+            }
+
+            // (선택 사항) 이미 존재하는 배지가 있다면 닫기 버튼 이벤트 연결
+            $('#keywordBadges .badge-keyword .btn-close').on('click', function() {
+                $(this).closest('.badge-keyword').remove();
+            });
+        });
+    </script>
+
+</body>
+</html>

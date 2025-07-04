@@ -1,0 +1,70 @@
+-- ### NOTICE 테이블을 활용한 CRUD 만들기 시작 ### --
+-- Notice 테이블을 활용한 CRUD 연습
+create table noticemember(
+    mem_no number(8) not null,
+    mem_id varchar2(100) not null,
+    mem_pw varchar2(100) not null,
+    mem_name varchar2(100) not null,
+    mem_gender varchar2(10) not null,
+    mem_email varchar2(130) not null,
+    mem_phone varchar2(40) not null,
+    mem_postcode varchar2(30) not null,
+    mem_address1 varchar2(300) not null,
+    mem_address2 varchar2(100) null,
+    mem_agree varchar2(4) not null,
+    mem_profileimg varchar2(400) not null,
+    mem_regdate date not null,
+    constraint pk_noticemember primary key(mem_no)
+);
+create sequence seq_noticemember increment by 1 start with 1 nocache;
+
+-- NOTICE 게시판 테이블 작성
+-- CREATE NOTICE TABLE
+create table notice(
+    bo_no number(8) not null,
+    bo_title varchar2(300) not null,
+    bo_content clob not null,
+    bo_writer varchar2(150) not null,
+    bo_date date not null,
+    bo_hit number(8) default 0 null,
+    constraint pk_notice primary key(bo_no)
+);
+create sequence seq_notice increment by 1 start with 1 nocache;
+
+-- NOTICE 게시판 파일 테이블 작성
+-- CREATE NOTICEFILE TABLE
+create table noticefile(
+    file_no number(8) not null,
+    bo_no number(8) not null,
+    file_name varchar2(300) not null,
+    file_size number(20) not null,
+    file_fancysize varchar2(100) not null,
+    file_mime varchar2(100) not null,
+    file_savepath varchar2(500) not null,
+    file_downcount number(12) not null,
+    constraint pk_noticefile primary key(file_no),
+    constraint fk_noticefile_bo_no foreign key(bo_no)
+        references notice(bo_no)
+);
+create sequence seq_noticefile increment by 1 start with 1 nocache;
+
+-- NOTICE 게시판 댓글 테이블 작성
+-- CREATE NOTICECOMMENT TABLE
+create table noticecomment(
+    cmt_no number(8) not null,
+    bo_no number(8) not null,
+    cmt_writer varchar2(30) not null,
+    cmt_content varchar2(2000) not null,
+    cmt_group number(8) not null,
+    cmt_ord number(8) default 1 null,
+    cmt_depth number(8) default 0 null,
+    cmt_date date not null,
+    cmt_status varchar2(4) not null,
+    constraint pk_notice_comment primary key(cmt_no),
+    constraint fk_notice_comment_bo_no foreign key(bo_no)
+        references notice(bo_no)
+);
+
+create sequence seq_noticecomment increment by 1 start with 1 nocache;
+---------------------------------------------------------------------------
+-- ### NOTICE 테이블을 활용한 CRUD 만들기 끝 ### --

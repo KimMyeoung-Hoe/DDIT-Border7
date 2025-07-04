@@ -1,0 +1,207 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec" %>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Border7</title>
+
+	<%@ include file="../modules/header.jsp" %>
+	<%@ include file="../modules/sidebar.jsp" %>
+	<%@ include file="../modules/modal.jsp" %>
+	<link rel="stylesheet" href="/css/sidebar.css">
+	<link rel="stylesheet" href="/css/header.css">
+	<link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<sec:authentication property="principal" var="princ"/>
+<div class="app-container">
+    <main class="main-content-area">
+       <div class="content-header">
+		   <!-- 브레드크럼 엘리먼트 -->
+		   <div class="breadcrumb-warp">
+		      <div class="col-sm-12">
+		         <ol class="breadcrumb">
+		         	<li class="breadcrumb-item"><a href="/">Home</a></li>
+		            <li class="breadcrumb-item"><a href="/servant/customsDeclaration.do">통계지원</a></li>
+		         </ol>
+		      </div>
+		      <!-- 브레드크럼 엘리먼트 끝 -->
+		   </div>
+		   <div class="content-title">통계지원</div>
+		   <p class="desc">화주가 통계를 확인하는 페이지 입니다.</p>
+		</div>
+		<div class="section" >
+			<div class="card-header">
+				<h2>기간별 HS 코드별 검사 / 검역 합격률</h2>
+				<form id="searchForm" action="/" method="get">
+				    <label for="startDate">시작일:</label>
+				    <input type="date" id="startDate" name="startDate">
+				    <label for="endDate">종료일:</label>
+				    <input type="date" id="endDate" name="endDate">
+				     <button type="submit">조회</button>
+				</form>
+				<c:if test="${startEnd.endDate ne null and startEnd.startDate ne null}">
+					<span> ${startEnd.startDate}에서 ${startEnd.endDate}까지의 조회 결과 입니다. </span>
+				</c:if>
+				<c:if test="${startEnd.endDate eq null or startEnd.startDate eq null}">
+					<span> 전체기간의 조회 결과 입니다. </span>
+				</c:if>
+			</div>
+			<div class="card-main">
+			    <div class="card-left" >
+			    	<h3>검사 / 검역 합격률 상위 3건 정보</h3>
+				    <canvas id="qrntTopChart" width="400" height="200" ></canvas>
+				   	<table class="data-table">
+						<tr>
+							<th>HS 코드</th>
+							<th>총 검사 / 검역 수</th>
+							<th>합격한 검사 / 검역 수</th>
+							<th>검사 / 검역 합격률</th>
+						</tr>
+						<c:forEach var="qrntAgree" items="${qrntAgreeList}" varStatus="status" >
+							<tr id="tr_index_${status.index}">
+								<td id="td_index_${status.index}">
+									${qrntAgree['HS_CODE']} / ${qrntAgree['HS_KR_NAME']}
+								</td>
+								<td id="td_index_${status.index}">
+									${qrntAgree['TOTAL_QRNT']}
+								</td>
+								<td id="td_index_${status.index}">
+									${qrntAgree['PASS_COUNT']}
+								</td>
+								<td id="td_index_${status.index}">
+									${qrntAgree['PASS_RATE_PERCENT']}
+								</td>
+							</tr>
+						</c:forEach>
+						
+					</table>
+				</div>
+			    <div class="card-right">
+			    	 <h3>검사 / 검역 합격률 하위 3건 정보</h3>
+				    <canvas id="qrntBottomChart" width="400" height="200" ></canvas>
+			    	<table class="data-table">
+						<tr>
+							<th>HS 코드</th>
+							<th>총 검사 / 검역 수</th>
+							<th>합격한 검사 / 검역 수</th>
+							<th>검사 / 검역 합격률</th>
+						</tr>
+						<c:forEach var="qrntDisAgree" items="${qrntDisAgreeList}" varStatus="status">
+							<tr id="tr_index_${status.index}">
+								<td id="td_index_${status.index}">
+									${qrntDisAgree['HS_CODE']} / ${qrntDisAgree['HS_KR_NAME']}
+								</td>
+								<td id="td_index_${status.index}">
+									${qrntDisAgree['TOTAL_QRNT']}
+								</td>
+								<td id="td_index_${status.index}">
+									${qrntDisAgree['PASS_COUNT']}
+								</td>
+								<td id="td_index_${status.index}">
+									${qrntDisAgree['PASS_RATE_PERCENT']}
+								</td>
+							</tr>
+						</c:forEach>
+					</table>
+			    </div>
+		    </div>
+		</div>
+    </main>
+</div>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="text/javascript">
+	const qrntTopData = [
+    <c:forEach var="item" items="${qrntAgreeList}" varStatus="status">
+        {
+            hsCode: '${item["HS_CODE"]} / ${item["HS_KR_NAME"]}',
+            passRate: ${item["PASS_RATE_PERCENT"]},
+            totalCount: ${item["TOTAL_QRNT"]}
+        }<c:if test="${!status.last}">,</c:if>
+    </c:forEach>
+];
+
+const qrntBottomData = [
+    <c:forEach var="item" items="${qrntDisAgreeList}" varStatus="status">
+        {
+            hsCode: '${item["HS_CODE"]} / ${item["HS_KR_NAME"]}',
+            passRate: ${item["PASS_RATE_PERCENT"]},
+            totalCount: ${item["TOTAL_QRNT"]}
+        }<c:if test="${!status.last}">,</c:if>
+    </c:forEach>
+];
+
+const renderBarChart = (ctxId, label, dataList, color) => {
+    const ctx = document.getElementById(ctxId).getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: dataList.map(d => d.hsCode),
+            datasets: [{
+                label: label,
+                data: dataList.map(d => d.passRate),
+                backgroundColor: color,
+                barPercentage: 0.5,
+                categoryPercentage: 0.6    
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        font: {
+                            size: 20 // 범례 글씨 크기
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: label,
+                    font: {
+                        size: 20 // 타이틀 글씨 크기 (옵션)
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        font: {
+                            size: 18 // x축 레이블 글씨 크기
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: '합격률 (%)',
+                        font: {
+                            size: 18 // y축 제목 글씨 크기
+                        }
+                    },
+                    ticks: {
+                        font: {
+                            size: 16 // y축 눈금 글씨 크기
+                        }
+                    }
+                }
+            }
+        }
+    });
+};
+
+renderBarChart('qrntTopChart', '상위 3건 합격률 (%)', qrntTopData, '#4CAF50');
+renderBarChart('qrntBottomChart', '하위 3건 합격률 (%)', qrntBottomData, '#FF6F61');
+
+if (window.history.replaceState) {
+    const url = window.location.protocol + "//" + window.location.host + window.location.pathname;
+    window.history.replaceState({}, document.title, url);
+}
+</script>
+</html>

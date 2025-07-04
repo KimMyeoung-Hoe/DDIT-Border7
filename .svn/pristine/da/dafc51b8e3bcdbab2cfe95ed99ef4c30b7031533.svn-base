@@ -1,0 +1,294 @@
+/*
+#chatArea {
+	border: 1px solid #ccc;
+	height: 200px;
+	overflow-y: scroll;
+	padding: 10px;
+	margin-top: 10px;
+}
+
+#webSocketChetIpt {
+	width: 80%;
+	padding: 8px;
+	margin-top: 5px;
+}
+
+#sendBtn {
+	width: 15%;
+	padding: 8px;
+	margin-left: 5px;
+}
+
+#localStream {
+	max-width: 100%;
+	width: 500px;
+	display: none;
+}
+
+#remoteStreamDiv {
+	width: 100%;
+	display: inline;
+	flex-wrap: wrap;
+}
+
+#startSteamBtn {
+	display: none;
+}
+
+.subimg {
+	max-width: 100%;
+	width: 500px;
+	display: none;
+}
+
+#endSteamBtn {
+	display: none;
+}
+
+.visible {
+	display: block;
+}
+
+.flex_div {
+	display: flex;
+	gap: 20px;
+}
+*/
+
+
+
+/* 온라인 사용자 목록 스타일 추가 */
+
+
+
+/*
+#onlineUsersContainer {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-top: 20px;
+    background-color: #f9f9f9;
+}
+#onlineUsersList ul {
+    list-style-type: none;
+    padding: 0;
+}
+#onlineUsersList li {
+    padding: 5px 0;
+    border-bottom: 1px dotted #eee;
+}
+#onlineUsersList li:last-child {
+    border-bottom: none;
+}
+*/
+
+
+/* 화상 통화 영역 (왼쪽) */
+.consultant-wrap {
+    flex: 2; /* 더 많은 공간 차지 */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.flex_div {
+    display: flex;
+    gap: 10px; /* 버튼 간 간격 */
+    align-items: center; /* 세로 중앙 정렬 */
+    margin-bottom: 15px; /* 아래 여백 추가 */
+}
+
+/* 버튼 스타일 */
+button, input[type="button"], .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+}
+
+button#enterRoomBtn, .btn-primary { /* 입장하기, 상담 내용 작성하기 버튼 */
+    background-color: #007bff;
+    color: white;
+}
+
+button#enterRoomBtn:hover, .btn-primary:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+button#startSteamBtn, button#sendBtn {
+    background-color: #28a745; /* 녹색 계열 */
+    color: white;
+}
+
+button#startSteamBtn:hover, button#sendBtn:hover {
+    background-color: #218838;
+    transform: translateY(-2px);
+}
+
+button#endSteamBtn {
+    background-color: #dc3545; /* 빨간색 계열 */
+    color: white;
+}
+
+button#endSteamBtn:hover {
+    background-color: #c82333;
+    transform: translateY(-2px);
+}
+
+input[type="text"], textarea {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 1rem;
+    box-sizing: border-box; /* 패딩이 너비에 포함되도록 */
+}
+
+/* 비디오 영역 */
+.video-ele-wrap {
+    display: flex;
+    gap: 15px; /* 비디오 간 간격 */
+    flex-wrap: wrap; /* 작은 화면에서 줄바꿈 */
+    background-color: #000; /* 비디오 배경을 어둡게 */
+    padding: 15px;
+    border-radius: 8px;
+    justify-content: center; /* 비디오 중앙 정렬 */
+    min-height: 300px; /* 최소 높이 설정 */
+    align-items: center;
+}
+
+#localStream, #remoteStreamDiv {
+    background-color: #333; /* 비디오 영역 배경 */
+    border-radius: 8px;
+    overflow: hidden; /* 모서리 둥글게 */
+    position: relative; /* 자식 video 요소 포지셔닝 기준 */
+    min-width: 300px; /* 최소 너비 */
+    flex: 1; /* 가변 너비 */
+    display: flex; /* 비디오 요소를 중앙에 배치하기 위함 */
+    align-items: center;
+    justify-content: center;
+}
+
+#localStream video, #remoteStreamDiv video {
+    width: 100%;
+    height: auto; /* 비율 유지 */
+    display: block; /* 하단 여백 제거 */
+    border-radius: 8px;
+}
+
+/* 초기에는 비디오 숨기기 (JavaScript로 .visible 클래스 토글) */
+#localStream, #remoteStreamDiv {
+    display: none; /* 기본 숨김 */
+}
+.video-ele-wrap .visible { /* .video-ele-wrap 안에 있는 .visible 클래스가 추가된 요소에만 적용 */
+    display: block;
+}
+
+
+/* 채팅 영역 */
+#chatArea {
+    border: 1px solid #e0e0e0;
+    height: 250px; /* 채팅창 높이 증가 */
+    overflow-y: auto; /* 스크롤바 항상 보이도록 auto */
+    padding: 15px;
+    margin-top: 20px;
+    border-radius: 8px;
+    background-color: #fefefe;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); /* 내부 그림자 */
+    line-height: 1.5; /* 줄 간격 */
+}
+
+#webSocketChetIpt {
+    width: calc(85% - 10px); /* 버튼 너비와 간격 고려 */
+    margin-top: 10px;
+    display: inline-block; /* 버튼과 같은 라인에 */
+    vertical-align: middle; /* 세로 정렬 */
+}
+
+#sendBtn {
+    width: calc(15% - 10px); /* 너비 조정 */
+    margin-left: 10px; /* 입력창과의 간격 */
+    display: inline-block; /* 입력창과 같은 라인에 */
+    vertical-align: middle;
+}
+
+/* 상담 내용 작성 영역 (오른쪽) */
+.consultant-ipt-wrap {
+    flex: 1; /* 적은 공간 차지 */
+    background-color: #f9f9f9;
+    padding: 25px;
+    border-radius: 10px;
+    border: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.consultant-ipt-wrap.show {
+    display: flex; /* JavaScript로 .show 클래스 토글 */
+}
+
+.content-header {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+}
+
+.content-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #444;
+    margin-bottom: 5px;
+}
+
+.desc {
+    color: #777;
+    font-size: 0.9rem;
+}
+
+textarea#consultantContent {
+    width: 100%; /* 너비 꽉 채우기 */
+    min-height: 150px; /* 최소 높이 */
+    resize: vertical; /* 세로로만 크기 조절 가능 */
+    margin-bottom: 15px;
+}
+
+.btn-container {
+    text-align: right; /* 버튼 오른쪽 정렬 */
+}
+
+
+/* 유틸리티 클래스 */
+.visible {
+    display: block !important; /* 중요: JavaScript로 토글될 때 사용 */
+}
+
+.flex_div {
+    display: flex;
+    gap: 20px;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+    .main-content-area {
+        flex-direction: column; /* 세로로 쌓이도록 변경 */
+    }
+    .consultant-wrap, .consultant-ipt-wrap {
+        flex: none; /* 유연성 제거 */
+        width: 100%; /* 너비 꽉 채움 */
+    }
+    .video-ele-wrap {
+        flex-direction: column; /* 비디오도 세로로 쌓이도록 */
+    }
+    #localStream, #remoteStreamDiv {
+        min-width: unset; /* 최소 너비 제한 해제 */
+    }
+    #webSocketChetIpt {
+        width: calc(100% - 70px); /* 모바일에서 입력창 너비 조정 */
+    }
+    #sendBtn {
+        width: 60px; /* 모바일에서 버튼 너비 고정 */
+        margin-left: 10px;
+    }
+}

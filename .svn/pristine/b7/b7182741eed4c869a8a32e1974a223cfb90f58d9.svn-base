@@ -1,0 +1,602 @@
+package kr.or.ddit.controller;
+
+import java.awt.Container;
+import java.lang.ProcessBuilder.Redirect;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import java.util.Arrays;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import io.micrometer.common.util.StringUtils;
+import kr.or.ddit.ServiceResult;
+import kr.or.ddit.service.ICCAService;
+import kr.or.ddit.service.IConsignorSerivce;
+import kr.or.ddit.service.ILogisticsService;
+import kr.or.ddit.service.IStowageService;
+import kr.or.ddit.vo.CCAVO;
+import kr.or.ddit.vo.ContainerDetailVO;
+import kr.or.ddit.vo.ContainerFormVO;
+import kr.or.ddit.vo.CDVO;
+import kr.or.ddit.vo.ContainerVO;
+import kr.or.ddit.vo.ContractFileAttachVO;
+import kr.or.ddit.vo.ContractRecord;
+import kr.or.ddit.vo.ContractVO;
+import kr.or.ddit.vo.CustomUser;
+import kr.or.ddit.vo.HsCodeVO;
+import kr.or.ddit.vo.KRNotationVO;
+import kr.or.ddit.vo.MyItemLocationVO;
+import kr.or.ddit.vo.PaginationInfoVO;
+import kr.or.ddit.vo.RefusalVO;
+import kr.or.ddit.vo.ShipScheduleVO;
+import kr.or.ddit.vo.ShipsVO;
+import kr.or.ddit.vo.StowageVO;
+import kr.or.ddit.vo.SubmitVO;
+import kr.or.ddit.vo.TaxVO;
+import kr.or.ddit.vo.UserVO;
+import kr.or.ddit.vo.WarehouseVO;
+import kr.or.ddit.vo.WhDetailVO;
+import kr.or.ddit.vo.containerShipForm;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+@RequestMapping("/cca")
+public class CCAController {
+
+	@Autowired
+	private IConsignorSerivce consignorService;
+
+	@Autowired
+	private ICCAService ccaService;
+
+	// 관세사의 접수대기 중인 의뢰내역 페이지
+	@GetMapping("/waitingContract.do")
+	public String CCAWaitingContract() {
+		return "cca/waitingContract";
+	}
+
+	// 관세사의 진행중인 의뢰내역 페이지
+	@GetMapping("/ongoingContract.do")
+	public String CCAOngoingContract() {
+		return "cca/ongoingContract";
+	}
+
+	// 관세사의 완료 의뢰내역 페이지
+	@GetMapping("/completionContract.do")
+	public String CCAcompletionContract() {
+		return "cca/completionContract";
+	}
+
+	// 한글표시사항 작성
+	@GetMapping("/koreanLabelWrite.do")
+	public String koreanLabelWrite(@RequestParam("contractNo") String contractNo, Model model) {
+		log.info("koreanLabelWrite 실행 contractNo : {}", contractNo);
+
+		KRNotationVO krnotationVO = ccaService.koreanLabelWrite(contractNo);
+		model.addAttribute("krNotationVO", krnotationVO);
+		model.addAttribute("contractNo", contractNo);
+
+		return "cca/koreanLabelWrite";
+	}
+
+	// 한글표시사항 저장
+	@PostMapping("/koreanLabelInsert.do")
+	public String koreanLabelInsert(KRNotationVO krNotationVO, Model model, RedirectAttributes ra) {
+		String goPage = "";
+
+		// 1. 서버 측 유효성 검사 (contractNo만 검사)
+		Map<String, String> errors = new HashMap<>();
+		/*
+		 * 
+		 * if (StringUtils.isBlank(krNotationVO.getContractNo())) {
+		 * errors.put("contractNo", "계약번호를 입력해주세요!"); } // 필요시 다른 필드 유효성 검사 추가 if
+		 * (StringUtils.isBlank(krNotationVO.getProductNameKr())) {
+		 * errors.put("productNameKr", "제품명을 입력해주세요!"); }
+		 */
+
+		if (errors.size() > 0) { // 입력된 데이터에 문제가 있을 때
+			model.addAttribute("errors", errors);
+			model.addAttribute("krNotationVO", krNotationVO); // 사용자가 입력했던 데이터 유지
+			goPage = "cca/koreanLabelWrite"; // 다시 작성 폼으로 포워드
+
+		} else { // 정상적인 데이터
+			// 2. DB에 데이터 삽입
+			ServiceResult result = ccaService.koreanLabelInsert(krNotationVO);
+
+			if (result.equals(ServiceResult.OK)) { // 3. 삽입 성공
+				ra.addFlashAttribute("message", "한글표시사항이 성공적으로 저장되었습니다!");
+				goPage = "redirect:/cca/ccaDetailContract/" + krNotationVO.getContractNo();
+
+			} else if (result.equals(ServiceResult.EXIST)) { // 4-1. 이미 데이터가 있을 때
+				model.addAttribute("message", "해당 계약일련번호로 작성된 한글표시사항이 존재합니다!");
+				model.addAttribute("krNotationVO", krNotationVO);
+				goPage = "cca/koreanLabelWrite";
+
+			} else { // 4-2. 그 외의 삽입 실패
+				model.addAttribute("message", "서버 에러, 한글표시사항 저장에 실패했습니다. 다시 시도해주세요!");
+				model.addAttribute("krNotationVO", krNotationVO);
+				goPage = "cca/koreanLabelWrite";
+			}
+		}
+		return goPage;
+	}
+	/*
+	 * // 한글표시사항 수정
+	 * 
+	 * @PostMapping("/koreanLabelUpdate.do") public String koreanLabelUpdate(
+	 * KRNotationVO krNotationVO, Model model, RedirectAttributes ra) { String
+	 * goPage = "";
+	 * 
+	 * Map<String, String> errors = new HashMap<>();
+	 * 
+	 * if (errors.size() > 0) { // 입력된 데이터에 문제가 있을 때 model.addAttribute("errors",
+	 * errors); model.addAttribute("krNotationVO", krNotationVO); // 사용자가 입력했던 데이터
+	 * 유지 goPage = "cca/koreanLabelWrite"; // 다시 작성 폼으로 포워드
+	 * 
+	 * } else { // 정상적인 데이터 // 2. DB에 데이터 수정 ServiceResult result =
+	 * ccaService.koreanLabelUpdate(krNotationVO);
+	 * 
+	 * if (result.equals(ServiceResult.OK)) { // 3. 수정 성공
+	 * ra.addFlashAttribute("message", "한글표시사항이 성공적으로 수정되었습니다!"); goPage =
+	 * "redirect:/cca/koreanLabelDetail.do?contractNo=" +
+	 * krNotationVO.getContractNo();
+	 * 
+	 * } else { // 4-2. 그 외의 삽입 실패 model.addAttribute("message",
+	 * "서버 에러, 한글표시사항 수정에 실패했습니다. 다시 시도해주세요!"); model.addAttribute("krNotationVO",
+	 * krNotationVO); goPage = "cca/koreanLabelWrite"; }
+	 * 
+	 * } return goPage; }
+	 */
+
+	// 관세사의 한글표시사항 세부내용페이지 (조회)
+	@GetMapping("/koreanLabelDetail.do")
+	public String koreanLabelDetail(@RequestParam("contractNo") String contractNo, Model model) {
+		log.info("koreanLabelDetail 실행 - contractNo: {}", contractNo);
+
+		KRNotationVO krnotationVO = ccaService.koreanLabelDetail(contractNo);
+		log.info("koreanLabelDetail 실행 - krnotationVO: {}", krnotationVO);
+
+		model.addAttribute("krNotationVO", krnotationVO);
+		model.addAttribute("contractNo", contractNo);
+
+		return "cca/koreanLabelDetail";
+	}
+
+	// 관세사의 의뢰내역
+	@PreAuthorize("hasRole('ROLE_CCA')")
+	@RequestMapping("/ccaContract")
+	public String ccaContractList(@RequestParam(name = "page", required = false, defaultValue = "1") int currentPage,
+			@RequestParam(required = false) String searchWord, @RequestParam(required = false) String searchType,
+			@RequestParam(required = false) String searchStatus, @RequestParam(required = false) String searchCategory,
+			@RequestParam(required = false) String sortDirection, Model model) {
+		PaginationInfoVO<ContractVO> pageVo = new PaginationInfoVO<>();
+		log.info("넘어온 currentPage : {}", currentPage);
+		log.info("넘어온 searchWord : {}", searchWord);
+		log.info("넘어온 searchType : {}", searchType);
+		log.info("넘어온 searchStatus : {}", searchStatus);
+		log.info("넘어온 searchCategory : {}", searchCategory);
+		log.info("넘어온 sortDirection : {}", sortDirection);
+
+		if (StringUtils.isNotBlank(searchWord)) {
+			pageVo.setSearchWord(searchWord);
+			model.addAttribute("searchWord", searchWord);
+		}
+
+		if (StringUtils.isNotBlank(searchType)) {
+			pageVo.setSearchType(searchType);
+			model.addAttribute("searchType", searchType);
+		}
+
+		if (StringUtils.isNotBlank(searchStatus)) {
+			pageVo.setSearchStatus(searchStatus);
+			model.addAttribute("searchStatus", searchStatus);
+		}
+
+		if (StringUtils.isNotBlank(searchCategory)) {
+			pageVo.setSearchCategory(searchCategory);
+			model.addAttribute("searchCategory", searchCategory);
+		}
+
+		if (StringUtils.isNotBlank(sortDirection)) {
+			pageVo.setSortDirection(sortDirection);
+			model.addAttribute("sortDirection", sortDirection);
+		}
+
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+		UserVO user = userSec.getUser();
+
+		if (user != null) {
+			int userNo = user.getUserNo();
+			// 있음
+			pageVo.setCurrentPage(currentPage);
+			pageVo.setUserNo(userNo);
+			int totalRecord = ccaService.ccaContractCount(pageVo);
+			pageVo.setTotalRecord(totalRecord);
+			List<ContractVO> ccaContractList = ccaService.ccaContractList(pageVo);
+			pageVo.setDataList(ccaContractList);
+
+			// 신규의뢰
+			List<ContractVO> newContractList = ccaService.selectNewContract(userNo);
+			int selectNewContractCount = ccaService.selectNewContractCount(userNo);
+
+			// 의뢰 개수
+			int selectExportCount = ccaService.selectExportCount(userNo);// 수출
+			int selectImportCount = ccaService.selectImportCount(userNo);// 수입
+			int selectNewCount = ccaService.selectNewCount(userNo);// 신규
+			model.addAttribute("pageVo", pageVo);
+			model.addAttribute("newListCount", selectNewContractCount);
+			model.addAttribute("newList", newContractList);
+			model.addAttribute("exportCount", selectExportCount);
+			model.addAttribute("importCount", selectImportCount);
+			model.addAttribute("newCount", selectNewCount);
+		} else {
+			System.out.println("없음");
+		}
+		return "cca/ccaContract";
+	}
+
+	// 관세사 신규 의뢰상세
+	@PreAuthorize("hasRole('ROLE_CCA')")
+	@GetMapping("/ccaNewContract/{contractNo}")
+	public String ccaNewContract(@PathVariable String contractNo, Model model) {
+		log.info("넘겨받은 contractNo : {}", contractNo);
+		ContractVO ccaNewContract = ccaService.ccaNewContract(contractNo);
+		List<ContractRecord> selectRefusalList = ccaService.selectRefusalList(contractNo);
+		model.addAttribute("newContract", ccaNewContract); // 신규의뢰 내역 상세
+		model.addAttribute("refusalList", selectRefusalList);// 거절 리스트
+		return "cca/ccaNewContract";
+	}
+
+	// 관세사 상세 의뢰내역
+	@PreAuthorize("hasRole('ROLE_CCA')")
+	@GetMapping("/ccaDetailContract/{contractNo}")
+	public String ccaDetailContract(@PathVariable String contractNo, Model model) {
+		log.info("넘겨받은 contractNo : {}", contractNo);
+		ContractVO ccaDetailContract = ccaService.ccaDetailContract(contractNo);
+		List<ContractRecord> categoryBar = consignorService.categoryBar(contractNo);
+		List<ContractFileAttachVO> selectDeclNo = consignorService.selectDeclNo(contractNo); // delDNO
+		UserVO selectServant = ccaService.selectServant(contractNo);
+		KRNotationVO krnotationVO = ccaService.koreanLabelWrite(contractNo); // 한글표시사항 추가
+		String selectTaxNo = ccaService.selectTaxNo(contractNo); // delNo
+
+		if (selectTaxNo != null) {
+			TaxVO selectTaxList = ccaService.selectTaxList(selectTaxNo); // 세금에 대한 결과
+			CDVO selectCdList = ccaService.selectCdList(selectTaxNo); // 수출입신고필증에 대한 결과
+
+			model.addAttribute("TaxVO", selectTaxList);
+			model.addAttribute("CDVO", selectCdList);
+		}
+		
+		if(ccaDetailContract.getContractType().equals("수입")) {
+			MyItemLocationVO selectMyItemLocation = ccaService.selectMyItemLocation(contractNo);
+			model.addAttribute("whList",selectMyItemLocation);
+		}else if (ccaDetailContract.getContractType().equals("수출")) {
+			MyItemLocationVO selectMyContainerLocation = ccaService.selectMyContainerLocation(contractNo);
+			model.addAttribute("conList",selectMyContainerLocation);
+		}
+		model.addAttribute("contractVo", ccaDetailContract);
+		model.addAttribute("servantVo", selectServant);
+		model.addAttribute("categoryBar", categoryBar);
+		model.addAttribute("contractDelNo", selectDeclNo);
+		model.addAttribute("krNotationVO", krnotationVO);
+		model.addAttribute("declNo", selectTaxNo);
+		return "cca/ccaDetailContract";
+	}
+
+	// 관세사 신규 의뢰 거절
+	@PreAuthorize("hasRole('ROLE_CCA')")
+	@ResponseBody
+	@PostMapping("/contractRefusal")
+	public String contractRefusal(RefusalVO refusalVO) {
+		String redirectUrl = "";
+		log.info("contractNo :  {} ", refusalVO.getContractNo());
+		log.info("refusalForm :  {} ", refusalVO.getStatusCode());
+
+		int contractRefusal = ccaService.contractRefusal(refusalVO);
+
+		if (refusalVO.getResult() > 0) {
+			redirectUrl = "/cca/ccaContract";
+		} else {
+			redirectUrl = "/cca/ccaNewContract/" + refusalVO.getContractNo();
+		}
+
+		return redirectUrl;
+	}
+
+	// 관세사 신규 의뢰 승인
+	@PreAuthorize("hasRole('ROLE_CCA')")
+	@ResponseBody
+	@PostMapping("/contractApproval")
+	public String contractApproval(RefusalVO refusalVO) {
+		String goPage = "";
+		log.info("contractNo : {}", refusalVO.getContractNo());
+
+		int contractApproval = ccaService.contractApproval(refusalVO);
+
+		if (refusalVO.getResult() > 0) {
+			goPage = "/cca/ccaContract";
+		} else {
+			goPage = "/cca/ccaNewContract/" + refusalVO.getContractNo();
+		}
+		return goPage;
+	}
+
+	// 관세사 수입 상태코드 조회
+	@PreAuthorize("hasAnyRole('ROLE_CCA','ROLE_CONSIGNOR')")
+	@GetMapping("/selectOptionCategory")
+	public ResponseEntity<List<ContractRecord>> selectOptionCategory(String data) {
+		log.info("넘어온 data {}", data);
+		List<ContractRecord> selectOptionCategory = ccaService.selectOptionCategory(data);
+		return new ResponseEntity<List<ContractRecord>>(selectOptionCategory, HttpStatus.OK);
+	}
+
+	// --------------------------------------- 예림
+	// --------------------------------------------
+
+	// 관세사 물류창고 접수?? 머라하드라 이걸
+
+	@PreAuthorize("hasRole('ROLE_CCA')")
+	@RequestMapping("/stowageList.do")
+	public String stowageList(
+			@RequestParam(name = "page", required = false, defaultValue = "1") int currentPage
+			, @RequestParam(required = false) String searchType
+			, @RequestParam(required = false) String searchWord
+			, @RequestParam(required = false) String sortColumn
+			, @RequestParam(required = false, defaultValue = "w") String searchTarget
+			, @RequestParam(required = false) String contractNo
+			, Model model) {
+		log.info("currentPage : {}", currentPage);
+		log.info("searchWord : {}", searchWord);
+		log.info("searchType : {}", searchType);
+		log.info("sortColumn : {}", sortColumn);
+		log.info("searchTarget : {}", searchTarget);
+		
+		if (StringUtils.isNotBlank(searchTarget)) {
+			model.addAttribute("searchTarget", searchTarget);
+		}
+
+		PaginationInfoVO<WarehouseVO> warehousePagingVO = new PaginationInfoVO<>(); //창고 페이징
+		PaginationInfoVO<ContainerVO> containerPagingVO = new PaginationInfoVO<>(); //컨테이너 페이징
+		
+		// 물류창고 이름, 물류창고 주소, 물류창고 크기, 물류창고 종류, 물류창고 등록일자
+		// 수입 - 창고 start
+		//창고 검색일때 새팅하기
+		if(searchTarget.equals("w")) {
+			if (StringUtils.isNotBlank(searchWord)) {
+				warehousePagingVO.setSearchWord(searchWord);
+				model.addAttribute("searchWord", searchWord);
+			}
+
+			if (StringUtils.isNotBlank(searchType)) {
+				warehousePagingVO.setSearchType(searchType);
+				model.addAttribute("searchType", searchType);
+			}
+			if (StringUtils.isNotBlank(sortColumn)) {
+				warehousePagingVO.setSortColumn(sortColumn);
+				model.addAttribute("sortColumn", sortColumn);
+			}
+			
+			warehousePagingVO.setCurrentPage(currentPage);
+			containerPagingVO.setCurrentPage(1);
+		}else {
+			warehousePagingVO.setCurrentPage(1);
+		}
+		int totalRecord = ccaService.wareHouseCount(warehousePagingVO);
+		warehousePagingVO.setTotalRecord(totalRecord);
+
+		//List<WarehouseVO> warehouseVO = ccaService.WarehouseList();
+		List<WarehouseVO> warehouseVO = ccaService.WarehouseList2(warehousePagingVO);
+		log.info("warehouseVO : {}", warehouseVO);
+		warehousePagingVO.setDataList(warehouseVO);
+		
+		log.info("warehousePagingVO : {}", warehousePagingVO);
+
+		model.addAttribute("warehousePagingVO", warehousePagingVO);
+		// 수입 - 창고 end
+		
+		
+		// 수출 - 컨테이너 start
+		//컨테이너 검색일때 새팅하기
+		if(searchTarget.equals("c")) {
+			if (StringUtils.isNotBlank(searchWord)) {
+				containerPagingVO.setSearchWord(searchWord);
+				model.addAttribute("searchWord", searchWord);
+			}
+
+			if (StringUtils.isNotBlank(searchType)) {
+				containerPagingVO.setSearchType(searchType);
+				model.addAttribute("searchType", searchType);
+			}
+			if (StringUtils.isNotBlank(sortColumn)) {
+				containerPagingVO.setSortColumn(sortColumn);
+				model.addAttribute("sortColumn", sortColumn);
+			}
+			
+			containerPagingVO.setCurrentPage(currentPage);
+		}
+		
+		int containerTotalRecord = ccaService.containerCount(containerPagingVO);
+		containerPagingVO.setTotalRecord(containerTotalRecord);
+		
+		List<ContainerVO> containerVO = ccaService.ContainerList2(containerPagingVO);
+		containerPagingVO.setDataList(containerVO);
+		//List<ContainerVO> containerVO = ccaService.ContainerList();
+		
+		log.info("containerPagingVO : {}",containerPagingVO);		
+		model.addAttribute("containerPagingVO", containerPagingVO);
+		// 수출 - 컨테이너 end
+		
+		// 적재신청 리스트 start //
+		CustomUser userSec = (CustomUser)
+		SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		UserVO user = userSec.getUser();
+		model.addAttribute("user", user);
+		List<ContractVO> contractVO = ccaService.myContract(user.getUserNo());
+		log.info("contractVO : {}",contractVO);
+		model.addAttribute("contractVO", contractVO);
+		
+		if(!StringUtils.isEmpty(contractNo)) {
+			model.addAttribute("contractNo", contractNo);
+		}
+		
+		// 적재신청 리스트 end //
+		
+		return "cca/stowageList";
+	}
+
+	// 관세사별 관세대리업무 + 물품 + 화주 정보 끌어오기
+	@PreAuthorize("hasRole('ROLE_CCA')")
+	@ResponseBody
+	@PostMapping("/contractSelect.do")
+	public ResponseEntity<ContractVO> contractSelect(@RequestBody String contractNo, Model model) {
+		log.info(contractNo);
+		// 관세사의 userNo를 보내서 자신의 계약 목록만 가져옴 -> 진행코드는 19, 38인 것만 List<ContractVO>
+		ContractVO contractSelect = ccaService.contractSelect(contractNo);
+		log.info("contractSelect : {}", contractSelect);
+		model.addAttribute("contractVO", contractSelect);
+		return ResponseEntity.ok(contractSelect);
+
+	}
+
+	// 트랜잭션 위한 서비스
+	@Autowired
+	private IStowageService stowageService;
+
+	@Autowired
+	private ILogisticsService logisticsService;
+
+	@PreAuthorize("hasRole('ROLE_CCA')")
+	@PostMapping("/whStowage.do")
+	public ResponseEntity<ServiceResult> whStowage(@RequestBody StowageVO stowageVO, Model model) {
+		log.info("whDetailList {}", stowageVO);
+
+		// 창고 적재 <수입>
+		stowageService.whStowage(stowageVO);
+
+		return new ResponseEntity<>(ServiceResult.OK, HttpStatus.OK);
+	}
+
+	// 선박 조회 jsp
+
+	@PreAuthorize("hasRole('ROLE_CCA')")
+	@PostMapping("/shipSeheduleList.do")
+	public String shipSeheduleList(@ModelAttribute ContainerFormVO cfVO, Model model) {
+		log.info("containerFormVO {}", cfVO);
+
+		PaginationInfoVO<ShipsVO> pagingVO = new PaginationInfoVO<>();
+		pagingVO.setCurrentPage(1);
+		List<ShipScheduleVO> shipsVO = logisticsService.selectShipSheduleList(pagingVO);
+		log.info("shipsVO {}", shipsVO);
+		model.addAttribute("cfVO", cfVO);
+		model.addAttribute("shipsVO", shipsVO);
+		return "cca/shipSeheduleList";
+
+	}
+
+	@PreAuthorize("hasRole('ROLE_CCA')")
+	@PostMapping("/containerStowage.do")
+	public ResponseEntity<ServiceResult> containerStowage(@RequestBody containerShipForm csfVO, Model model) {
+		log.info("csfVO {}", csfVO);
+
+		String receivedShipScheduleNoStr = csfVO.getShipScheduleNo(); // AJAX에서 받은 shipScheduleNo (String)
+		ContainerFormVO containerDetailForm = csfVO.getContainerDetail();
+
+		int parsedShipScheduleNo;
+		try {
+			parsedShipScheduleNo = Integer.parseInt(receivedShipScheduleNoStr);
+		} catch (NumberFormatException e) {
+			log.error("선박 일정 번호 파싱 오류: {}", receivedShipScheduleNoStr, e);
+			return new ResponseEntity<>(ServiceResult.FAILED, HttpStatus.BAD_REQUEST);
+		}
+
+		List<String> contractNosList = new ArrayList<>();
+		List<String> containerNosListParsed = new ArrayList<>();
+		List<Integer> containerDetailStowageQtysList = new ArrayList<>();
+
+		if (containerDetailForm.getContractNos() != null && !containerDetailForm.getContractNos().isEmpty()) {
+			contractNosList = Arrays.asList(containerDetailForm.getContractNos().split(","));
+		}
+		if (containerDetailForm.getContainerNos() != null && !containerDetailForm.getContainerNos().isEmpty()) {
+			containerNosListParsed = Arrays.asList(containerDetailForm.getContainerNos().split(","));
+		}
+		if (containerDetailForm.getContainerDetailStowageQtys() != null
+				&& !containerDetailForm.getContainerDetailStowageQtys().isEmpty()) {
+			try {
+				containerDetailStowageQtysList = Arrays
+						.stream(containerDetailForm.getContainerDetailStowageQtys().split(",")).map(Integer::parseInt)
+						.collect(Collectors.toList());
+			} catch (NumberFormatException e) {
+				log.error("컨테이너 적재 수량 파싱 오류: {}", containerDetailForm.getContainerDetailStowageQtys(), e);
+				return new ResponseEntity<>(ServiceResult.FAILED, HttpStatus.BAD_REQUEST);
+			}
+		}
+
+		StowageVO stowageVO = new StowageVO();
+
+		if (!contractNosList.isEmpty()) {
+			stowageVO.setContractNo(contractNosList.get(0));
+		}
+
+		List<ContainerDetailVO> containerDetailVOs = new ArrayList<>();
+
+		if (!contractNosList.isEmpty() && contractNosList.size() == containerNosListParsed.size()
+				&& contractNosList.size() == containerDetailStowageQtysList.size()) {
+
+			for (int i = 0; i < contractNosList.size(); i++) {
+				String currentContractNo = contractNosList.get(i);
+				String currentContainerNoStr = containerNosListParsed.get(i);
+				int currentStowageQty = containerDetailStowageQtysList.get(i);
+
+				log.info("개별 ContainerDetail 처리 중 - 계약번호: {}, 컨테이너번호: {}, 적재수량: {}", currentContractNo,
+						currentContainerNoStr, currentStowageQty);
+
+				ContainerDetailVO detail = new ContainerDetailVO();
+
+				detail.setShipScheduleNo(parsedShipScheduleNo);
+
+				try {
+					detail.setContainerNo(Integer.parseInt(currentContainerNoStr));
+				} catch (NumberFormatException e) {
+					log.error("개별 컨테이너 번호 오류: {}", currentContainerNoStr, e);
+					return new ResponseEntity<>(ServiceResult.FAILED, HttpStatus.BAD_REQUEST);
+				}
+
+				detail.setContainerDetailStowageQty(currentStowageQty);
+
+				containerDetailVOs.add(detail);
+			}
+		} else {
+			log.warn("오류");
+			return new ResponseEntity<>(ServiceResult.FAILED, HttpStatus.BAD_REQUEST);
+		}
+
+		stowageVO.setContainerDetailList(containerDetailVOs);
+		log.info("stowageVO : {}", stowageVO);
+
+		// 컨테이너 적재 <수출>
+		stowageService.containerStowage(stowageVO);
+
+		return new ResponseEntity<>(ServiceResult.OK, HttpStatus.OK);
+	}
+
+}

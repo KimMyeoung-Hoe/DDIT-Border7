@@ -1,0 +1,687 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec"%>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.functions" prefix="fn" %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>상업송장 작성</title>
+<%@ include file="../modules/header.jsp" %>
+<%@ include file="../modules/sidebar.jsp" %>
+<%@ include file="../modules/modal.jsp" %>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/contract.css">
+<link rel="stylesheet" href="/css/cipl.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.js"></script>
+<style type="text/css">
+textarea:focus.empty-field {
+    border: 2px solid red;
+    box-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+	<main class="main-content-area">
+		<div class="content-header">
+			<div class="breadcrumb-warp">
+				<div class="col-sm-12">
+					<ol class="breadcrumb">
+						<li class="breadcrumb-item"><a href="/">Home</a></li>
+						<li class="breadcrumb-item"><a href="/">관세사 정보</a></li>
+						<li class="breadcrumb-item"><a href="/">관세사 상세 정보</a></li>
+						<li class="breadcrumb-item"><a href="/">기본 정보 입력</a></li>
+						<li class="breadcrumb-item"><a href="/">CI 작성</a></li>
+					</ol>
+				</div>
+			</div>
+		
+			<div class="content-title">CI 작성</div>
+			<p class="desc">상업송장을 작성 합니다. 모든 항목이 필수적으로 작성되어야 합니다.</p>
+		</div>
+		<div class="section doc-section">
+			<form action="/ci/insert.do" method="post" id="ciform">
+				<input type="hidden" name="contractNo" id="contractNo" value="${contractNo }"/>
+				<c:if test="${status eq 'u' }">
+					<input type="hidden" name="ciNo" value="${ci.ciNo }" />
+				</c:if>
+				<table class="invoice-table">
+				    <thead>
+				        <tr>
+				            <th colspan="7" class="invoice-header">COMMERCIAL INVOICE</th>
+				        </tr>
+				    </thead>
+				    <tbody>
+				        <tr class="invoice-row">
+				            <td class="invoice-label">
+				            	<span class="label-bold">Shipper/Seller</span>
+				            	<div class="label-bold">(<c:choose>
+				            		<c:when test="${contractVO.contractType =='수입'}">판매자의 정보</c:when>
+				            		<c:when test="${contractVO.contractType =='수출'}">회원의 정보</c:when>
+				            		<c:otherwise>에러</c:otherwise>
+				            	</c:choose>)</div>
+				            </td>
+				            <td class="invoice-value">
+					            <c:set var="shipperValue">
+								    <c:choose>
+								        <c:when test="${not empty ci.shipper }">${fn:trim(ci.shipper) }</c:when>
+								        <c:when test="${not empty contractVO }">
+								            <c:choose>
+								            
+								                <c:when test="${contractVO.contractType =='수입'}"></c:when>
+								                <c:when test="${contractVO.contractType =='수출'}">${fn:trim(contractVO.consignorVO.consignorName) }</c:when>
+								                <c:otherwise>contractVO 없음</c:otherwise>
+								            </c:choose>
+								        </c:when>
+								        <c:otherwise>ci,contractVO 둘다없음</c:otherwise>
+								    </c:choose>
+								</c:set>
+				            	<textarea name="shipper" id="shipper"><c:out value="${shipperValue}"/></textarea>
+				            </td>
+				            
+				            <td class="invoice-label">
+				            	<span class="label-bold">Invoice No. and date</span>
+				            	<div class="label-bold">(인보이스의 번호와 작성날짜)</div>
+				            </td>
+				            <td colspan="4" class="invoice-value"><textarea name="invoice" id="invoice">${ci.invoice }</textarea></td>
+				        </tr>
+				
+				        <tr class="invoice-row">
+				            <td class="invoice-label">
+				            	<span class="label-bold">Consignee</span>
+				            	<div class="label-bold">(물품을 인도받을 사람)</div>
+				            </td>
+				            <td class="invoice-value">
+				            	<textarea name="consignee" id="consignee">${ci.consignee }</textarea>
+				            </td>
+				            
+				            <td class="invoice-label">
+				            	<span class="label-bold">L/C No.</span>
+				            	<div class="label-bold">(신용장 번호 및 발행일)</div>
+				            </td>
+				            <td colspan="4" class="invoice-value">
+				            	<textarea name="lcNoAndDate" id="lcNoAndDate">${ci.lcNoAndDate }</textarea>
+				            </td>
+				        </tr>
+				
+				        <tr class="invoice-row">
+				            <td class="invoice-label">
+				            	<span class="label-bold">Departure date</span>
+				            	<div class="label-bold">(화물을 적재한 선박이나<br/> 비행기의 출발 날짜)</div>
+				            </td>
+				            <td class="invoice-value">
+				            	<textarea name="departureDate" id="departureDate">${ci.departureDate }</textarea>
+				            </td>
+				            
+				            <td class="invoice-label">
+				            	<span class="label-bold">Buyer(if other than consignee)</span>
+				            	<div class="label-bold">(거래처)</div>
+				            </td>
+				            <td colspan="4" class="invoice-value">
+				            	<textarea name="buyer" id="buyer">${ci.buyer }</textarea>
+				            </td>
+				        </tr>
+				
+				        <tr class="invoice-row">
+				            <td class="invoice-label">
+				           		<span class="label-bold">Vessel/flight</span>
+				            	<div class="label-bold">(운송에 사용되는 선박/비행기 선택)</div>
+				            </td>
+				            <td class="invoice-value">
+				           		<select class="" name="vessel" id="vessel">
+					           			<option value="vessel">선박</option>
+					           			<option value="flight">비행기</option>
+					           	</select>
+				            	<%-- <textarea name="vessel" id="vessel">${ci.vessel }</textarea> --%>
+				            </td>
+				            
+				            <td class="invoice-label">
+				            	<span class="label-bold">Other references</span>
+				            	<div class="label-bold">(거래상대방이 신용장 또는 요구한 사항)</div>
+				            </td>
+				            <td colspan="4" class="invoice-value">
+				            	<textarea name="otherReferences" id="otherReferences">${ci.otherReferences }</textarea>
+				            </td>
+				        </tr>
+				
+				        <tr class="invoice-row">
+				            <td class="invoice-label">
+				            	<span class="label-bold">From</span>
+				            	<div class="label-bold">(출발예정항)</div>
+				            </td>
+				            <td class="invoice-value">
+				            	<select class="" name="portFrom" id="portFrom">
+									
+					           	</select>
+				            	<%-- <textarea name="portFrom" id="portFrom">${ci.portFrom }</textarea> --%>
+				            </td>
+				            
+				            <td class="invoice-label">
+				            	<span class="label-bold">Terms of delivery and payment</span>
+				            	<div class="label-bold">(인도조건과 지불조건)</div>
+				            </td>
+				            <td colspan="4" class="invoice-value">
+				            	<textarea name="tdap" id="tdap">${ci.tdap }</textarea>
+				            </td>
+				        </tr>
+				        <tr class="invoice-row">
+				            <td class="invoice-label">
+				            	<span class="label-bold">To</span>
+				            	<div class="label-bold">(도착예정항)</div>
+				            </td>
+				            <td colspan="6" class="invoice-value">
+					            <select class="" name="portTo" id="portTo">
+									
+					           	</select>
+				            	<%-- <textarea name="portTo" id="portTo">${ci.portTo }</textarea> --%>
+				            </td>
+				        </tr>
+				
+				        <tr>
+				            <th class="invoice-th-item">
+				            	Shipping Marks <div class="label-bold">(취급주의 마크)</div>
+				            </th>
+				            <th class="invoice-th-item">
+				            	No. & kind of packages <div class="label-bold">(물품의 포장형태)</div>
+				            </th>
+				            <th class="invoice-th-item">
+				            	Goods description <div class="label-bold">(물품 명세)</div>
+				            </th>
+				            <th class="invoice-th-item">
+				            	Quantity<div class="label-bold">(최소단위당 수량)</div>
+				            </th>
+				            <th class="invoice-th-item">
+				            	Unit price<div class="label-bold">(단위 수량당 가격)</div>
+				            </th>
+				            <th class="invoice-th-item">
+				            	Amount<div class="label-bold">(단위당 단가에 수량을 곱하여 총 금액)</div>
+				            </th>
+				        </tr>
+				
+				        <tr class="invoice-item-row">
+				            <td>
+				            	<textarea name="shippingMarks" id="shippingMarks">${ci.shippingMarks }</textarea>
+				            </td>
+				            <td>
+				            	<textarea name="kindOfPackages" id="kindOfPackages">${ci.kindOfPackages }</textarea>
+				            </td>
+				            <td>
+				            	<textarea name="goodsDescription" id="goodsDescription">${ci.goodsDescription }</textarea>
+				            </td>
+				            <td>
+				            	<textarea name="quantity" id="quantity">${ci.quantity }</textarea>
+				            </td>
+				            <td>
+				            	<textarea name="unitprice" id="unitprice">${ci.unitprice }</textarea>
+				            </td>
+				            <td>
+				            	<textarea name="amount" id="amount">${ci.amount }</textarea>
+				            </td>
+				        </tr>
+				
+				        <tr>
+				            <td colspan="7" class="invoice-signed-by">
+				                <span class="label-bold">Signed by</span>
+				                <div class="label-bold">(송장작성자)</div>
+				                <br><br>
+				                <textarea name="signedBy" id="signedBy"></textarea>
+				            </td>
+				        </tr>
+				    </tbody>
+				</table>
+				<c:set value="등록" var="btnText"/>
+				<c:if test="${status eq 'u' }">
+					<c:set value="수정" var="btnText"/>
+				</c:if>
+				
+	            <div class="btn-container">
+					<button type="button" id="submitbtn" class="btn btn-primary btn-c">CI ${btnText }</button>
+				</div>
+				
+				<!-- <div>
+					<form action="/excel/download" method="post" enctype="multipart/form-data">
+						<button type="submit">읽어오기</button>
+					</form>
+					ajax : <input id="uploadDoc" name="file" type="file">
+				</div> -->
+				
+				
+				
+			</form>
+		</div>
+		<div class="btn-container autovalbtn">
+			<input class="btn btn-primary btn-c btn-sm" id="autoval" value="불러오기" readonly="readonly"/>
+		</div>
+	</main>
+</div>
+</body>
+<script type="text/javascript">
+	const ciform = document.querySelector("#ciform");
+	const submitbtn = document.querySelector("#submitbtn");
+	
+	submitbtn.addEventListener("click", (event) => {
+		console.log(submitbtn.innerHTML)
+		if(submitbtn.innerHTML === "CI 수정"){
+			ciform.action = "/ci/update.do"
+		}
+		
+		// 모든 textarea 요소를 가져옵니다.
+        const textareas = ciform.querySelectorAll('textarea');
+        let firstEmptyTextarea = null;
+
+        // 모든 textarea에서 'empty-field' 클래스를 제거합니다.
+        // 이전 검사에서 빨간색 테두리가 남아있을 수 있기 때문입니다.
+        textareas.forEach(textarea => {
+            textarea.classList.remove('empty-field');
+        });
+
+        // 각 textarea를 순회하며 비어 있는지 확인합니다.
+        for (let i = 0; i < textareas.length; i++) {
+            const textarea = textareas[i];
+            // .trim()을 사용하여 공백만 있는 경우도 비어있는 것으로 간주합니다.
+            if (textarea.value.trim() === '') {
+                // 비어있는 첫 번째 textarea를 저장합니다.
+                if (!firstEmptyTextarea) {
+                    firstEmptyTextarea = textarea;
+                }
+                // 비어있는 필드에 시각적 피드백을 위한 클래스를 추가합니다.
+                textarea.classList.add('empty-field');
+            }
+        }
+        
+        if (firstEmptyTextarea) {
+            // 비어있는 textarea가 있다면
+            //alert('비어있는 항목이 있습니다. 내용을 작성해주세요.');
+			alertify.error('비어있는 항목이 있습니다. 내용을 작성해주세요.');
+            firstEmptyTextarea.focus(); // 첫 번째 비어있는 textarea에 포커스를 줍니다.
+            
+            return false;
+        }
+		
+        $.confirm({
+        	title: '상업송장 작성',
+    	       content: '상업송장 작성 완료시 수정할 수 없습니다',
+   	       buttons: {
+ 				확인: {
+ 					btnClass: 'btn-primary',
+ 					action : function() {
+ 						ciform.submit();
+ 					}
+ 				},
+ 				취소 : {
+ 					btnClass: 'btn-danger',
+ 					action : function() {
+ 						alertify.error('작성을 취소 했습니다.');
+ 					}
+   	          }
+   	       }
+   	    });
+        
+		//ciform.submit();
+		//ciform
+	});
+	const autoval = $("#autoval");
+
+	autoval.on("click",function(){
+		let contractNo = "${contractVO.contractNo }";
+		$.ajax({
+			url : "/contract/api/selectdeclDToContract.do?contractNo=${contractVO.contractNo }",
+			type : "get",
+			contentType:"application/json; charset=utf-8",
+			success : function(result){
+				console.log(result)
+				if(result.plNo !== 0){//pl이 작성되어 있을때*/
+					document.querySelector("#shipper").value = 			result.plVO.shipper;
+					document.querySelector("#invoice").value = 			result.plVO.invoice;
+					document.querySelector("#consignee").value = 		result.plVO.consignee;
+					document.querySelector("#departureDate").value = 	result.plVO.departureDate;
+					document.querySelector("#buyer").value = 			result.plVO.buyer;
+					document.querySelector("#vessel").value = 			result.plVO.vessel;
+					document.querySelector("#otherReferences").value = 	result.plVO.otherReferences;
+					document.querySelector("#portFrom").value = 		result.plVO.portFrom;
+					document.querySelector("#portTo").value = 			result.plVO.portTo;
+					document.querySelector("#shippingMarks").value = 	result.plVO.shippingMarks;
+					document.querySelector("#kindOfPackages").value = 	result.plVO.kindOfPackages;
+					document.querySelector("#goodsDescription").value = result.plVO.goodsDescription;
+					document.querySelector("#amount").value = 			result.plVO.amount;////////////
+					document.querySelector("#signedBy").value = 		result.plVO.signedBy;
+
+			        document.getElementById('lcNoAndDate').value = setNumberString9();
+			        document.querySelector("#tdap").value = "Incoterms " + ['FOB', 'CIF', 'EXW', 'DDP'][generateRandomNumber(0, 3)] + " / Payment_" + ['TT', 'LC', 'COD'][generateRandomNumber(0, 2)];
+			        document.querySelector("#quantity").value = result.productVO.productQty +" Piece";
+					document.querySelector("#unitprice").value = result.productVO.productPrice +" 원";
+					document.querySelector("#amount").value = (result.productVO.productQty * result.productVO.productPrice).toFixed(0)+" 원";
+					
+				}else{//pl이 작성되지 않았을때
+					/*수출입 공통**/
+					document.querySelector("#invoice").value = setNumberString9();
+			        document.getElementById('lcNoAndDate').value = setNumberString9();
+					document.querySelector("#signedBy").value = result.consignorVO.consignorAddr+" " +result.consignorVO.consignorName;
+
+			        document.getElementById('departureDate').value = generateRandomDate();
+					document.querySelector("#goodsDescription").value = result.productVO.productWeight +" kg \n"+ result.productVO.productVolume +" CBM";
+					document.querySelector("#quantity").value = result.productVO.productQty +" Piece";
+					document.querySelector("#unitprice").value = result.productVO.productPrice +" 원";
+					document.querySelector("#amount").value = (result.productVO.productQty * result.productVO.productPrice).toFixed(0)+" 원";
+					
+			        document.querySelector("#vessel").selectedIndex = 0;
+					document.querySelector("#tdap").value = "Incoterms " + ['FOB', 'CIF', 'EXW', 'DDP'][generateRandomNumber(0, 3)] + " / Payment_" + ['TT', 'LC', 'COD'][generateRandomNumber(0, 2)];
+					document.querySelector("#shippingMarks").value = "MARK-" + generateRandomString(6) + "-" + generateRandomNumber(10, 99);
+					document.querySelector("#kindOfPackages").value = generateRandomNumber(1, 50) + " " + ['Cartons', 'Boxes', 'Pallets', 'Drums'][generateRandomNumber(0, 3)];				
+			        document.querySelector("#otherReferences").value = "REF-" + generateRandomString(5) + "-" + generateRandomNumber(100, 999);
+			        
+					/*수입*/
+					if(result.contractNo.substring(0,3) == 'IMP'){
+						document.querySelector("#shipper").value = generateForeignBuyers(1)[0].address+ " " +generateForeignBuyers(1)[0].name;
+						document.querySelector("#consignee").value = result.consignorVO.consignorAddr+" " +result.consignorVO.consignorName;
+						document.querySelector("#buyer").value = result.consignorVO.consignorAddr+" " +result.consignorVO.consignorName;
+						
+						/* document.querySelector("#portFrom").value = result[0][8];
+						document.querySelector("#portTo").value = result[0][10]; */
+						const portFrom = document.querySelector("#portFrom");
+						const portTo = document.querySelector("#portTo");
+
+						if (portTo) {
+					        // 한국 항구 옵션들의 배열 (value 값 기준)
+					        const koreanPortValues = ["KRYOS", "KRBNP", "KRKPO", "KRKUV", "KRTGH", "KRINC"];
+
+					        if (koreanPortValues.length > 0) {
+					            // 배열에서 랜덤 인덱스 선택
+					            const randomIndex = Math.floor(Math.random() * koreanPortValues.length);
+					            // 선택된 랜덤 value 가져오기
+					            const randomPortValue = koreanPortValues[randomIndex];
+
+					            // #portTo 셀렉트 박스에 랜덤으로 선택된 value 할당
+					            portTo.value = randomPortValue; // Changed from 'portToSelect.value' to 'portTo.value'
+
+					            // 선택이 실제로 이루어졌는지 확인
+					            if (portTo.value !== randomPortValue) { // Changed from 'portToSelect.value' to 'portTo.value'
+					                console.warn("'" + '#portTo' + "' 셀렉트 박스에 '" + randomPortValue + "' 값을 가진 옵션이 없습니다.");
+					            } else {
+					                console.log("'" + '#portTo' + "'에 랜덤으로 '" + randomPortValue + "'가 선택되었습니다.");
+					            }
+					        } else {
+					            console.warn("선택할 한국 항구 옵션이 없습니다.");
+					        }
+					    } else {
+					        console.warn("ID가 'portTo'인 요소를 찾을 수 없습니다.");
+					    }
+						
+						
+						if (portFrom) {
+					        const nonKoreanPortValues = [];
+
+					        // #portFrom 엘리먼트의 모든 옵션을 순회합니다.
+					        for (let i = 0; i < portFrom.options.length; i++) {
+					            const option = portFrom.options[i];
+					            const portCode = option.value;
+
+					            // 'KR'로 시작하지 않는 (즉, 한국이 아닌) 항구 코드만 필터링하여 배열에 추가합니다.
+					            if (!portCode.startsWith("KR")) {
+					                nonKoreanPortValues.push(portCode);
+					            }
+					        }
+
+					        if (nonKoreanPortValues.length > 0) {
+					            // 필터링된 배열에서 랜덤 인덱스를 선택합니다.
+					            const randomIndex = Math.floor(Math.random() * nonKoreanPortValues.length);
+					            // 선택된 랜덤 항구의 value 값을 가져옵니다.
+					            const randomPortValue = nonKoreanPortValues[randomIndex];
+
+					            // `#portFrom` 셀렉트 박스에 랜덤으로 선택된 value를 할당하여 옵션을 선택합니다.
+					            portFrom.value = randomPortValue;
+
+					            // 선택이 실제로 이루어졌는지 확인하여 콘솔에 메시지를 출력합니다.
+					            if (portFrom.value !== randomPortValue) {
+					                console.warn("'" + '#portFrom' + "' 셀렉트 박스에 '" + randomPortValue + "' 값을 가진 옵션이 없습니다.");
+					            } else {
+					                console.log("'" + '#portFrom' + "'에 랜덤으로 (한국 제외) '" + randomPortValue + "'가 선택되었습니다.");
+					            }
+					        } else {
+					            console.warn("선택할 한국 외 항구 옵션이 없습니다.");
+					        }
+					    } else {
+					        console.warn("ID가 'portFrom'인 요소를 찾을 수 없습니다.");
+					    }
+					}
+					
+			        /*수출*/
+			        if(result.contractNo.substring(0,3) == 'EXP'){
+						document.querySelector("#shipper").value = result.consignorVO.consignorAddr+" " +result.consignorVO.consignorName;
+						document.querySelector("#consignee").value = generateForeignBuyers(1)[0].address+ " " +generateForeignBuyers(1)[0].name;
+						document.querySelector("#buyer").value = generateForeignBuyers(1)[0].address+ " " +generateForeignBuyers(1)[0].name;
+						
+						
+			        	const portFrom = document.querySelector("#portFrom");
+			            const portTo = document.querySelector("#portTo");
+
+			            // --- #portFrom 로직 (랜덤 한국 항구 선택) ---
+			            // 수출 시 출발 항구는 국내 항구가 됩니다.
+			            if (portFrom) {
+			                // 한국 항구 옵션들의 배열 (value 값 기준)
+			                const koreanPortValues = ["KRYOS", "KRBNP", "KRKPO", "KRKUV", "KRTGH", "KRINC"];
+
+			                if (koreanPortValues.length > 0) {
+			                    // 배열에서 랜덤 인덱스 선택
+			                    const randomIndex = Math.floor(Math.random() * koreanPortValues.length);
+			                    // 선택된 랜덤 value 가져오기
+			                    const randomPortValue = koreanPortValues[randomIndex];
+
+			                    // #portFrom 셀렉트 박스에 랜덤으로 선택된 value 할당
+			                    portFrom.value = randomPortValue;
+
+			                    // 선택이 실제로 이루어졌는지 확인
+			                    if (portFrom.value !== randomPortValue) {
+			                        console.warn("'" + '#portFrom' + "' 셀렉트 박스에 '" + randomPortValue + "' 값을 가진 옵션이 없습니다.");
+			                    } else {
+			                        console.log("'" + '#portFrom' + "'에 랜덤으로 (한국) '" + randomPortValue + "'가 선택되었습니다.");
+			                    }
+			                } else {
+			                    console.warn("선택할 한국 출발 항구 옵션이 없습니다.");
+			                }
+			            } else {
+			                console.warn("ID가 'portFrom'인 요소를 찾을 수 없습니다.");
+			            }
+
+			            // --- #portTo 로직 (한국 제외 항구 랜덤 선택) ---
+			            // 수출 시 도착 항구는 해외 항구가 됩니다.
+			            if (portTo) {
+			                const nonKoreanPortValues = [];
+
+			                // #portTo 엘리먼트의 모든 옵션을 순회합니다.
+			                for (let i = 0; i < portTo.options.length; i++) {
+			                    const option = portTo.options[i];
+			                    const portCode = option.value;
+
+			                    // 'KR'로 시작하지 않는 (즉, 한국이 아닌) 항구 코드만 필터링하여 배열에 추가합니다.
+			                    if (!portCode.startsWith("KR")) {
+			                        nonKoreanPortValues.push(portCode);
+			                    }
+			                }
+
+			                if (nonKoreanPortValues.length > 0) {
+			                    // 필터링된 배열에서 랜덤 인덱스를 선택합니다.
+			                    const randomIndex = Math.floor(Math.random() * nonKoreanPortValues.length);
+			                    // 선택된 랜덤 항구의 value 값을 가져옵니다.
+			                    const randomPortValue = nonKoreanPortValues[randomIndex];
+
+			                    // `#portTo` 셀렉트 박스에 랜덤으로 선택된 value를 할당하여 옵션을 선택합니다.
+			                    portTo.value = randomPortValue;
+
+			                    // 선택이 실제로 이루어졌는지 확인하여 콘솔에 메시지를 출력합니다.
+			                    if (portTo.value !== randomPortValue) {
+			                        console.warn("'" + '#portTo' + "' 셀렉트 박스에 '" + randomPortValue + "' 값을 가진 옵션이 없습니다.");
+			                    } else {
+			                        console.log("'" + '#portTo' + "'에 랜덤으로 (한국 제외) '" + randomPortValue + "'가 선택되었습니다.");
+			                    }
+			                } else {
+			                    console.warn("선택할 한국 외 도착 항구 옵션이 없습니다.");
+			                }
+			            } else {
+			                console.warn("ID가 'portTo'인 요소를 찾을 수 없습니다.");
+			            }
+					}
+				}
+			}
+		})//ajax
+	});
+	
+	/**숫자로된 문자열 만들기**/
+	function setNumberString9(){
+		let randomNum = '';
+		for (let i = 0; i < 9; i++) {
+			randomNum += Math.floor(Math.random() * 10);
+		}
+		return randomNum;
+	}
+	
+	/****랜덤 외국인 뽑기 start*****/
+	function generateForeignBuyers(numBuyers = 30) {
+	    // 흔한 영어권 이름들 (랜덤 조합을 위해 분리)
+	    const firstNames = [
+	        "John", "Jane", "Michael", "Emily", "David", "Sarah", "Chris", "Jessica",
+	        "Matthew", "Ashley", "Daniel", "Amanda", "James", "Elizabeth", "Robert", "Megan"
+	    ];
+	    const lastNames = [
+	        "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
+	        "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson"
+	    ];
+	
+	    // 그럴듯한 거리명, 도시명, 주/지역, 우편번호 패턴
+	    const streetPrefixes = ["Main", "Oak", "Elm", "Pine", "Maple", "Cedar", "Park", "Highland"];
+	    const streetSuffixes = ["Street", "Avenue", "Road", "Lane", "Drive", "Place", "Court"];
+	    const cities = [
+	        "New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia",
+	        "San Antonio", "San Diego", "Dallas", "San Jose", "Austin", "Jacksonville"
+	    ];
+	    const states = [
+	        "CA", "NY", "TX", "FL", "IL", "PA", "OH", "GA", "NC", "MI" // 미국 주 약어
+	    ];
+	
+	    const buyers = [];
+	
+	    for (let i = 0; i < numBuyers; i++) {
+	        // 이름 조합
+	        const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+	        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+	        const fullName = firstName + " " + lastName; // 변경된 부분
+
+	        // 주소 조합
+	        const streetNum = Math.floor(Math.random() * 9999) + 1; // 1~9999 사이의 번지
+	        const streetName = streetPrefixes[Math.floor(Math.random() * streetPrefixes.length)] + " " + streetSuffixes[Math.floor(Math.random() * streetSuffixes.length)]; // 변경된 부분
+	        const city = cities[Math.floor(Math.random() * cities.length)];
+	        const state = states[Math.floor(Math.random() * states.length)];
+	        const zipCode = String(Math.floor(Math.random() * 90000) + 10000); // 5자리 우편번호
+
+	        const address = streetNum + " " + streetName + ", " + city + ", " + state + " " + zipCode; // 변경된 부분
+
+	        const buyer = {
+	            name: fullName,
+	            address: address
+	        };
+	        buyers.push(buyer);
+	    }
+	    return buyers;
+	}
+	/****랜덤 외국인 뽑기 end*****/
+	
+	/**국가 데이터 가져오기**/
+	/**하드코딩 데이터가 4만개로 일단 진행**/
+	const portData = [
+            { id: 17643, countryCode: "KR", name: "여수", portCode: "KRYOS" },
+            { id: 17600, countryCode: "KR", name: "부산 신항", portCode: "KRBNP" },
+            { id: 17617, countryCode: "KR", name: "포항", portCode: "KRKPO" },
+            { id: 17618, countryCode: "KR", name: "군산", portCode: "KRKUV" },
+            { id: 17635, countryCode: "KR", name: "동해", portCode: "KRTGH" },
+            { id: 17611, countryCode: "KR", name: "인천", portCode: "KRINC" },
+
+            { id: 960, countryCode: "AU", name: "PORT GILES", portCode: "AUPGI" },
+            { id: 961, countryCode: "AU", name: "PORT HEDLAND", portCode: "AUPHE" },
+            { id: 962, countryCode: "AU", name: "POINT HENRY PIER/MELBOURNE", portCode: "AUPHP" },
+            { id: 963, countryCode: "AU", name: "PRAHRAN", portCode: "AUPHR" },
+            { id: 964, countryCode: "AU", name: "PORT HUON", portCode: "AUPHU" },
+            { id: 965, countryCode: "AU", name: "PICTON", portCode: "AUPIC" },
+            { id: 966, countryCode: "AU", name: "PHILLIP ISLAND", portCode: "AUPIS" },
+            { id: 967, countryCode: "AU", name: "PORT JACKSON", portCode: "AUPJK" },
+            { id: 968, countryCode: "AU", name: "PARKES", portCode: "AUPKE" },
+            { id: 969, countryCode: "AU", name: "PORT KEMBLA", portCode: "AUPKL" },
+            { id: 970, countryCode: "AU", name: "PORT KENNY", portCode: "AUPKY" },
+            { id: 971, countryCode: "AU", name: "PORT LATTA", portCode: "AUPLA" },
+            { id: 972, countryCode: "AU", name: "PORT LINCOLN", portCode: "AUPLO" },
+            { id: 973, countryCode: "AU", name: "PALM ISLAND", portCode: "AUPMK" },
+            { id: 974, countryCode: "AU", name: "PORT MELBOURNE", portCode: "AUPOR" },
+
+            { id: 24200, countryCode: "US", name: "ALHAMBRA", portCode: "USALH" },
+            { id: 24201, countryCode: "US", name: "ALLISONPARK", portCode: "USALK" },
+            { id: 24202, countryCode: "US", name: "ALLEGAN", portCode: "USALL" },
+            { id: 24203, countryCode: "US", name: "ALAMOGORDO", portCode: "USALM" },
+            { id: 24204, countryCode: "US", name: "ALTON", portCode: "USALN" },
+            { id: 24205, countryCode: "US", name: "WATERLOO, IA", portCode: "USALO" },
+            { id: 24206, countryCode: "US", name: "ALAMOSA", portCode: "USALS" },
+            { id: 24207, countryCode: "US", name: "ALBURTIS", portCode: "USALU" },
+            { id: 24208, countryCode: "US", name: "ALBERTVILLE, MN", portCode: "USALV" },
+            { id: 24209, countryCode: "US", name: "WALLAWALLA", portCode: "USALW" },
+            { id: 24210, countryCode: "US", name: "ALEXANDERCITY", portCode: "USALX" },
+            { id: 24211, countryCode: "US", name: "ALITAK", portCode: "USALZ" },
+            { id: 24212, countryCode: "US", name: "AMARILLO", portCode: "USAMA" },
+            { id: 24213, countryCode: "US", name: "AMBROSE, ND", portCode: "USAMB" }
+        ];
+	
+	const countrySelect = document.getElementById('countrySelect');
+    const portSelect = document.getElementById('portFrom');
+
+    // 페이지 로드 시 드롭다운 생성 함수 호출
+    document.addEventListener('DOMContentLoaded', function() {
+	    const portFrom = document.getElementById('portFrom');
+	    const portTo = document.getElementById('portTo');
+	
+	    // portData 배열을 순회하며 옵션 생성
+	    portData.forEach(port => {
+	        const option = document.createElement('option');
+	        // 옵션의 value는 항구 코드로 설정 (예: KRYOS, AUPGI, USALH)
+	        option.value = port.portCode;
+	        // 옵션의 텍스트는 '도시명 (국가코드) 항구코드' 형식으로 설정
+	        // 변경된 부분: 문자열 결합 ("" + "") 사용
+	        option.textContent = port.name + " (" + port.countryCode + ") " + port.portCode;
+	        portFrom.appendChild(option);
+	    });
+
+	    portData.forEach(port => {
+	        const option = document.createElement('option');
+	        // 옵션의 value는 항구 코드로 설정 (예: KRYOS, AUPGI, USALH)
+	        option.value = port.portCode;
+	        // 옵션의 텍스트는 '도시명 (국가코드) 항구코드' 형식으로 설정
+	        // 변경된 부분: 문자열 결합 ("" + "") 사용
+	        option.textContent = port.name + " (" + port.countryCode + ") " + port.portCode;
+	        portTo.appendChild(option);
+	    });
+	});
+    
+	
+	
+	// 랜덤 데이터 생성 도우미 함수
+	function generateRandomString(length) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    function generateRandomNumber(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateRandomDate() {
+        const start = new Date(2024, 0, 1);
+        const end = new Date(2026, 11, 31);
+        const date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+        return date.toISOString().split('T')[0]; // YYYY-MM-DD 형식으로 반환
+    }
+	
+</script>
+</html>

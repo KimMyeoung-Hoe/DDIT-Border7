@@ -1,0 +1,994 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec" %>
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>마이페이지</title>
+	<!-- 공통css -->
+	<%@ include file="../modules/header.jsp" %>
+	<%@ include file="../modules/sidebar.jsp" %>
+	<%@ include file="../modules/modal.jsp" %>
+	<link rel="stylesheet" href="/css/main.css" />
+	<!-- confirm 대체 -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.js"></script>
+	<style>
+		/* 선택된 메일함 등 조건에 따라 표시/비표시되는 항목 */
+		.toggle { /* 기본적으로 비활성 */
+			display: none;
+		}
+		.toggle.active {
+			display: block;
+		}
+		.mail-viewer { /* 메일 미리보기 전체 영역 */
+			display: none;
+		}
+        .mail-viewer.active { 
+            display: flex;
+            padding: 10px 20px 10px 20px;
+            background-color: #fff;
+            flex-direction: column;
+			border-bottom-right-radius: 14px;
+/* 			resize: horizontal; */
+			flex-grow: 1;
+        }
+        .mail-viewer .mail-header table {
+        	width: 100%;
+        	table-layout: fixed;
+        }
+        .mail-list {
+        	display: none;
+        }
+        .mail-list.active { /* 메일 목록 영역 */
+            overflow-y: auto;
+            background-color: #fff;
+            min-width: 450px;
+            width: 40%;
+            display: flex;
+			flex-grow: 1;
+			border-right: 1px solid #eee;
+			flex-direction: column;
+			align-items: center;
+        }
+	
+		/* 상단 버튼 영역 */
+        .btn-div { /* 전체 상단 버튼 영역 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0px 10px 15px 10px;
+            color: white;
+        }
+        .btn-div .btn { /* 전체 버튼 */
+            min-width: 90px;
+            max-width: 90px;
+            padding: 5px;
+        }
+        .btn-div .search-box { /* 검색 영역 */
+            display: flex;
+            align-items: center;
+        }
+        .btn-div .search-box > * { /* 검색 영역의 모든 요소 */
+            margin-left: 5px;
+        }
+        .btn-div .left-buttons .btn { /* 좌측 버튼(템플릿 선택) */
+        	min-width: 185px;
+            max-width: 185px;
+        }
+        .category-title-span { /* 메일함 이름 */
+        	font-size:28px;
+        	color: #007bff;
+        	margin: 0px;
+        	padding: 0px;
+        	font-weight: bold;
+        	
+        }
+        
+        /* 메일 전체 영역 */
+        .mail-main-content {
+            display: flex;
+            min-height: 650px;
+        }
+        
+        /* 메일 사이드바 영역 */
+        .mail-sidebar { /* 전체 메일 사이드바 영역 */
+            min-width: 200px;
+            padding: 20px 10px;
+            border-right: 1px solid #eee;
+            background-color: #f2f4fa;
+        	border-bottom-left-radius: 12px;   
+        	border-top-left-radius: 12px;   
+        }
+        .mail-sidebar .labels label { /* 안읽음, 중요, 첨부파일 */
+        	align-items: center;
+        	text-align: center;
+        	margin: 0px 4px;
+        	font-size: 14px;
+        }
+        .mail-sidebar ul { /* 메일함 목록 ul */
+            list-style: none;
+            padding: 0;
+            margin: 20px 0px;
+            display:inline-block;
+            align-content: flex-start;
+            width: 100%;
+            position: relative;
+        }
+        .mail-sidebar ul li { /* 메일함 목록 li */
+            padding: 5px;
+            cursor: pointer;
+            display: flex;
+        }
+        .mail-sidebar ul li:hover,
+        .mail-sidebar ul li.active { /* 마우스를 올린, 혹은 현재 선택된 메일함 */
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .mail-sidebar ul li span.count { /* 메일함의 메일개수 표기 */
+        	margin-right: 0px;
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+			position: absolute;
+			right: 1px;
+        }
+        
+        /* 메일 영역 */
+        .mail-list-div { /* 메일 전체 영역 */
+            display: flex;
+            border-right: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+            width: 100%;
+            flex-direction: column;
+            border-top-right-radius: 14px;
+            border-bottom-right-radius: 14px;
+        }
+        .mail-list-controls { /* 메일 관리 버튼 전체 영역 */
+            align-items: center;
+            padding: 10px 15px;
+            background-color: #3a3a50;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            width: 100%;
+            box-sizing: border-box;
+            border-top-right-radius: 14px;
+            height: 50px;
+        }
+        .mail-list-controls > * { /* 메일 관리 버튼 모든 요소들 */
+            margin-right: 10px;
+        }
+        .mail-list-controls .btn { /* 메일 관리 버튼 버튼 */
+        	background-color: #e0e0e0;
+        	padding: 0px;
+        	width: 70px;
+        	height: 25px;
+        	margin-right: 5px;
+        }
+        .mail-list-controls .btn.toggle-temp-select { /* 이어서 작성 버튼 */
+            width: 110px;
+            margin-left: auto;
+        }
+        .mail-list-display { /* 메일 목록과 메일 미리보기 영역 */
+        	display: flex;
+        	border-bottom-right-radius: 14px;
+        	height: 100%;
+        }
+        .mail-list-table { /* 메일 목록 테이블 */
+	        width: 100%;
+	    	border-collapse: collapse;
+        	overflow: hidden;
+        	margin: 0;
+        	table-layout: fixed;
+        }
+        .mail-item { /* 각각의 메일 행 */
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            margin: 7px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        .mail-item:hover, .mail-item.selected { /* 마우스를 올린, 혹은 선택된 메일 행 */
+            background-color: #eaf1fb; 
+        }
+        .mail-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        .tr-unread {
+        	color: #0d6efd;
+        }
+        
+        /* 메일 목록에 마우스 올리면 해당 행 바탕색 */
+        .mail-list-table tr {
+			transition: background-color 0.2s ease;
+		}
+		.mail-list-table tr:hover {
+			background-color: #f5f5f5;
+		}
+        
+        .td-checkbox { /* 메일 목록 중 체크박스 열 */
+        	padding: 0%;
+        	width: 20px;
+        	padding-left: 15px;
+        }
+        
+        /* 중요한 메일 체크 별 아이콘 */
+        .like-button {
+			background: none;
+			border: none;
+			cursor: pointer;
+			padding: 0px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 15px;
+			color: #555;
+			transition: color 0.3s ease;
+		}
+		.star-icon { /* 기본 별 */
+			width: 18px;
+			height: 18px;
+			transition: fill 0.3s ease, stroke 0.3s ease;
+			fill: none;
+			stroke: #888;
+		}
+		.like-button.liked .star-icon { /* 클릭 시 별 */
+			fill: #FFA500;
+			stroke: #FFA500;
+		}
+		.like-button:hover .star-icon { /* 호버 시 별 */
+		stroke: #FFA500;
+		}
+		.like-button.liked .star-icon { /* 애니메이션 효과 */
+			animation: starPulse 0.3s ease-in-out;
+		}
+		@keyframes starPulse {
+			0% { transform: scale(1); }
+			50% { transform: scale(1.2); }
+			100% { transform: scale(1); }
+		}
+        
+        .td-acount { /* 메일 목록 중 메일주소 열 */
+        	width: 25%;
+        	border-right: 1px solid #eee;
+        	white-space: nowrap; /* 텍스트를 한 줄로 */
+		    overflow: hidden;    /* 영역을 벗어나면 숨김 */
+		    text-overflow: ellipsis; /* 숨긴 내용 ... 처리 */
+		    padding: 4px 10px 5px 18px;
+        }
+        .td-title { /* 메일 목록 중 제목 열 */
+        	border-right: 1px solid #eee;
+        	white-space: nowrap; /* 텍스트를 한 줄로 */
+		    overflow: hidden;    /* 영역을 벗어나면 숨김 */
+		    text-overflow: ellipsis; /* 숨긴 내용 ... 처리 */
+		    padding: 4px 10px 5px 10px;
+		    width: auto;
+        }
+        .td-date { /* 메일 목록 중 날짜 열 */
+        	width: 130px;
+        	text-align: right;
+        	padding-left: 2px;
+        	padding-right: 10px;
+        }
+        .table-footer { /* 페이징 영역 */
+        	margin-top: auto;
+        	bottom: 0;
+        	width: 100%;
+        }
+/*         .mail-item .sender { */
+/*             flex-grow: 1; */
+/*             font-size: 14px; */
+/*             color: #333; */
+/*         } */
+/*         .mail-item .title { */
+/*             flex-grow: 3; */
+/*             font-size: 14px; */
+/*             color: #333; */
+/*             white-space: nowrap; */
+/*             overflow: hidden; */
+/*             text-overflow: ellipsis; */
+/*         } */
+/*         .mail-item .date { */
+/*             font-size: 13px; */
+/*             color: #888; */
+/*             margin-left: 15px; */
+/*             white-space: nowrap; */
+/*         } */
+        
+        /* 메일 미리보기 영역 */
+        .mail-viewer .mail-header { /* 메일 헤더 */
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+        .mail-viewer .mail-header h2 { /* 메일 헤더 - 메일 제목 */
+            margin: 0;
+            font-size: 20px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #viewBtn { /* 넓게보기/목록보기 버튼 */
+        	margin-left: 5px;
+        	background-color: #e0e0e0;
+        	padding: 0px;
+        	width: 90px;
+        	height: 25px;
+        }
+        .td-datail-date-t {
+        	text-align: right;
+        	margin: 0px;
+        	padding: 0px;
+        }
+        .td-datail-title-t .mail-detail-title {
+        	font-weight: bold;
+        	font-size: 24px;
+        	color: #0d6efd;
+        	margin: 0px;
+        	padding: 0px;
+        	display: block;
+		    word-wrap: break-word;
+		    overflow-wrap: break-word;
+        }
+        
+        .td-datail-info-t {
+        	margin-top: 5px;
+        	min-width: 70px;
+        	max-width: 70px;
+        	vertical-align: top;
+        }
+        
+        .td-datail-info-b {
+		    width: auto;
+		}
+        .mail-detail-content * {
+        	color: black;
+        }
+        .mail-viewer .mail-header .mail-detail-info { /* 메일 헤더 - 보낸 이, 받는 이 */
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .mail-viewer .mail-detail-content-div { /* 메일 본문 */
+            flex-grow: 1;
+            overflow-y: scroll;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #444;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-right: 15px;
+            height: 300px;
+        }
+        .mail-viewer .attachments { /* 첨부파일 */
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .mail-viewer .attachments h3 { /* 첨부파일 - 영역 제목  */
+            margin: 0 0 10px 0;
+            font-size: 15px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .mail-viewer .attachments h3 button { /* 첨부파일 - 다운로드  */
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .mail-viewer .attachments ul { /* 첨부파일 - 첨부된 파일 목록 */
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .mail-viewer .attachments ul li { /* 첨부파일 - 첨부된 파일 행 */
+            padding: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+        .mail-viewer-table th:first-child{
+        	width: 70px;
+        }
+        .mail-viewer-table th:last-child{
+        	width: calc(100% - 70);
+        }
+        
+        #fileListContainer { /* 첨부파일 목록 */
+		    list-style: none;
+		    padding: 0;
+		    margin: 3px 0; 
+		    text-align: left;
+		    display: block !important;
+		}
+        .file-save-btn { /* 개별 파일 삭제 버튼 */
+        	background: none;
+		    border: none;
+		    font-size: 14px;
+		    padding: 0px 5px;
+        }
+		#fileListContainer .attached-file-item { /* 개별 파일 항목 */
+		    display: flex;
+		    align-items: center;
+		    justify-content: space-between;
+		    padding: 0px 5px;
+		    border-bottom: 1px dashed #eee;
+		    font-size: 14px;
+		    color: #555;
+		    display: block !important;
+		    width: 100% !important;
+		    box-sizing: border-box;
+		}
+		.attached-file-item:last-child {
+		    border-bottom: none; /* 마지막 항목은 구분선 없음 */
+		}
+		.attached-file-item span {
+		    margin-right: 5px;
+		}
+    </style>
+	<sec:authentication property="principal" var="princ"/>
+	<% String contextPath = request.getContextPath(); %>
+</head>
+<body>
+	<div class="app-container">
+		<main class="main-content-area">
+
+			<!-- 헤더 영역 -->
+			<div class="content-header">
+				<!-- 브레드크럼 엘리먼트 -->
+				<div class="breadcrumb-warp">
+					<div class="col-sm-12">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/">Home</a></li>
+							<li class="breadcrumb-item">내 메일</li>
+						</ol>
+					</div>
+				</div>
+				<div id="contentTitle" class="content-title">내 메일</div>
+				<p id="contentDesc" class="desc">Border7 계정 메일로 주고받은 메일 목록을 조회합니다.</p>
+			</div>
+
+			<!--  본문 영역 시작 -->
+			<div class="section">
+				<!-- 상단 버튼 및 검색 영역 -->
+				<div class="btn-div">
+					<div class="left-buttons">
+						<button type="button" class="btn btn-primary" onclick="location.href='mailEdit.do'">메일 작성</button>
+<!-- 						<button type="button" class="btn btn-primary">템플릿</button> -->
+						<span class="category-title-span"></span>
+					</div>
+					<div class="search-box">
+						<select id="searchType" name="search-key">
+							<option value="emailTitle" ${pagingVO.searchType == 'emailTitle' ? 'selected' : ''}>메일 제목</option>
+							<option value="emailAddress" ${pagingVO.searchType == 'emailAddress' ? 'selected' : ''}>메일 주소</option>
+						</select>
+						<input id="searchWord" type="text" class="form-control" placeholder="검색 키워드 입력" value="${pagingVO.searchWord }" />
+						<button id="searchBtn" type="button" class="btn btn-primary">메일 검색</button>
+					</div>
+				</div>
+
+				<div class="mail-main-content">
+					<!-- 메일 사이드바 -->
+					<div class="mail-sidebar">
+						<div class="labels">
+							<label class="mail-label" data-category="unread">
+								<span id="unreadCount">${myMailVO.unreadCount }</span>
+								<br/>안읽음
+							</label>
+							<label class="mail-label" data-category="star">☆<br/>중요</label>
+							<label class="mail-label" data-category="files">💾<br/>첨부파일</label>
+		            	</div>
+		                <ul class="categorys">
+							<li class="category category-all" id="category-all" data-category="all">
+								전체 메일함
+								<span class="count">${myMailVO.allCount }</span>
+							</li>
+							<li class="category category-recip" id="category-recip" data-category="recip">
+								받은 메일함
+								<span class="count">${myMailVO.recipCount }</span>
+		                    </li>
+							<li class="category category-send" id="category-send" data-category="send">
+		                    	보낸 메일함
+								<span class="count">${myMailVO.sendCount }</span>
+							</li>
+							<li class="category category-temp" id="category-temp" data-category="temp">
+								임시 보관함
+								<span class="count">${myMailVO.tempCount }</span>
+							</li>
+							<li class="category category-trash" id="category-trash" data-category="trash">
+		                    	휴지통
+								<span class="count">${myMailVO.trashCount }</span>
+							</li>
+						</ul>
+					</div>
+
+					<!-- 메일 영역 -->
+					<div class="mail-list-div">
+						<!-- 메일 관리 영역 -->
+						<div class="mail-list-controls">
+							<input type="checkbox" id="allCheck" />
+							<p>선택 메일</p>
+							<button type="button" class="btn toggle toggle-read active" id="selectReadBtn" data-action="read">읽음</button>
+							<button type="button" class="btn toggle toggle-trash active" id="selectTrashBtn" data-action="trash">휴지통</button>
+							<button type="button" class="btn toggle toggle-delete" id="selectDeleteBtn" data-action="delete">삭제</button>
+							<form action="mailEdit.do" id="emailNoForm" method="post">
+								<input type="hidden" name="emailNo" id="emailNo">
+							</form>
+							<button type="button" class="btn toggle toggle-temp-select" id="tempReBtn">이어서 작성</button>
+							
+						</div>
+						
+						<div class="mail-list-display">
+			                <!-- 메일 목록 영역 -->
+							<div class="mail-list active">
+			                    <table class="mail-list-table">
+				                    <c:choose>
+										<c:when test="${empty pagingVO.dataList}">
+										    <tr>
+										        <td colspan="5">조회된 결과가 없습니다.</td>
+										    </tr>
+										</c:when>
+										<c:otherwise>
+										    <c:forEach var="mails" items="${pagingVO.dataList}" varStatus="status" >
+										        <tr id="tr_${mails['EMAIL_NO']}" data-index="${status.index}" data-emailno="${mails['EMAIL_NO']}" data-recipno="${mails['RECIP_NO']}" class="${mails['READ_YN'] == 0 ? 'tr-unread' : ''}">
+										            <td class="td-checkbox">
+										            	<input type="checkbox" name="selectMails" value="${mails['EMAIL_NO']}" data-recipno="${mails['RECIP_NO']}" />
+									            	</td>
+									            	<td class="td-checkbox td-star" data-staryn="${mails['STAR_YN'] }">
+									            		<c:if test="${searchCategory ne 'trash' && searchCategory ne 'temp'}">
+									            			<c:if test="${mails['STAR_YN'] eq '1'}">
+															    <button class="like-button liked" aria-label="좋아요">
+									            			</c:if>
+									            			<c:if test="${mails['STAR_YN'] ne '1'}">
+															    <button class="like-button" aria-label="좋아요">
+									            			</c:if>
+																<svg class="star-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+																	<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+																</svg>
+															</button>
+														</c:if>
+										            </td>
+									            	<td class="td-acount">
+									            		<c:if test="${mails['COM_FILE_NO'] ne 0}">
+															💾
+														</c:if>
+									            		<c:if test="${mails['EMAIL_CATEGORY'] eq 'recip'}">
+															${mails['EMAIL_SENDER']}
+														</c:if>
+									            		<c:if test="${mails['EMAIL_CATEGORY'] ne 'recip'}">
+										            		<c:choose>
+											            		<c:when test="${fn:contains(mails['RECIP_EMAILS'], ',')}">
+														            ${fn:substringBefore(mails['RECIP_EMAILS'], ',')} 외
+														        </c:when>
+														        <c:otherwise>
+														            ${mails['RECIP_EMAILS']}
+														        </c:otherwise>
+													        </c:choose>
+														</c:if>
+										            </td>
+										            <td class="td-title">
+										            	${mails['EMAIL_TITLE']}
+										            </td>
+										            <td class="td-date">
+														<fmt:formatDate value="${mails['EMAIL_DATE']}" pattern="yy-MM-dd hh:mm" />
+										            </td>
+										        </tr>
+										    </c:forEach>
+										</c:otherwise>
+									</c:choose>
+			                    </table>
+			                    <div class="table-footer">
+						      		<div class="pagination" id="pagingArea">
+								   		${pagingVO.pagingHTML}
+									</div>
+								</div>
+			                </div>
+			                
+			                <!--  메일 미리보기 영역 -->
+			                <div class="mail-viewer">
+				                <div class="mail-header">
+				                	<table class="mail-viewer-table">
+				                	<thead>
+					                	<th></th>
+					                	<th></th>
+				                	</thead>
+				                		<tr>
+				                			<td colspan="2" class="td-datail-date-t">
+				                				<span class="mail-detail-date"></span>
+				                				<button type="button" class="btn" id="viewBtn">넓게 보기</button>
+				                			</td>
+				                		</tr>
+				                		<tr>
+				                			<td colspan="2" class="td-datail-title-t">
+							                	<span class="mail-detail-title"></span>
+				                			</td>
+				                		</tr>
+				                		<tr>
+				                			<td class="td-datail-info-t">
+				                				보낸 이 :
+				                			</td>
+				                			<td class="td-datail-info-b">
+				                				<span class="mail-detail-send"></span>
+				                			</td>
+				                		</tr>
+				                		<tr>
+				                			<td class="td-datail-info-t">
+				                				받는 이 :
+				                			</td>
+				                			<td class="td-datail-info-b">
+				                				<span class="mail-detail-recip"></span>
+				                			</td>
+				                		</tr>
+				                	</table>
+				                </div>
+				                <div class="mail-detail-content-div">
+				                	<span class="mail-detail-content"></span>
+				                </div>
+				                <div class="mail-detail-attachments">
+				                    <h5>
+				                        첨부파일 <span class="mail-detail-fileCount"></span>
+				                    </h5>
+				                    <ul id="fileListContainer">
+									</ul>
+				                </div>
+			            	</div>
+			            </div>
+		            </div>
+		        </div>
+			</div>
+			<!-- 본문 영역 끝 -->
+		</main>
+	</div>	
+</body>
+<script>
+	$(document).ready(function () {
+		// 기본 URL
+		let baseUrl = "/myPage/myMail.do";
+		
+		let searchCategory = '${searchCategory}';	// 메일함
+		let searchType = "";						// 검색유형
+        let searchWord = "";						// 검색단어
+        
+        // 화면 기초 세팅        
+        $('.category').removeClass("active");
+		$('#category-' + searchCategory).addClass("active");
+		
+		// 버튼 및 상단 현재메일함 표기 세팅
+		if(searchCategory == 'send' || searchCategory == 'temp') {
+			$('.toggle-read').removeClass("active");
+        	$('.toggle-trash').addClass("active");
+        	$('.toggle-delete').removeClass("active");
+        	$(".category-title-span").text(searchCategory == 'send' ? "보낸 메일함" : "임시 보관함");
+        }else if(searchCategory == 'trash') {
+        	$('.toggle-read').removeClass("active");
+        	$('.toggle-trash').removeClass("active");
+        	$('.toggle-delete').addClass("active");
+        	$(".category-title-span").text("휴지통");
+        }else {
+        	$('.toggle-read').addClass("active");
+        	$('.toggle-trash').addClass("active");
+        	$('.toggle-delete').removeClass("active");
+        }
+		if(searchCategory == 'all') {
+        	$(".category-title-span").text("전체 메일함");
+        }else if(searchCategory == 'recip') {
+        	$(".category-title-span").text("받은 메일함");
+        }else if(searchCategory == 'unread') {
+        	$(".category-title-span").text("안읽은 메일");
+        }else if(searchCategory == 'star') {
+        	$(".category-title-span").text("중요한 메일");
+        }else if(searchCategory == 'files') {
+        	$(".category-title-span").text("파일이 첨부된 메일");
+        }
+		
+		
+		// 엔터키로 검색
+		$("#searchWord").keypress(function(event) {
+	        if (event.which === 13) { 
+	            $("#searchBtn").click();
+	        }
+	    });
+		
+		// 검색 버튼을 눌러 검색
+		$("#searchBtn").on("click", function () {
+			searchType = $("#searchType").val();
+			searchWord = $("#searchWord").val();
+			window.location.href = baseUrl + "?searchCategory=" + encodeURIComponent(searchCategory)
+											+ "&searchType=" + encodeURIComponent(searchType)
+											+ "&searchWord=" + encodeURIComponent(searchWord)
+		});
+		
+		// 상단 체크박스(전체선택/전체해제) 클릭 처리
+		$("#allCheck").on('change', function() {
+			const isChecked = this.checked; 
+	        $('input[name="selectMails"]').prop('checked', isChecked);
+	    });
+		
+		// 상단 읽음 / 휴지통 / 삭제 버튼 이벤트
+		$("#selectReadBtn, #selectTrashBtn, #selectDeleteBtn").on("click", function () {
+			// 읽음 / 휴지통 / 삭제 인지 구분
+			const action = $(this).data('action');
+			
+			// 선택된 메일의 emailNo와 recipNo를 저장
+			let selectEmailData = [];
+			$('input[name="selectMails"]:checked').each(function() {
+				selectEmailData.push({
+	                emailNo: $(this).val(),
+	                recipNo: $(this).data('recipno')
+	            });
+			});
+			
+			if (selectEmailData.length === 0) {
+				$.confirm({
+					title: '메일 일괄 처리',
+					content: '선택된 메일이 없습니다.',
+					buttons: {
+						"확인": function() {}
+					}
+				});
+	            return;
+	        }
+			
+			if(action == "delete") {
+				$.confirm({
+					title: '메일 삭제',
+					content: '메일 삭제 시 복원이 불가능합니다. 정말로 삭제하시겠습니까?',
+					buttons: {
+						"네": function() {
+							$.ajax({
+					            url: '/myPage/mailAction',
+					            type: 'POST',
+					            dataType: 'text',
+					            contentType: 'application/json',
+					            data: JSON.stringify({
+					            	actionType: action,
+					            	selectEmailData: selectEmailData
+					            }),
+					            success: function(response) {
+					            	console.log('성공');
+					            	location.reload();
+					            },
+					            error: function(xhr, status, error) {
+					                console.error('AJAX 실패:', status, error);
+					            }
+					        });},
+						"아니요": function() {return;}
+					}
+				});
+			}else {
+				$.ajax({
+		            url: '/myPage/mailAction',
+		            type: 'POST',
+		            dataType: 'text',
+		            contentType: 'application/json',
+		            data: JSON.stringify({
+		            	actionType: action,
+		            	selectEmailData: selectEmailData
+		            }),
+		            success: function(response) {
+		            	console.log('성공');
+		            	location.reload();
+		            },
+		            error: function(xhr, status, error) {
+		                console.error('AJAX 실패:', status, error);
+		            }
+		        });
+			}
+
+		});
+		
+		// 안읽음/중요/첨부파일 클릭하면
+		$(".mail-label").on('click', function() {
+			searchCategory = $(this).data("category");
+			window.location.href = baseUrl + "?searchCategory=" + encodeURIComponent(searchCategory);
+		});
+		
+		// 메일함을 클릭하면
+		$('.category').on('click', function() {
+			searchCategory = $(this).data("category");
+			window.location.href = baseUrl + "?searchCategory=" + encodeURIComponent(searchCategory);
+		});
+		
+		// 페이징 번호를 클릭하면
+		$(".pagination").find(".page-link").on("click", function (event) {
+	     	event.preventDefault(); // 기본 이벤트 제거 (클릭 시 페이지 새로고침 방지)
+			
+	        let page = $(this).attr("data-page");
+	        
+	        searchType = $("#searchType").val();
+			searchWord = $("#searchWord").val();
+			
+	        if(!page){page = 1;}
+	        
+	        window.location.href = baseUrl + "?page=" + encodeURIComponent(page)
+	        								+ "&searchCategory=" + encodeURIComponent(searchCategory)
+									        + "&searchType=" + encodeURIComponent(searchType)
+									        + "&searchWord=" + encodeURIComponent(searchWord);
+	    });
+		
+		// 중요한 메일 설정 (별 아이콘 클릭 시 이벤트)
+		$('.like-button').on('click', function(event) {
+	        event.stopPropagation(); // 기존에 tr에 걸린 이벤트 발생 방지
+	
+	        const $thisButton = $(this);
+	        let isLiked = $thisButton.hasClass('liked'); // 현재 좋아요 상태 확인
+	
+	        if (isLiked) {
+	            $thisButton.removeClass('liked'); // liked 클래스 제거 (좋아요 취소)
+	            isLiked = false;
+	        } else {
+	            $thisButton.addClass('liked'); // liked 클래스 추가 (좋아요)
+	            isLiked = true;
+	        }
+	
+	        const $parentTr = $thisButton.closest('tr');
+	        const emailNo = $parentTr.data('emailno');
+	        const recipNo = $parentTr.data('recipno');
+	
+	        $.ajax({
+	            url: '/myPage/updateStar',
+	            type: 'POST',
+	            data: {
+	                emailNo: emailNo,
+	                recipNo: recipNo,
+	                isLiked: isLiked
+	            },
+	            success: function(response) {
+	                console.log('서버 응답:', response);
+	            },
+	            error: function(error) {
+	                console.error('좋아요 상태 업데이트 실패:', error);
+	                $thisButton.toggleClass('liked'); // 오류 발생 시 상태 되돌림
+	            }
+	        });
+	    });
+		
+		// 메일을 선택하면 미리보기 뷰 표시
+		$('tr[id^="tr_"]').on('click', function() {
+			let emailNo = $(this).data('emailno');
+			
+			//선택한 메일이 받은 메일이고 아직 안 읽은 메일이면 읽음 처리
+			let recipno = $(this).data('recipno');
+			$(this).removeClass("tr-unread");
+			if(recipno != null && recipno != 0 && recipno != "") {
+				let selectEmailData = [{
+					emailNo: emailNo,
+					recipNo: recipno
+				}];
+				
+				$.ajax({
+		            url: '/myPage/mailAction',
+		            type: 'POST',
+		            dataType: 'text',
+		            contentType: 'application/json',
+		            data: JSON.stringify({
+		            	actionType: 'read',
+		            	selectEmailData: selectEmailData
+		            }),
+		            success: function(response) {
+		            	console.log('읽음 성공');
+		            },
+		            error: function(xhr, status, error) {
+		                console.error('AJAX 실패:', status, error);
+		            }
+		        });
+			}
+			
+	        $('.mail-viewer').addClass("active");
+	        
+	        
+	        $.ajax({
+	            url: '/myPage/mailDetailContent',
+	            type: 'POST',
+	            data: {
+	                emailNo: emailNo
+	            },
+	            success: function(response) {
+	            	console.log(response);
+	            	$(".mail-detail-date").text(response.emailDate);
+	            	$(".mail-detail-title").text(response.emailTitle);
+	            	$(".mail-detail-send").text(response.emailSender);
+	            	$(".mail-detail-recip").text(response.recipEmails);
+	            	$(".mail-detail-content").html(response.emailContent);
+	            	$('#emailNo').val(response.emailNo);
+	            	$("#unreadCount").text(response.unreadCount);
+	            	console.log(response.unreadCount);
+	            	$('.mail-detail-fileCount').text("0건");
+	            	if(response.emailFileList) {
+	            		const $fileListContainer = $('#fileListContainer');
+	                    $fileListContainer.empty();
+	                    const fileListLength = response.emailFileList.length;
+	                    $('#mail-detail-fileCount').text(fileListLength + "건");
+	                    response.emailFileList.forEach(function(fileItem, index) {
+	                    	
+	                        const fileSize = (fileItem.comFileDetailSize / 1024).toFixed(2);
+	                        const fileName = fileItem.comFileDetailOriginalName;
+
+	                        // 새로운 <li> 요소 생성
+	                        const $listItem = $('<li></li>')
+	                            .addClass('attached-file-item')
+	                            // data-comfileno 속성 추가
+	                            .attr('data-comfileno', fileItem.comFileNo);
+
+	                        // 저장 버튼 추가
+	                        const $saveButton = $('<button type="button" class="file-save-btn">💾</button>');
+	                        $saveButton.on('click', function() {
+
+	                            const $downloadLink = $('<a>')
+	                                .attr('href', "/myPage/download.do?comFileDetailNo=" + fileItem.comFileDetailNo)
+	                                .css('display', 'none'); // 화면에 보이지 않도록 숨김
+
+	                            $('body').append($downloadLink); // DOM에 추가 (필요)
+	                            $downloadLink[0].click(); // 클릭 이벤트 발생
+	                            $downloadLink.remove(); // 클릭 후 DOM에서 제거
+
+	                            console.log(`파일 No. ${fileItem.comFileNo} 다운로드 버튼 클릭됨`);
+	                            console.log(`다운로드 경로: ${fileItem.comFileDetailSavePath}`);
+	                        });
+	                        
+	                        $listItem.append($saveButton);
+
+	                        // 파일 정보 텍스트 추가
+	                        $listItem.append("<span>" + fileName + "</span> - <span>" + fileSize +"KB</span>");
+
+	                        // ul 컨테이너에 li 추가
+	                        $fileListContainer.append($listItem);
+	                    });
+	            	}
+	            },
+	            error: function(xhr, status, error) {
+	                console.error('AJAX 실패:', status, error);
+	            }
+	        });
+	        
+	        if(searchCategory == 'temp') {
+	        	$('.toggle-temp-select').addClass("active");
+	        }
+	        
+	    });
+		
+		// 미리보기 뷰 외의 영역 클릭 시 미리보기 뷰 닫기
+		$(document).on('click', function(event) {
+	        const $target = $(event.target); // 클릭된 요소
+	
+	        // 1. 클릭된 요소가 .mail-viewer div 자체이거나 그 자손인지 확인
+	        const isInsideMailViewer = $target.closest('.mail-viewer').length > 0;
+	
+	        // 2. 클릭된 요소가 td[id^="td_"] 자체이거나 그 자손인지 확인
+	        const isInsideMailListItem = $target.closest('tr[id^="tr_"]').length > 0;
+	
+	     	// 3. 클릭된 요소가 .btn-div 내부의 버튼이 아닌지 확인 (버튼 클릭 시도 버튼 비활성 방지)
+	        const isButton = $target.hasClass('toggle');
+	     	
+	        // .mail-viewer 내부도 아니고, td[id^="td_"] 내부도 아닐 경우에만 .mail-viewer를 숨김
+	        if (!isInsideMailViewer && !isInsideMailListItem && !isButton) {
+	        	$('.mail-viewer').removeClass('active');
+	        	$('.toggle-temp-select').removeClass('active');
+	        }
+	    });
+
+		// 넓게 보기 / 목록 보기
+		$("#viewBtn").on("click", function () {
+			if($("#viewBtn").text() == "넓게 보기") {
+				$('.mail-list').removeClass('active');
+				$("#viewBtn").text("목록 보기");
+			}else {
+				$('.mail-list').addClass('active');
+				$("#viewBtn").text("넓게 보기");
+			}
+		});
+		
+		// 임시 보관함 - 이어서 작성 버튼 클릭 이벤트 (기존 값을 가지고 메일 작성 화면으로 이동)
+		$("#tempReBtn").on("click", function () {
+			$('#emailNoForm').submit();
+		});
+		
+	});
+</script>
+</html>

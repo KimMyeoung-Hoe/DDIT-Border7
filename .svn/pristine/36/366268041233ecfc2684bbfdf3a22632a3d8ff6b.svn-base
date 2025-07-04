@@ -1,0 +1,1922 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="kr.or.ddit.mapper.ICCAMapper">
+  
+  
+  	<sql id="ccaSearch">
+  		<where>
+	  		<if test="searchWord != null and searchWord != ''">
+	  			(
+		  			b.cca_name  LIKE '%' || #{searchWord} || '%'
+		  			or b.cca_addr  LIKE '%' || #{searchWord} || '%'
+		  			or a.specialty_name  LIKE '%' || #{searchWord} || '%'
+		  		)
+	  		</if>
+  		</where>
+  	</sql>
+  	
+	<sql id="contractSearch">
+		    <if test="searchWord != null and searchWord != ''">
+		        <choose>
+		            <when test="searchType == '수출'">
+		                AND t.contract_type = '수출'
+		                AND (t.contract_no LIKE '%' || #{searchWord} || '%' OR b.consignor_name LIKE '%' || #{searchWord} || '%')
+		                and  s.status_code_medium_category_name LIKE '%' || #{searchCategory} || '%'
+		            </when>
+		            <when test="searchType == '수입'">
+		                AND t.contract_type = '수입'
+		                AND (t.contract_no LIKE '%' || #{searchWord} || '%' OR b.consignor_name LIKE '%' || #{searchWord} || '%')
+		                and s.status_code_medium_category_name LIKE '%' || #{searchCategory} || '%'
+		            </when>
+		            <otherwise> AND (t.contract_no LIKE '%' || #{searchWord} || '%' OR b.consignor_name LIKE '%' || #{searchWord} || '%')
+		            </otherwise>
+		        </choose>
+		    </if>
+		    <if test="searchWord == null or searchWord == ''">
+		        <if test="searchType == '수출'">
+		            AND t.contract_type = '수출'
+		        </if>
+		        <if test="searchType == '수입'">
+		            AND t.contract_type = '수입'
+		        </if>
+		    </if>
+		
+		    <if test="searchStatus != null and searchStatus != ''">
+		        AND s.status_code_name LIKE '%' || #{searchStatus} || '%'
+		    </if>
+		     <if test="searchCategory != null and searchCategory != ''">
+		        AND s.status_code_medium_category_name LIKE '%' || #{searchCategory} || '%'
+		    </if>
+		</sql>
+  	
+  
+    <resultMap id="ccaVOResultMap" type="kr.or.ddit.vo.CCAVO">
+        <id property="userNo" column="USER_NO"/>
+        <result property="ccaName" column="CCA_NAME"/>
+        <result property="ccaAddr" column="CCA_ADDR"/>
+        <result property="ccaDetAddr" column="CCA_DET_ADDR"/>
+        <result property="ccaTel" column="CCA_TEL"/>
+        <result property="ccaProfileImg" column="CCA_PROFILE_IMG"/>
+        <result property="ccaSanctionScore" column="CCA_SANCTION_SCORE"/>
+        <result property="userTel" column="USER_TEL"/>
+        <result property="userFax" column="USER_FAX"/>
+        <result property="userEmail" column="USER_EMAIL"/>
+        <result property="infallible" column="INFALLIBLE"/>
+        <collection property="specialtyNameList" resultMap="specialtyCodeMap"/>
+    </resultMap>
+    
+    <resultMap id="specialtyCodeMap" type="kr.or.ddit.vo.SpecialtyCodeVO">
+        <result property="specialtyName" column="SPECIALTY_NAME"/>
+    </resultMap>
+  	
+  
+	  <resultMap type="kr.or.ddit.vo.ContractVO" id="contractVOResultMap">
+	  		<id property="contractNo" column="CONTRACT_NO"/>
+	  		<result property="consignorNo" column="CONSIGNOR_NO"/>
+	  		<result property="ccaNo" column="CCA_NO"/>
+	  		<result property="productNo" column="PRODUCT_NO"/>
+	  		<result property="ciNo" column="CI_NO"/>
+	  		<result property="plNo" column="PL_NO"/>
+	  		<result property="contractType" column="CONTRACT_TYPE"/>
+	  		<result property="contractDate" column="CONTRACT_DATE"/>
+	  		<result property="comFileNo" column="COM_FILE_NO"/>
+	  		<result property="lastStatusCode" column="LAST_STATUS_CODE"/>
+	  		<result property="ccaName" column="CCA_NAME"/>
+	  		<result property="consignorName" column="CONSIGNOR_NAME"/>
+	  		<result property="consignorCompanyName" column="CONSIGNOR_COMPANY_NAME"/>
+		    <result property="consignorTel" column="CONSIGNOR_TEL"/>
+		    <result property="consignorUserTel" column="CONSIGNOR_USER_TEL"/>
+		    <result property="consignorUserFax" column="CONSIGNOR_USER_FAX"/>
+		    <result property="consignorUserEmail" column="CONSIGNOR_USER_EMAIL"/>
+		    <result property="ccaCompanyName" column="CCA_COMPANY_NAME"/>
+		    <result property="ccaTel" column="CCA_TEL"/>
+		    <result property="ccaUserTel" column="CCA_USER_TEL"/>
+		    <result property="ccaUserFax" column="CCA_USER_FAX"/>
+		    <result property="ccaUserEmail" column="CCA_USER_EMAIL"/>
+		    
+			<association property="productVO" javaType="kr.or.ddit.vo.ProductVO">
+				      <id property="productNo" column="PRODUCT_NO"/> 
+				      <result property="consignorNo" column="PRODUCT_CONSIGNOR_NO"/>
+				      <result property="hsCode" column="HS_CODE"/>
+				      <result property="productName" column="PRODUCT_NAME"/>
+				      <result property="productOrigin" column="PRODUCT_ORIGIN"/>
+				      <result property="productPrice" column="PRODUCT_PRICE"/>
+				      <result property="productQty" column="PRODUCT_QTY"/>
+				      <result property="productWeight" column="PRODUCT_WEIGHT"/>
+				      <result property="productVolume" column="PRODUCT_VOLUME"/>
+		    </association>
+	  		
+	  		<collection property="contractFileList" resultMap="contractFileMap"/>
+	  		<collection property="contractRecordList" resultMap="contractStatusMap"/>
+	  </resultMap>
+	  
+	  
+	  <resultMap type="kr.or.ddit.vo.ContractRecord" id="contractStatusMap">
+	  	 <result property="contractStatusCode" column="CONTRACT_STATUS_CODE"/>
+	     <result property="contractRecordRegDate" column="CONTRACT_RECORD_REG_DATE"/>
+	     <result property="statusCodeMediumCategoryName" column="STATUS_CODE_MEDIUM_CATEGORY_NAME"/>
+	     <result property="statusCodeName" column="STATUS_CODE_NAME"/>
+	  </resultMap>
+	  
+	  <resultMap type="kr.or.ddit.vo.ContractFileAttachVO" id="contractFileMap">
+	  	<result property="contractFileAttachNo" column="CONTRACT_FILE_ATTACH_NO"/>
+	  	<result property="contractFileNo" column="CONTRACT_FILE_NO"/>
+	  	<result property="contractFileType" column="CONTRACT_FILE_TYPE"/>
+	  	<result property="contractFileOriginalName" column="CONTRACT_FILE_ORIGINAL_NAME"/>
+	  	<result property="contractFileExtension" column="CONTRACT_FILE_EXTENSION"/>
+	  	<result property="contractFileSize" column="CONTRACT_FILE_SIZE"/>
+	  	<result property="contractFilePath" column="CONTRACT_FILE_PATH"/>
+	  	<result property="contractFileSavedName" column="CONTRACT_FILE_SAVED_NAME"/>
+	  	<result property="contractFileDate" column="CONTRACT_FILE_DATE"/>
+	  	<result property="contractFileYn" column="CONTRACT_FILE_YN"/>
+	  </resultMap>
+	  
+
+  
+  	<select id="ccaList" resultMap="ccaVOResultMap">
+  		 with cca_a as (
+		             select 
+		                    s.cca_no , s.specialty_no , sc.specialty_name
+		               from 
+		                    specialty s, specialty_code sc
+		             where 
+		                    s.specialty_code = sc.specialty_code
+		               ),
+		       cca_b as(
+		             select 
+		                    user_no, cca_name , substr(cca_addr,1,instr(cca_addr,' ',1,2)-1) as cca_addr ,
+		                    cca_tel , cca_profile_img,cca_sanction_score 
+		               from 
+		                    cca
+	              	  )
+	       select
+	            b.user_no,
+	            b.cca_name,
+	            b.cca_addr,
+	            b.cca_tel,
+	            b.cca_sanction_score,
+	            b.cca_profile_img,
+	            a.specialty_name
+	        from
+	            cca_b b
+	        join
+	            cca_a a on b.user_no = a.cca_no
+  	</select>
+  	
+  	<select id="searchCcaList" parameterType="kr.or.ddit.vo.CCAVO" resultMap="ccaVOResultMap">
+  		 with cca_a as (
+		             select 
+		                    s.cca_no , s.specialty_no , sc.specialty_name
+		               from 
+		                    specialty s, specialty_code sc
+		             where 
+		                    s.specialty_code = sc.specialty_code
+		               ),
+		       cca_b as(
+		             select 
+		                    user_no, cca_name , substr(cca_addr,1,instr(cca_addr,' ',1,2)-1) as cca_addr ,
+		                    cca_tel , cca_profile_img,cca_sanction_score 
+		               from 
+		                    cca
+	              	  )
+	       select
+	            b.user_no,
+	            b.cca_name,
+	            b.cca_addr,
+	            b.cca_tel,
+	            b.cca_sanction_score,
+	            b.cca_profile_img,
+	            a.specialty_name
+	        from
+	            cca_b b
+	        join
+	            cca_a a on b.user_no = a.cca_no
+	        <include refid="ccaSearch"/>	   
+  	
+  	</select>
+  	
+  	<select id="searchCcaSpecialty" parameterType="kr.or.ddit.vo.CCAVO" resultMap="ccaVOResultMap">
+  		 with cca_a as (
+                 select 
+                        s.cca_no , s.specialty_no , sc.specialty_name
+                   from 
+                        specialty s, specialty_code sc
+                 where 
+                        s.specialty_code = sc.specialty_code
+                 and ( 
+                        <foreach collection="specialtyCode" item="code"  separator="or">
+                        	sc.specialty_code  =  #{code}
+                        </foreach>
+                      )       
+                   ),
+           cca_b as(
+                 select 
+                        cca.user_no, cca_name , substr(cca_addr,1,instr(cca_addr,' ',1,2)-1) as cca_addr ,
+                        cca_tel , cca_profile_img,cca_sanction_score 
+                   from 
+                        cca
+                     join 
+                          user_tb on cca.user_no = user_tb.user_no
+                     where 
+                          user_status = 0     
+                    )
+         select
+              b.user_no,
+              b.cca_name,
+              b.cca_addr,
+              b.cca_tel,
+              b.cca_sanction_score,
+              b.cca_profile_img,
+              a.specialty_name
+          from
+              cca_b b
+          join
+              cca_a a on b.user_no = a.cca_no
+  	</select>
+  	
+  	<select id="checkSpecialTypCodeCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+  		select
+              b.*
+        from
+              (
+                select
+                  a.*,row_number() over (order by a.user_no desc) rnum
+                from
+                  (                
+                     
+                     with cca_a as (
+                              SELECT
+                      s.cca_no,
+                      LISTAGG(sc.specialty_name, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) AS specialty_name,
+                      LISTAGG(sc.specialty_code, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) AS specialty_code
+                  FROM
+                      specialty s
+                  JOIN
+                      specialty_code sc ON s.specialty_code = sc.specialty_code
+                  GROUP BY
+                      s.cca_no
+                  HAVING 
+                    1=1
+                  AND
+                     ( 
+                                  <foreach collection="specialtyCode" item="code"  separator="or">
+                                    LISTAGG(sc.specialty_code, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) LIKE '%' || #{code} || '%'
+                                OR LISTAGG(sc.specialty_code, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) LIKE #{code} || ',%'
+                                OR LISTAGG(sc.specialty_code, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) LIKE '%, ' || #{code} 
+                                OR LISTAGG(sc.specialty_code, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) LIKE '%, ' || #{code} || ',%' 
+                                OR LISTAGG(sc.specialty_code, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) LIKE '%,${code},%'
+                                OR LISTAGG(sc.specialty_code, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) = #{code} 
+                                  </foreach>
+                               )     
+                               ),
+                       cca_b as(
+                             select 
+                                    cca.user_no, cca_name , substr(cca_addr,1,instr(cca_addr,' ',1,2)-1) as cca_addr ,
+                                    cca_tel , cca_profile_img,cca_sanction_score 
+                               from 
+                                    cca
+                                join 
+	                                 user_tb on cca.user_no = user_tb.user_no
+	                            where 
+	                                user_status = 0       
+                                )
+                     select
+                         count(distinct(b.user_no)) as user_no
+                      from
+                          cca_b b
+                      join
+                          cca_a a on b.user_no = a.cca_no   
+                      order by 1 desc 
+                       
+                 ) a
+          )b
+  	</select>
+  	
+  	
+  	
+  	<select id="checkSpecialtyCodeList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultMap="ccaVOResultMap">
+  		select
+          		b.*
+        from
+		          (
+		            select
+		              a.*,row_number() over (order by a.user_no desc) rnum
+		            from
+		              (                
+		                 
+		                 with cca_a as (
+		                          SELECT
+									    s.cca_no,
+									    LISTAGG(sc.specialty_name, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) AS specialty_name,
+									    LISTAGG(sc.specialty_code, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) AS specialty_code
+									FROM
+									    specialty s
+									JOIN
+									    specialty_code sc ON s.specialty_code = sc.specialty_code
+									GROUP BY
+									    s.cca_no
+									HAVING 
+										1=1
+									AND
+										 ( 
+					                        <foreach collection="specialtyCode" item="code"  separator="or">
+					                        	LISTAGG(sc.specialty_code, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) LIKE '%' || #{code} || '%'
+		              							OR LISTAGG(sc.specialty_code, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) LIKE #{code} || ',%'
+								                OR LISTAGG(sc.specialty_code, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) LIKE '%, ' || #{code} 
+								                OR LISTAGG(sc.specialty_code, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) LIKE '%, ' || #{code} || ',%' 
+								                OR LISTAGG(sc.specialty_code, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) LIKE '%,${code},%'
+								                OR LISTAGG(sc.specialty_code, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) = #{code} 
+					                        </foreach>
+		                     			 )     
+		                           ),
+		                   cca_b as(
+		                         select 
+		                                cca.user_no, cca_name , substr(cca_addr,1,instr(cca_addr,' ',1,2)-1) as cca_addr ,
+		                                cca_tel , cca_profile_img,cca_sanction_score 
+		                           from 
+		                                cca
+		                            join 
+		                                 user_tb on cca.user_no = user_tb.user_no
+		                            where 
+		                                user_status = 0    
+		                            ),
+                  		 cca_c as (
+		                           SELECT
+		                           nvl(
+		                            TRUNC(
+		                                (
+		                                    COUNT(CASE WHEN c.last_status_code IN (2,3,4,5,8,11,15,21,23,24,25,26,29,32,36,41) THEN c.contract_no END)
+		                                    -
+		                                    COUNT(CASE WHEN sc.status_code_name LIKE '%반려%' THEN c.contract_no END)
+		                                )
+		                                /
+		                                nullif(COUNT(CASE WHEN c.last_status_code IN (2,3,4,5,8,11,15,21,23,24,25,26,29,32,36,41) THEN c.contract_no END),0)
+		                                * 100
+		                                , 1),0) AS infallible
+		                                ,ca.user_no
+		                              FROM
+		                                  contract c
+		                              LEFT JOIN
+		                                  status_code sc ON c.last_status_code = sc.status_code
+		                              left JOIN cca ca ON c.cca_no = ca.user_no 
+		                              WHERE
+		                                  c.last_status_code IN (2,3,4,5,8,11,15,21,23,24,25,26,29,32,36,41)
+		                              GROUP BY ca.user_no 
+		                           ) 
+		                 select
+		                      b.user_no,
+		                      b.cca_name,
+		                      b.cca_addr,
+		                      b.cca_tel,
+		                      b.cca_sanction_score,
+		                      b.cca_profile_img,
+		                      a.specialty_name,
+		                      c.infallible
+		                  from
+		                      cca_b b
+		                  join
+		                      cca_a a on b.user_no = a.cca_no
+		                  left join 
+                     		  cca_c c on c.user_no = b.user_no       
+		                  order by 1 desc 
+		                   
+		             ) a
+          )b
+            <![CDATA[
+			where 
+				b.rnum >= #{pageVo.startRow}
+			and
+				b.rnum <= #{pageVo.endRow}	
+			]]>	
+  	</select>
+  	
+  	<select id="detailCcaProfile" parameterType="int" resultMap="ccaVOResultMap">
+			   with cca_a as (
+                       select 
+                              s.cca_no , s.specialty_no , sc.specialty_name
+                         from 
+                              specialty s, specialty_code sc
+                       where 
+                              s.specialty_code = sc.specialty_code
+                         ),
+                 cca_b as(
+                       select 
+                              user_no, cca_name ,cca_addr , cca_det_addr,
+                              cca_tel , cca_profile_img,cca_sanction_score 
+                         from 
+                              cca
+                          ),
+                 cca_c as(
+                       select 
+                              user_no, user_tel, user_fax , user_email
+                         from 
+                              user_tb               
+                          ),
+                cca_d AS (
+                        SELECT
+                            NVL(
+                                TRUNC(
+                                    (
+                                        COUNT(CASE WHEN c.last_status_code IN (2,3,4,5,8,11,15,21,23,24,25,26,29,32,36,41) THEN c.contract_no END)
+                                        -
+                                        COUNT(CASE WHEN sc.status_code_name LIKE '%반려%' THEN c.contract_no END)
+                                    )
+                                    /
+                                    NULLIF(COUNT(CASE WHEN c.last_status_code IN (2,3,4,5,8,11,15,21,23,24,25,26,29,32,36,41) THEN c.contract_no END), 0)
+                                    * 100
+                                , 1), 0) AS infallible,
+                            ca.user_no
+                        FROM
+                            contract c
+                        LEFT JOIN
+                            status_code sc ON c.last_status_code = sc.status_code
+                        LEFT JOIN
+                            cca ca ON c.cca_no = ca.user_no
+                        WHERE
+                            c.last_status_code IN (2,3,4,5,8,11,15,21,23,24,25,26,29,32,36,41)
+                        GROUP BY
+                            ca.user_no
+                            )        
+               select
+                    b.user_no,
+                    b.cca_name,
+                    b.cca_addr,
+                    b.cca_det_addr,
+                    b.cca_tel,
+                    b.cca_sanction_score,
+                    b.cca_profile_img,
+                    a.specialty_name,
+                    c.user_tel,
+                    c.user_fax,
+                    c.user_email,
+                    d.infallible
+                from
+                    cca_b b
+                join
+                    cca_a a on b.user_no = a.cca_no
+                join 
+                    cca_c c on b.user_no = c.user_no
+                LEFT JOIN
+                    cca_d d ON d.user_no = b.user_no     
+			          where  b.user_no = #{userNo} 
+  	</select>
+  	
+  	<select id="selectCCACount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+  		select b.*      
+        from 
+           (with cca_a as (
+                           select 
+                                  s.cca_no , s.specialty_no , sc.specialty_name
+                             from 
+                                  specialty s, specialty_code sc
+                           where 
+                                  s.specialty_code = sc.specialty_code
+                             ),
+                     cca_b as(
+                           select 
+                                  cca.user_no, cca_name , substr(cca_addr,1,instr(cca_addr,' ',1,2)-1) as cca_addr ,
+                                  cca_tel , cca_profile_img,cca_sanction_score 
+                             from 
+                                  cca
+                             join 
+                  				user_tb on cca.user_no = user_tb.user_no
+              where 
+                  user_status = 0   
+                              )
+                   select
+                       count(distinct(b.user_no)) as user_no
+                    from
+                        cca_b b
+                    join
+                        cca_a a on b.user_no = a.cca_no
+                         <include refid="ccaSearch"/>	
+                        ) b
+  	</select>
+  	
+  <select id="selectCCAList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultMap="ccaVOResultMap">
+	  WITH cca_a AS (
+					    SELECT
+					        s.cca_no,
+					        LISTAGG(sc.specialty_name, ', ') WITHIN GROUP (ORDER BY sc.specialty_name) AS specialty_name
+					    FROM
+					        specialty s
+					    JOIN
+					        specialty_code sc ON s.specialty_code = sc.specialty_code
+					    GROUP BY
+					        s.cca_no
+					),
+					cca_b AS (
+					    SELECT
+					        cca.user_no,
+					        cca_name,
+					        substr(cca_addr,1,instr(cca_addr,' ',1,2)-1) as cca_addr,
+					        cca_tel,
+					        cca_profile_img,
+					        cca_sanction_score
+					    FROM
+					        cca
+					     join 
+                 			 user_tb on cca.user_no = user_tb.user_no
+              where 
+                  user_status = 0      
+					),
+					cca_c AS (
+					    SELECT
+					        NVL(
+					            TRUNC(
+					                (
+					                    COUNT(CASE WHEN c.last_status_code IN (2,3,4,5,8,11,15,21,23,24,25,26,29,32,36,41) THEN c.contract_no END)
+					                    -
+					                    COUNT(CASE WHEN sc.status_code_name LIKE '%반려%' THEN c.contract_no END)
+					                )
+					                /
+					                NULLIF(COUNT(CASE WHEN c.last_status_code IN (2,3,4,5,8,11,15,21,23,24,25,26,29,32,36,41) THEN c.contract_no END), 0)
+					                * 100
+					            , 1), 0) AS infallible,
+					        ca.user_no
+					    FROM
+					        contract c
+					    LEFT JOIN
+					        status_code sc ON c.last_status_code = sc.status_code
+					    LEFT JOIN
+					        cca ca ON c.cca_no = ca.user_no
+					    WHERE
+					        c.last_status_code IN (2,3,4,5,8,11,15,21,23,24,25,26,29,32,36,41)
+					    GROUP BY
+					        ca.user_no
+					)
+					  SELECT
+					        final_paged_result.*
+					    FROM
+					        (
+					            SELECT
+					                ordered_filtered_result.*,
+					                ROW_NUMBER() OVER (  <choose>
+										                        <when test="searchType == '오름'">
+										                            ORDER BY nvl(ordered_filtered_result.infallible,0) ASC
+										                        </when>
+										                        <when test="searchType == '내림'">
+										                            ORDER BY nvl(ordered_filtered_result.infallible,0) DESC
+										                        </when>
+										                        <otherwise>
+										                            ORDER BY ordered_filtered_result.user_no DESC
+										                        </otherwise>
+										                    </choose>) rnum
+					            FROM
+					                (
+					                    SELECT
+					                        b.user_no,
+					                        b.cca_name,
+					                        b.cca_addr,
+					                        b.cca_tel,
+					                        b.cca_profile_img,
+					                        b.cca_sanction_score,
+					                        a.specialty_name,
+					                        c.infallible 
+					                    FROM
+					                        cca_b b
+					                    LEFT JOIN
+					                        cca_a a ON b.user_no = a.cca_no
+					                    LEFT JOIN
+					                        cca_c c ON c.user_no = b.user_no
+					                    
+					                    <include refid="ccaSearch"/> 
+					                   
+					                ) ordered_filtered_result 
+					        ) final_paged_result
+						      <![CDATA[
+								where 
+									final_paged_result.rnum >= #{startRow}
+								and
+									final_paged_result.rnum <= #{endRow}	
+								]]>	
+  	</select>
+  	
+  	
+  	<select id="ccaContractCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+  	select b.*      
+			  from 
+			       (
+		  			  with c_a as (
+		                                 select user_no ,cca_name
+		                                   from cca
+		                               ),
+		                        c_b as(
+		                                  select user_no , consignor_name
+		                                    from consignor
+		                               )
+		                             select count(t.contract_no)
+		                               from contract t          
+		                               join
+		                                    c_a a on a.user_no = t.cca_no
+		                               join
+		                                    c_b b on b.user_no = t.consignor_no     
+		                               left join
+		                                    status_code s on s.status_code = t.last_status_code 
+		                               where
+		                                    cca_no = #{userNo}
+		                                and 
+		                                    s.status_code not in (
+		                                                             select status_code
+		                                                               from status_code
+		                                                               where STATUS_CODE_MEDIUM_CATEGORY_NAME = '관세대리업무 접수'
+		                                                                 and status_code_name = '대기'       
+		                                                         )  
+		                              <include refid="contractSearch"/>	                                
+		            )b                        
+  	</select>
+
+	<select id="ccaContractList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultMap="contractVOResultMap">
+		select
+	        b.*
+	      from
+	        (
+	          select
+	            a.*,row_number() over (<choose>
+	            							<when test="sortDirection == '오름'">
+	            								order by a.contract_date asc
+	            							</when>
+	            							<when test="sortDirection == '내림'">
+	            								order by a.contract_date desc
+	            							</when>
+	            							<otherwise>
+	            								order by a.contract_date desc
+	            							</otherwise>
+	            						</choose>) rnum
+	          from
+	            (   
+                 with c_a as (
+                                 select user_no ,cca_name
+                                   from cca
+                               ),
+                        c_b as(
+                                  select user_no , consignor_name
+                                    from consignor
+                               )
+                             select t.contract_no,
+                                    a.cca_name,
+                                    b.consignor_name,
+                                    t.contract_type,
+                                    t.contract_date,
+                                    t.last_status_code,
+                                    s.status_code_medium_category_name,
+                                    s.status_code_name
+                               from contract t          
+                               join
+                                    c_a a on a.user_no = t.cca_no
+                               join
+                                    c_b b on b.user_no = t.consignor_no     
+                               left join
+                                    status_code s on s.status_code = t.last_status_code 
+                               where
+                                    cca_no = #{userNo}    
+                                and 
+                                    s.status_code not in (
+                                                             select status_code
+                                                               from status_code
+                                                               where STATUS_CODE_MEDIUM_CATEGORY_NAME = '관세대리업무 접수'
+                                                                 and status_code_name = '대기'       
+                                                         ) 
+                                      <include refid="contractSearch"/>	                                  
+                               order by contract_date desc 
+	           ) a
+	        )b
+	         <![CDATA[
+					where 
+						b.rnum >= #{startRow}
+					and
+						b.rnum <= #{endRow}	
+					]]>
+	</select>
+  	
+  	
+  	<select id="selectNewContract" parameterType="int" resultMap="contractVOResultMap">
+  		 with c_a as (
+                                 select user_no ,cca_name
+                                   from cca
+                               ),
+                        c_b as(
+                                  select user_no , consignor_name
+                                    from consignor
+                               )
+                             select t.contract_no,
+                                    a.cca_name,
+                                    b.consignor_name,
+                                    t.contract_type,
+                                    t.contract_date,
+                                    t.last_status_code,
+                                    s.status_code_medium_category_name,
+                                    s.status_code_name
+                               from contract t          
+                               join
+                                    c_a a on a.user_no = t.cca_no
+                               join
+                                    c_b b on b.user_no = t.consignor_no     
+                               left join
+                                    status_code s on s.status_code = t.last_status_code 
+                               where
+                                    cca_no = #{userNo}
+                                     and 
+                                    s.status_code in (
+                                                             select status_code
+                                                               from status_code
+                                                               where STATUS_CODE_MEDIUM_CATEGORY_NAME = '관세대리업무 접수'
+                                                                 and status_code_name = '대기'       
+                                                         )         
+                               order by 1 desc 
+  	</select>
+  	
+  	<select id="ccaDetailContract" parameterType="string" resultMap="contractVOResultMap">
+						
+        with c_a as (
+                     select   c.contract_no,
+                              p.product_no,
+                              p.consignor_no,
+                              p.hs_code,
+                              p.product_name,
+                              p.product_origin,
+                              p.product_qty,
+                              p.product_weight,
+                              p.product_volume,
+                              p.product_price
+                          from contract c
+                          join
+                              product p on c.product_no = p.product_no
+                          where
+                              c.contract_no =#{contractNo}
+                      ),
+                      c_c as (
+                          select
+                              c.contract_no,
+                              r.contract_status_code,
+                              r.contract_record_reg_date,
+                              s.status_code_medium_category_name,
+                              s.status_code_name
+                          from contract c
+                          join
+                              contract_record r on r.contract_no = c.contract_no
+                          join
+                              status_code s on s.status_code = r.contract_status_code
+                          where
+                              c.contract_no =  #{contractNo}
+                          order by 3
+                      )
+                      select
+                          t.contract_no,
+                          t.consignor_no,
+                          u_con.user_name as consignor_name,
+                          con_detail.consignor_name as consignor_company_name,
+                          con_detail.consignor_tel as consignor_tel,
+                          u_con.user_tel as consignor_user_tel,
+                          u_con.user_fax as consignor_user_fax,
+                          u_con.user_email as consignor_user_email,
+                          t.contract_type,
+                          t.contract_date,
+                          t.com_file_no,
+                          t.last_status_code,
+                          a.product_no,
+                          a.consignor_no,
+                          a.hs_code,
+                          a.product_name,
+                          a.product_origin,
+                          a.product_qty,
+                          a.product_weight,
+                          a.product_volume,
+                          a.product_price,
+                          c.contract_status_code,
+                          c.contract_record_reg_date,
+                          c.status_code_medium_category_name,
+                          c.status_code_name,
+                          t.ci_no,
+                          t.pl_no
+                      from contract t
+                      join
+                          c_a a on a.contract_no = t.contract_no
+                      join
+                          c_c c on c.contract_no = t.contract_no
+                      join
+                          user_tb u_con on u_con.user_no = t.consignor_no
+                      join
+                          cca cca_detail ON cca_detail.user_no = t.cca_no
+                      join
+                          consignor con_detail on con_detail.user_no = t.consignor_no    
+                      where
+                      t.contract_no = #{contractNo}
+
+  	</select>
+  	
+  	
+  	<select id="selectServant" parameterType="string" resultType="kr.or.ddit.vo.UserVO">
+  		select   
+		        t.user_no
+		       ,t.user_name
+		       ,t.user_tel
+		       ,t.user_fax
+		       ,t.user_email
+		       ,d.dept_tel
+		       ,d.dept_name
+		       ,j.job_grade_name
+		  from  user_tb t ,public_servant ps,job_grade j,dept d ,(
+												                   select decl.servant_no
+												                     from decl_d
+												                     join
+												                        decl on decl.decl_d_no = decl_d.decl_d_no
+												                    where contract_no = #{contractNo}
+												                    ) s     
+		where 
+		      t.user_no = s.servant_no
+		   and   
+		      ps.servant_no = s.servant_no
+		   and 
+		      ps.job_grade_code = j.job_grade_code  
+		   and 
+		      ps.dept_code = d.dept_code  
+  	</select>
+  	
+  	
+  	<select id="selectNewContractCount" parameterType="int" resultType="int">
+  		with c_a as (
+                                 select user_no ,cca_name
+                                   from cca
+                               ),
+                        c_b as(
+                                  select user_no , consignor_name
+                                    from consignor
+                               )
+                             select count(contract_no)
+                               from contract t          
+                               join
+                                    c_a a on a.user_no = t.cca_no
+                               join
+                                    c_b b on b.user_no = t.consignor_no     
+                               left join
+                                    status_code s on s.status_code = t.last_status_code 
+                               where
+                                    cca_no =  #{userNo}
+                                     and 
+                                    s.status_code in (
+                                                             select status_code
+                                                               from status_code
+                                                               where STATUS_CODE_MEDIUM_CATEGORY_NAME = '관세대리업무 접수'
+                                                                 and status_code_name = '대기'       
+                                                         ) 
+  	</select>
+  	<select id="ccaNewContract" parameterType="string"
+		resultMap="contractVOResultMap">
+
+		with c_a as (
+					select
+					c.contract_no,
+					p.product_no,
+					p.consignor_no,
+					p.hs_code,
+					p.product_name,
+					p.product_origin,
+					p.product_qty,
+					p.product_weight,
+					p.product_volume,
+					p.product_price
+		from contract c
+		join
+			product p on c.product_no = p.product_no
+		where
+		c.contract_no = #{contractNo}
+		),
+		c_c as (
+				select
+				c.contract_no,
+				r.contract_status_code,
+				r.contract_record_reg_date,
+				s.status_code_medium_category_name,
+				s.status_code_name
+		from contract c
+		join
+			contract_record r on r.contract_no = c.contract_no
+		join
+			status_code s on s.status_code = r.contract_status_code
+		where
+			c.contract_no = #{contractNo}
+		)
+		select
+		t.contract_no,
+		t.consignor_no,
+		u_con.user_name as consignor_name,
+		con_detail.consignor_name as consignor_company_name,
+		con_detail.consignor_tel as consignor_tel,
+		u_con.user_tel as consignor_user_tel,
+		u_con.user_fax as consignor_user_fax,
+		u_con.user_email as consignor_user_email,
+		t.contract_type,
+		t.contract_date,
+		t.com_file_no,
+		t.last_status_code,
+		a.product_no,
+		a.consignor_no,
+		a.hs_code,
+		a.product_name,
+		a.product_origin,
+		a.product_qty,
+		a.product_weight,
+		a.product_volume,
+		a.product_price,
+		t.ci_no,
+		t.pl_no,
+		c.contract_status_code,
+		c.contract_record_reg_date,
+		c.status_code_medium_category_name,
+		c.status_code_name
+		from contract t
+		join
+		c_a a on a.contract_no = t.contract_no
+		join
+		c_c c on c.contract_no = t.contract_no
+		join
+		user_tb u_con on u_con.user_no = t.consignor_no
+		join
+		cca cca_detail ON cca_detail.user_no = t.cca_no
+		join
+		consignor con_detail on con_detail.user_no = t.consignor_no
+		where
+		t.contract_no = #{contractNo}
+	</select>
+
+	<select id="selectRefusalList" parameterType="string"
+		resultType="kr.or.ddit.vo.ContractRecord">
+		select status_code,status_code_name
+		from
+		status_code
+		where
+		status_code_big_category in (
+		select contract_type
+		from contract
+		where contract_no = #{contractNo}
+		)
+		and
+		status_code_medium_category_name = '관세대리업무 접수'
+		and
+		status_code_name like '%거절%'
+	</select>
+
+
+	<update id="contractRefusal" statementType="CALLABLE" parameterType="kr.or.ddit.vo.RefusalVO">
+		{call process_newcontractre(
+				#{contractNo, mode=IN, jdbcType=VARCHAR},
+				#{statusCode, mode=IN, jdbcType=NUMERIC},
+				 #{result, mode=OUT, jdbcType=NUMERIC,javaType=java.lang.Integer}
+		)}
+	</update>
+	
+	<update id="contractApproval" statementType="CALLABLE" parameterType="kr.or.ddit.vo.RefusalVO">
+			{call process_approvalContract(
+				#{contractNo, mode=IN, jdbcType=VARCHAR},
+				 #{result, mode=OUT, jdbcType=NUMERIC,javaType=java.lang.Integer}
+		)}
+	</update>
+	
+	<select id="selectExportCount">
+		  with c_a as (
+                                     select user_no ,cca_name
+                                       from cca
+                                   ),
+                            c_b as(
+                                      select user_no , consignor_name
+                                        from consignor
+                                   )
+                                 select count(t.contract_no)
+                                   from contract t          
+                                   join
+                                        c_a a on a.user_no = t.cca_no
+                                   join
+                                        c_b b on b.user_no = t.consignor_no     
+                                   left join
+                                        status_code s on s.status_code = t.last_status_code 
+                                   where
+                                        cca_no = #{userNo}
+                                    and 
+                                        s.status_code not in (
+                                                                 select status_code
+                                                                   from status_code
+                                                                   where STATUS_CODE_MEDIUM_CATEGORY_NAME = '관세대리업무 접수'
+                                                                     and status_code_name = '대기'       
+                                                             ) 
+                                    and
+                                       t.contract_type = '수출'
+	</select>
+	
+  	<select id="selectImportCount">
+		  with c_a as (
+                                     select user_no ,cca_name
+                                       from cca
+                                   ),
+                            c_b as(
+                                      select user_no , consignor_name
+                                        from consignor
+                                   )
+                                 select count(t.contract_no)
+                                   from contract t          
+                                   join
+                                        c_a a on a.user_no = t.cca_no
+                                   join
+                                        c_b b on b.user_no = t.consignor_no     
+                                   left join
+                                        status_code s on s.status_code = t.last_status_code 
+                                   where
+                                        cca_no = #{userNo}
+                                    and 
+                                        s.status_code not in (
+                                                                 select status_code
+                                                                   from status_code
+                                                                   where STATUS_CODE_MEDIUM_CATEGORY_NAME = '관세대리업무 접수'
+                                                                     and status_code_name = '대기'       
+                                                             ) 
+                                    and
+                                       t.contract_type = '수입'
+		
+	</select>
+	
+  	<select id="selectNewCount">
+  	  with c_a as (
+                                     select user_no ,cca_name
+                                       from cca
+                                   ),
+                            c_b as(
+                                      select user_no , consignor_name
+                                        from consignor
+                                   )
+                                 select count(t.contract_no)
+                                   from contract t          
+                                   join
+                                        c_a a on a.user_no = t.cca_no
+                                   join
+                                        c_b b on b.user_no = t.consignor_no     
+                                   left join
+                                        status_code s on s.status_code = t.last_status_code 
+                                   where
+                                        cca_no = #{userNo}
+                                    and 
+                                        s.status_code in (
+                                                                 select status_code
+                                                                   from status_code
+                                                                   where STATUS_CODE_MEDIUM_CATEGORY_NAME = '관세대리업무 접수'
+                                                                     and status_code_name = '대기'       
+                                                             ) 
+                                    
+	</select>
+	
+	<select id="selectTaxNo" parameterType="string" resultType="string">
+  		select decl_no
+		  from decl
+		 where decl_d_no = (
+		                     select dd.decl_d_no
+		                      from contract t
+		                      join decl_d dd on t.contract_no = dd.contract_no
+		                      where t.contract_no =  #{contractNo}
+		                   )
+  	</select>
+  	
+  	
+  	<select id="selectTaxList" parameterType="string" resultType="kr.or.ddit.vo.TaxVO">
+  		select tax_dest_date, tax_deadline_date
+		   from tax
+		  where decl_no = #{declNo}
+  	</select>
+  	
+  	
+  	<select id="selectCdList" parameterType="string" resultType="kr.or.ddit.vo.CDVO">
+  		select cd_no, cd_date
+		 from cd
+		 where decl_no = #{declNo}
+  	</select>
+  	
+  	<select id="selectContractWithMe" parameterType="int" resultMap="contractVOResultMap">
+  		   with c_a as (
+                              select contract_no
+                                from contract
+                               where cca_no = #{ccaNo}
+                                 and consignor_no = #{consignorNo}
+                             )
+                            select t.contract_no
+                                   ,t.contract_type
+                                   ,t.last_status_code
+                                   ,s.STATUS_CODE_MEDIUM_CATEGORY_NAME                               
+                                   ,s.status_code_name
+                              from contract t
+                              join c_a a on t.contract_no = a.contract_no
+                              join status_code s on t.last_status_code = s.status_code
+                              
+  	</select>
+  	
+  	 <select id="selectOptionCategory" parameterType="string" resultType="kr.or.ddit.vo.ContractRecord">
+  		select distinct status_code_medium_category_name
+		  from status_code
+		 where status_code_big_category = #{statusCodeBigCategory}
+  	</select>
+  	
+  	<select id="selectSanctionScore" parameterType="int" resultType="kr.or.ddit.vo.SanctionVO">
+  		  select  c.contract_no
+		          ,d.decl_no
+		          ,s.sanction_no
+		          ,s.sanction_code
+		          ,s.sanction_date
+		          ,s.servant_no
+		          ,sc.sanction_name
+		          ,sc.sanction_score
+		    from contract c
+		    join decl_d dd on dd.contract_no = c.contract_no 
+		    join decl d on d.decl_d_no = dd.decl_d_no
+		    join sanction s on s.decl_no = d.decl_no
+		    join sanction_code sc on sc.sanction_code = s.sanction_code
+		   where cca_no = #{ccaNo}
+  	</select>
+  	
+  	<select id="selectSanctionTotlaScore" parameterType="int" resultType="kr.or.ddit.vo.SanctionVO">
+  		  select  sum(sanction_score)as sanction_score
+	        from contract c
+	        join decl_d dd on dd.contract_no = c.contract_no 
+	        join decl d on d.decl_d_no = dd.decl_d_no
+	        join sanction s on s.decl_no = d.decl_no
+	        join sanction_code sc on sc.sanction_code = s.sanction_code
+	        where cca_no = #{ccaNo}
+	        
+  	</select>
+  	
+  	
+  	
+  	<!-- 다진 끝 -->
+	<resultMap type="kr.or.ddit.vo.KRNotationVO" id="koreanLabelWriteMap">
+		<result property="contractNo" column="CONTRACT_NO"/>
+        <result property="productNameKr" column="PRODUCT_NAME"/>
+        <result property="ingredientsKr" column="HS_NCC_NAME"/> 
+        <result property="originKr" column="PRODUCT_ORIGIN"/> 
+        <result property="meatTypePartKr" column="HS_KR_NAME"/>
+        <result property="contentKr" column="PRODUCT_WEIGHT"/> 
+        <result property="consignorName" column="CONSIGNOR_NAME"/> 
+        <result property="consignorAddr" column="CONSIGNOR_ADDR"/>
+        <result property="consignorDetAddr" column="CONSIGNOR_DET_ADDR"/>
+        <result property="consignorTel" column="CONSIGNOR_TEL"/>
+	</resultMap>
+  	
+  	<select id="koreanLabelWrite" parameterType="string" resultMap="koreanLabelWriteMap">
+  		 SELECT
+            C.CONTRACT_NO
+            , P.PRODUCT_NAME
+            , P.PRODUCT_WEIGHT
+            , P.PRODUCT_ORIGIN
+            , H.HS_KR_NAME
+            , H.HS_NCC_NAME
+            , CON.CONSIGNOR_NAME
+            , CON.CONSIGNOR_ADDR
+            , CON.CONSIGNOR_DET_ADDR
+            , CON.CONSIGNOR_TEL
+            , KRN.PRODUCT_NAME_KR
+            , KRN.MEAT_TYPE_PART_KR
+            , KRN.MANUFACTURE_DATE_KR
+            , KRN.CONSUMPTION_DEADLINE_KR
+            , KRN.PACKAGING_MATERIAL_KR
+            , KRN.STORAGE_METHOD_KR
+            , KRN.ETC_KR
+            , KRN.REG_DATE
+        FROM
+            CONTRACT C
+        JOIN
+            PRODUCT P ON C.PRODUCT_NO = P.PRODUCT_NO
+        JOIN
+            CONSIGNOR CON ON C.CONSIGNOR_NO = CON.USER_NO
+        LEFT JOIN
+            HS_CODE H ON P.HS_CODE = H.HS_CODE
+        LEFT JOIN
+            KR_NOTATION KRN ON C.CONTRACT_NO = KRN.CONTRACT_NO
+        WHERE
+            C.CONTRACT_NO = #{contractNo}
+  	</select>
+  	
+  	<insert id="koreanLabelInsert" parameterType="kr.or.ddit.vo.KRNotationVO">
+  		 INSERT INTO KR_NOTATION (
+            CONTRACT_NO
+			, PRODUCT_NAME_KR
+			, IMPORTER_NAME_KR
+			, IMPORTER_TEL_KR
+			, ORIGIN_KR
+			
+			, MANUFACTURE_DATE_KR
+			, CONTENT_KR
+			, INGREDIENTS_KR
+			, PACKAGING_MATERIAL_KR
+			, STORAGE_METHOD_KR
+			
+			, ETC_KR
+			, MEAT_TYPE_PART_KR
+			, CONSUMPTION_DEADLINE_KR
+			, REG_DATE
+        ) VALUES (
+            #{contractNo}
+            , #{productNameKr}
+            , #{consignorName}
+            , #{consignorTel}
+            , #{originKr}
+            
+            , #{manufactureDateKr}
+            , #{contentKr}
+            , #{ingredientsKr}
+            , #{packagingMaterialKr}
+            , #{storageMethodKr}
+            
+            , #{etcKr}
+            , #{meatTypePartKr}
+            , #{consumptionDeadlineKr}
+            , sysdate
+        )
+  	</insert>
+  	
+  	<select id="checkContractNo" parameterType="string" resultType="int">
+  		SELECT 
+  			COUNT(*)
+  		FROM
+  			KR_NOTATION
+  		WHERE 
+  			CONTRACT_NO = #{contractNo}
+  	</select>
+  	
+  	<resultMap type="kr.or.ddit.vo.KRNotationVO" id="koreanLabelDetailMap">
+        <result property="contractNo" column="CONTRACT_NO"/>
+        <result property="productNameKr" column="PRODUCT_NAME_KR"/>
+        <result property="contentKr" column="CONTENT_KR"/>
+        <result property="ingredientsKr" column="INGREDIENTS_KR"/>
+        <result property="meatTypePartKr" column="MEAT_TYPE_PART_KR"/>
+        <result property="originKr" column="ORIGIN_KR"/>
+        <result property="manufactureDateKr" column="MANUFACTURE_DATE_KR"/>
+        <result property="consumptionDeadlineKr" column="CONSUMPTION_DEADLINE_KR"/>
+        <result property="packagingMaterialKr" column="PACKAGING_MATERIAL_KR"/>
+        <result property="storageMethodKr" column="STORAGE_METHOD_KR"/>
+        <result property="consignorName" column="IMPORTER_NAME_KR"/>
+        <result property="consignorAddr" column="CONSIGNOR_ADDR"/>
+        <result property="consignorDetAddr" column="CONSIGNOR_DET_ADDR"/>
+        <result property="consignorTel" column="IMPORTER_TEL_KR"/>
+        <result property="etcKr" column="ETC_KR"/>
+        <result property="regDate" column="REG_DATE"/>
+    </resultMap>
+  	
+  	<select id="koreanLabelDetail" parameterType="string" resultMap="koreanLabelDetailMap">
+  		SELECT 
+            KRN.CONTRACT_NO
+            , PRODUCT_NAME_KR
+            , CONTENT_KR
+            , INGREDIENTS_KR
+            , MEAT_TYPE_PART_KR
+            , ORIGIN_KR
+            , MANUFACTURE_DATE_KR
+            , CONSUMPTION_DEADLINE_KR
+            , PACKAGING_MATERIAL_KR
+            , STORAGE_METHOD_KR
+            , IMPORTER_NAME_KR
+            , CON.CONSIGNOR_ADDR
+            , CON.CONSIGNOR_DET_ADDR
+            , KRN.IMPORTER_TEL_KR
+            , KRN.ETC_KR
+        FROM 
+            KR_NOTATION KRN 
+        JOIN 
+            CONTRACT C ON KRN.CONTRACT_NO = C.CONTRACT_NO
+        LEFT JOIN
+            CONSIGNOR CON ON C.CONSIGNOR_NO = CON.USER_NO
+        WHERE KRN.CONTRACT_NO = #{contractNo}
+  	</select>
+  	
+  	
+  	<select id="WarehouseList" resultType="kr.or.ddit.vo.WarehouseVO">
+		select 
+             a.WH_NO
+            ,a.WH_NAME
+            ,a.WH_REG_DATE
+            ,a.WH_POST
+            ,a.WH_ADDR
+            ,a.WH_DETAIL_ADDR
+            ,a.WH_TYPE
+            ,a.WH_VOLUME
+            ,a.CLOSURE_YN
+            ,a.WH_USE_YN
+            ,a.WH_PRICE
+            ,b.user_name
+            ,(a.wh_volume - NVL(SUM(f.product_volume * c.WH_DETAIL_STOWAGE_QTY), 0)) as residual_volume
+        from 
+            WH a
+        left join
+            USER_TB b on b.USER_NO = a.LOGIST_MNG_NO 
+        left join
+            wh_detail c on a.wh_no = c.wh_no
+        left join
+            stowage d on d.stowage_no = c.stowage_no 
+        left join
+            contract e on e.contract_no = d.contract_no 
+        left join
+            product f on f.product_no = e.product_no
+        where 
+            a.CLOSURE_YN = 0 and
+            wh_use_yn = 1
+        group by a.WH_NO
+          ,a.WH_NAME
+          ,a.WH_REG_DATE
+          ,a.WH_POST
+          ,a.WH_ADDR
+          ,a.WH_DETAIL_ADDR
+          ,a.WH_TYPE
+          ,a.WH_VOLUME
+          ,a.CLOSURE_YN
+          ,a.WH_USE_YN
+          ,a.WH_PRICE
+          ,b.user_name
+          <if test="residual_volume == 0">
+          		update wh
+          		set wh_use_yn =0
+          </if>
+  	</select>
+
+  	<update id="koreanLabelUpdate" parameterType="kr.or.ddit.vo.KRNotationVO">
+  		UPDATE KR_NOTATION
+	    SET
+	        PRODUCT_NAME_KR = #{productNameKr}
+	        , IMPORTER_NAME_KR = #{consignorName}
+	        , IMPORTER_TEL_KR = #{consignorTel}
+	        , ORIGIN_KR = #{originKr}
+	        , MANUFACTURE_DATE_KR = #{manufactureDateKr}
+	        , CONTENT_KR = #{contentKr}
+	        , INGREDIENTS_KR = #{ingredientsKr}
+	        , PACKAGING_MATERIAL_KR = #{packagingMaterialKr}
+	        , STORAGE_METHOD_KR = #{storageMethodKr}
+	        , ETC_KR = #{etcKr}
+	        , MEAT_TYPE_PART_KR = #{meatTypePartKr}
+	        , CONSUMPTION_DEADLINE_KR = #{consumptionDeadlineKr}
+	    WHERE
+	        CONTRACT_NO = #{contractNo}
+  	</update>
+
+  	  	
+  	  <!-- 필요한 그
+  	   선박 일정, 선박 일련번호, 출발항, 도착항, 출발일시, 도착일시,
+  	  컨테이너 일련번호, 컨테이너 명칭은 뭐임, 위험물 정보는 뭐지, 컨테이너 위치도 있나, 컨테이너 구분(냉장 이런거인가)...?
+  	  컨테이너 크기, 컨테이너 이용비용, 컨테이너 사용가능 여부, 
+  	  물류창고 내용도 들어가야 하나..? 물류창고 일련번호, 물류창고 대표자, 물류창고 상호명, 물류창고 주소, 
+  	   -->
+  	   
+  	   <resultMap id="containerListMap" type="kr.or.ddit.vo.ContainerVO">
+		    <id property="containerNo" column="CONTAINER_NO"/>
+		    <result property="containerName" column="CONTAINER_NAME"/>
+		    <result property="sztpCode" column="SZTP_CODE"/>
+		    <result property="residualVolume" column="residual_volume"/> 
+		    <result property="containerLocation" column="container_location"/> 
+		    <result property="containerPrice" column="container_price"/> 
+		    <result property="containerSize" column="container_size"/> 
+		    <result property="containerType" column="container_type"/> 
+		    <result property="containerUseYn" column="container_use_yn"/> 
+		    
+		    <association property="warehouseVO" javaType="kr.or.ddit.vo.WarehouseVO">
+		        <id property="whNo" column="WH_NO"/> 
+		        <result property="whName" column="WH_NAME"/>
+		        <result property="logistMngNo" column="LOGIST_MNG_NO"/>
+		    </association>
+		
+		    <association property="shipScheduleVO" javaType="kr.or.ddit.vo.ShipScheduleVO">
+		        <id property="shipScheduleNo" column="SHIP_SCHEDULE_NO"/>
+		        <result property="portFrom" column="PORT_FROM"/>
+		        <result property="portTo" column="PORT_TO"/>
+		        <result property="shipScheduleDeparture" column="SHIP_SCHEDULE_DEPARTURE"/>
+		        <result property="shipScheduleArrival" column="SHIP_SCHEDULE_ARRIVAL"/>
+		        <result property="shipAvailableYn" column="SHIP_AVAILABLE_YN"/>
+		    </association>
+		
+		    <association property="userVO" javaType="kr.or.ddit.vo.UserVO">
+		        <id property="userNo" column="USER_NO"/>
+		         <result property="userName" column="USER_NAME"/>
+		         <result property="userFax" column="USER_FAX"/>
+		        </association>
+		</resultMap>
+  	   
+  	 <select id="ContainerList" resultMap="containerListMap">
+  	              
+               
+   SELECT
+					      a.container_no
+					    , a.container_name
+					    , a.container_location
+					    , a.sztp_code
+					    , a.hazard_damage_info
+					    , a.container_price
+					    , a.container_size
+					    , a.container_type
+					    , a.container_use_yn
+					    , a.logist_mng_no
+					
+					    , c.ship_schedule_no
+					    , c.port_from
+					    , c.port_to
+					    , c.ship_schedule_departure
+					    , c.ship_schedule_arrival
+					    , c.ship_available_yn
+					
+					    , e.user_name
+					    , e.user_email
+					    , e.user_fax AS userFax
+					
+					    , CASE
+					          WHEN TO_NUMBER(a.container_size DEFAULT 0 ON CONVERSION ERROR) = 40 THEN
+					              67.5 - NVL(SUM(TO_NUMBER((i.product_volume * f.CONTAINER_DETAIL_STOWAGE_QTY) DEFAULT 0 ON CONVERSION ERROR)), 0)
+					          ELSE
+					              33.1 - NVL(SUM(TO_NUMBER((i.product_volume * f.CONTAINER_DETAIL_STOWAGE_QTY) DEFAULT 0 ON CONVERSION ERROR)), 0)
+					      END AS residual_volume
+					FROM
+					    container a
+					LEFT JOIN container_detail f ON a.container_no = f.container_no
+					LEFT JOIN ship_schedule c ON f.ship_schedule_no = c.ship_schedule_no
+					LEFT JOIN ships d ON c.ship_no = d.ship_no
+					LEFT JOIN user_tb e ON a.logist_mng_no = e.user_no
+					
+					LEFT JOIN stowage g ON f.stowage_no = g.stowage_no
+					LEFT JOIN contract h ON g.contract_no = h.contract_no
+					LEFT JOIN product i ON h.product_no = i.product_no
+					 where a.container_use_yn = 1
+					GROUP BY
+					    a.container_no
+					  , a.container_name
+					  , a.container_location
+					  , a.sztp_code
+					  , a.hazard_damage_info
+					  , a.container_price
+					  , a.container_size
+					  , a.container_type
+					  , a.container_use_yn  
+					  , a.logist_mng_no
+					
+					  , c.ship_schedule_no
+					  , c.port_from
+					  , c.port_to
+					  , c.ship_schedule_departure
+					  , c.ship_schedule_arrival
+					  , c.ship_available_yn
+					  , e.user_name
+					  , e.user_email
+					  , e.user_fax
+					ORDER BY
+					    a.container_no
+          
+          
+  	 </select>
+  	 
+  
+  	 
+  	 
+  	 <select id="myContract" parameterType="int" resultType="kr.or.ddit.vo.ContractVO">
+  	 	SELECT
+		    a.contract_no
+		  , a.consignor_no
+		  , a.product_no
+		  , a.contract_type
+		  , a.contract_date
+		  , b.user_name
+		  , b.user_email
+		  , c.hs_code
+		  , c.product_name
+		  , c.product_qty
+		  , c.product_volume
+		FROM
+		         contract a
+		    INNER JOIN user_tb b ON b.user_no = a.consignor_no
+		    INNER JOIN product c ON c.product_no = a.product_no
+		WHERE
+		        cca_no = #{userNo}
+		    AND (last_status_code = 19
+		    OR last_status_code = 38)
+		   
+  	 </select>
+  	 
+  	 
+  	 <resultMap id="contractSelectMap" type="kr.or.ddit.vo.ContractVO">
+		    <id property="contractNo" column="contract_no"/>
+		    <result property="consignorNo" column="consignor_no"/>
+		    <result property="productNo" column="product_no"/>
+		    <result property="contractType" column="contract_type"/>
+		    <result property="contractDate" column="contract_date"/>
+		
+		    <association property="userVO" javaType="kr.or.ddit.vo.UserVO">
+		        <result property="userName" column="user_name"/>
+		        <result property="userEmail" column="user_email"/>
+		        <result property="userTel" column="user_tel"/>
+		    </association>
+		
+		    <association property="productVO" javaType="kr.or.ddit.vo.ProductVO">
+		        <result property="hsCode" column="hs_code"/>
+		        <result property="productName" column="product_name"/>
+		        <result property="productWeight" column="product_weight"/>
+		        <result property="productQty" column="product_qty"/>
+		        <result property="productVolume" column="product_volume"/>
+		    </association>
+		
+		    <association property="consignorVO" javaType="kr.or.ddit.vo.ConsignorVO">
+		        <result property="businessNumber" column="business_number"/>
+		        <result property="consignorName" column="consignor_name"/>
+		        <result property="consignorPost" column="consignor_post"/>
+		        <result property="consignorAddr" column="consignor_addr"/>
+		        <result property="consignorDetAddr" column="consignor_det_addr"/>
+		        <result property="consignorTel" column="consignor_tel"/>
+		        <result property="consignorCustomsCode" column="consignor_customs_code"/>
+		    </association>
+		</resultMap>
+		
+		
+  	 
+  	 
+  	 <select id="contractSelect" parameterType="string" resultMap="contractSelectMap">
+  	 	SELECT
+		    a.contract_no
+		  , a.consignor_no
+		  , a.product_no
+		  , a.contract_type
+		  , a.contract_date
+		  , b.user_name
+		  , b.user_email
+		  , b.user_tel
+		  , c.hs_code
+		  , c.product_name
+		  , c.product_weight
+		  , c.product_qty
+		  , c.product_volume
+		  , d.business_number
+		  , d.consignor_name
+		  , d.consignor_post
+		  , d.consignor_addr
+		  , d.consignor_det_addr
+		  , d.consignor_tel
+		  , d.consignor_customs_code
+		FROM
+		         contract a
+		    INNER JOIN user_tb b ON b.user_no = a.consignor_no
+		    INNER JOIN product c ON c.product_no = a.product_no
+		    INNER JOIN consignor d ON d.user_no = b.user_no
+		WHERE
+		        contract_no = TRIM(#{contractNo})
+		    
+  	 </select>
+  
+  	 <insert id="stowageInsert" parameterType="map" useGeneratedKeys="true">
+  	 	<selectKey keyProperty="stowageNo" resultType="int"  order="BEFORE">
+  	 		select seq_stowage_no.nextval from dual
+  	 	</selectKey>
+  	 	
+  	 	insert into stowage(STOWAGE_NO, CONTRACT_NO, STOWAGE_TYPE, STOWAGE_DATE)
+		values (#{stowageNo}, #{contractNo}, #{stowageType}, sysdate)
+  	 </insert>
+  	 
+  	 
+  	 <insert id="whDetailIst" parameterType="map" >
+  	 	<selectKey keyProperty="whDetailNo,stowageNo" resultType="kr.or.ddit.vo.WhDetailVO"  order="BEFORE">
+  	 		select seq_wh_detail_no.nextval as whDetailNo,seq_stowage_no.currval as stowageNo from dual
+  	 	</selectKey>
+  	 	insert into wh_detail(wh_detail_no, stowage_no, wh_no, wh_loading_date, wh_detail_status_code, wh_detail_stowage_qty)
+  	 	values (#{whDetailNo}, #{stowageNo}, #{whNo}, sysdate, #{whDetailStatusCode}, #{whDetailStowageQty})
+  	 </insert>
+  	 
+  	 <insert id="containerDetailIst" parameterType="map" useGeneratedKeys="true">
+  	 	<selectKey keyProperty="containerDetailNo,stowageNo" resultType="kr.or.ddit.vo.ContainerDetailVO"  order="BEFORE">
+  	 		select seq_container_detail_no.nextval as containerDetailNo,seq_stowage_no.currval as stowageNo from dual
+  	 	</selectKey>
+  	 	insert into container_detail(container_detail_no, ship_schedule_no, stowage_no, container_no, container_loading_date, container_detail_status_code, container_detail_stowage_qty)
+  	 	values (#{containerDetailNo}, #{shipScheduleNo}, #{stowageNo}, #{containerNo}, sysdate, #{containerDetailStatusCode}, #{containerDetailStowageQty})
+  	 </insert>
+  	 
+  	 <select id="residualVolumeCheck" parameterType="int" resultType="double">
+  	        SELECT
+		        GREATEST(0, (a.wh_volume - NVL(SUM(f.product_volume * c.WH_DETAIL_STOWAGE_QTY), 0)))
+		    FROM
+		        WH a
+		    LEFT JOIN
+		        wh_detail c ON a.wh_no = c.wh_no
+		    LEFT JOIN
+		        stowage d ON d.stowage_no = c.stowage_no
+		    LEFT JOIN
+		        contract e ON e.contract_no = d.contract_no
+		    LEFT JOIN
+		        product f ON f.product_no = e.product_no
+		    WHERE  a.wh_no = #{whNo}
+		    GROUP BY
+        a.WH_VOLUME
+  	 </select>
+  	 
+  	 <select id="CresidualVolumeCheck" parameterType="int" resultType="double">
+  	 	 SELECT
+		       CASE
+                    WHEN TO_NUMBER(c.container_size DEFAULT 0 ON CONVERSION ERROR) = 40 THEN
+                        67.5 - NVL(SUM(TO_NUMBER((P.product_volume * cd.CONTAINER_DETAIL_STOWAGE_QTY) DEFAULT 0 ON CONVERSION ERROR)), 0)
+                      ELSE
+                          33.1 - NVL(SUM(TO_NUMBER((P.product_volume * cd.CONTAINER_DETAIL_STOWAGE_QTY) DEFAULT 0 ON CONVERSION ERROR)), 0)
+                  END AS residual_volume
+		    FROM
+		        CONTAINER c
+		    LEFT JOIN
+		        CONTAINER_DETAIL cd ON c.CONTAINER_NO = cd.CONTAINER_NO
+		    LEFT JOIN
+		        STOWAGE s ON s.STOWAGE_NO = cd.STOWAGE_NO
+		    LEFT JOIN
+		        CONTRACT ct ON ct.CONTRACT_NO = s.CONTRACT_NO
+		    LEFT JOIN
+		        PRODUCT p ON p.PRODUCT_NO = ct.PRODUCT_NO
+		    WHERE  c.CONTAINER_NO = #{containerNo}
+		    GROUP BY
+                c.CONTAINER_SIZE
+  	 </select>
+  	 
+  	 <update id="whUseYnUpdate" parameterType="int">
+  	 	update wh
+  	 	set wh_use_yn = 0
+  	 	where wh_no = #{whNo}
+  	 </update>
+  	 
+  	 <update id="containerUseYnUpdate" parameterType="int">
+  	 	update container
+  	 	set container_use_yn = 0
+  	 	where container_no = #{containerNo}
+  	 </update>
+  	 
+  	 <select id="getLastStatusCode" parameterType="string" resultType="int">
+  	 	select last_status_code 
+  	 	from contract
+  	 	where contract_no = #{contractNo}
+  	 </select>
+  	 
+  	 <insert id="contractRecordInsert" parameterType="map" useGeneratedKeys="true" >
+  	 	<selectKey keyProperty="contractRecordNo" resultType="int"  order="BEFORE">
+  	 		select SEQ_CONTRACT_RECORD_NO.nextval from dual
+  	 	</selectKey>
+  	 	insert into CONTRACT_RECORD(CONTRACT_RECORD_NO, CONTRACT_NO, CONTRACT_STATUS_CODE, CONTRACT_RECORD_REG_DATE)
+		values(#{contractRecordNo}, #{contractNo}, #{contractStatusCode}, sysdate)
+  	 </insert>
+  	 
+  	 <update id="contractLastCodeUp" parameterType="hashmap">
+  	 	update contract 
+  	 	set last_status_code = #{lastStatusCode}
+  	 	where contract_no = #{contractNo}
+  	 </update> 
+  	 
+  	 <select id="wareHouseCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+  	 	SELECT
+		    COUNT(*)
+		FROM
+		    wh        a
+		WHERE
+			a.CLOSURE_YN = 0 
+			and wh_use_yn = 1
+		<choose>
+			<when test="searchType == 'WH_NAME'">and a.WH_NAME like '%'||#{searchWord }||'%'</when>
+			<when test="searchType == 'WH_ADDR'">and a.WH_ADDR like '%'||#{searchWord }||'%'</when>
+			<when test="searchType == 'WH_TYPE'">and a.WH_TYPE like '%'||#{searchWord }||'%'</when>
+			<when test="searchType == 'WH_USE_YN'">and a.WH_USE_YN like '%'||#{searchWord }||'%'</when>
+			<when test="searchType == 'WH_REG_DATE'">and a.WH_REG_DATE like '%'||#{searchWord }||'%'</when>
+			<otherwise></otherwise>
+		</choose>
+  	 </select>
+  	 
+  	 <select id="WarehouseList2" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="kr.or.ddit.vo.WarehouseVO">
+  	 	select
+			*
+		from(
+			select
+				TB.*
+				, ROWNUM RN
+			from(
+		  	 	select 
+		             a.WH_NO
+		            ,a.WH_NAME
+		            ,a.WH_REG_DATE
+		            ,a.WH_POST
+		            ,a.WH_ADDR
+		            ,a.WH_DETAIL_ADDR
+		            ,a.WH_TYPE
+		            ,a.WH_VOLUME
+		            ,a.CLOSURE_YN
+		            ,a.WH_USE_YN
+		            ,a.WH_PRICE
+		            ,(a.wh_volume - NVL(SUM(e.product_volume * b.WH_DETAIL_STOWAGE_QTY), 0)) as residual_volume
+		        from 
+		            WH a
+			        left join wh_detail b on a.wh_no = b.wh_no
+			        left join stowage c on c.stowage_no = b.stowage_no 
+			        left join contract d on d.contract_no = c.contract_no 
+			        left join product e on e.product_no = d.product_no
+				where 1=1
+					and a.CLOSURE_YN = 0 
+		            and a.wh_use_yn = 1
+				<choose>
+					<when test="searchType == 'WH_NAME'">and a.WH_NAME like '%'||#{searchWord }||'%'</when>
+					<when test="searchType == 'WH_ADDR'">and a.WH_ADDR like '%'||#{searchWord }||'%'</when>
+					<when test="searchType == 'WH_TYPE'">and a.WH_TYPE like '%'||#{searchWord }||'%'</when>
+					<when test="searchType == 'WH_USE_YN'">and a.WH_USE_YN like '%'||#{searchWord }||'%'</when>
+					<when test="searchType == 'WH_REG_DATE'">and a.WH_REG_DATE like '%'||#{searchWord }||'%'</when>
+					<otherwise></otherwise>
+				</choose>
+				group by a.WH_NO
+		          ,a.WH_NAME
+		          ,a.WH_REG_DATE
+		          ,a.WH_POST
+		          ,a.WH_ADDR
+		          ,a.WH_DETAIL_ADDR
+		          ,a.WH_TYPE
+		          ,a.WH_VOLUME
+		          ,a.CLOSURE_YN
+		          ,a.WH_USE_YN
+		          ,a.WH_PRICE
+				ORDER BY
+			    <choose>
+			        <when test="searchType != null and searchType != ''">#{searchType}</when>
+			        <otherwise>a.WH_REG_DATE</otherwise>
+			    </choose>
+			    <choose>
+			        <when test="sortColumn != null and sortColumn != ''">${sortColumn}</when>
+			        <otherwise>DESC</otherwise>
+			    </choose>
+			) TB
+	    ) 
+	  	WHERE RN BETWEEN #{startRow} AND #{endRow}
+  	 </select>
+  	 
+  	 <select id="containerCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+  	 	SELECT
+			count(*)
+		FROM container a
+		 where a.container_use_yn = 1
+		<choose>
+			<when test="searchType == 'CONTAINER_NAME'">and CONTAINER_NAME like '%'||#{searchWord }||'%'</when>
+			<when test="searchType == 'CONTAINER_LOCATION'">and CONTAINER_LOCATION like '%'||#{searchWord }||'%'</when>
+			<when test="searchType == 'CONTAINER_TYPE'">and CONTAINER_TYPE like '%'||#{searchWord }||'%'</when>
+			<when test="searchType == 'CONTAINER_SIZE'">and CONTAINER_SIZE like '%'||#{searchWord }||'%'</when>
+			<when test="searchType == 'CONTAINER_PRICE'">and CONTAINER_PRICE like '%'||#{searchWord }||'%'</when>
+			<otherwise></otherwise>
+		</choose>
+  	 </select>
+  	 
+  	 <select id="ContainerList2" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="kr.or.ddit.vo.ContainerVO">
+  	 select
+			*
+		from(
+			select
+				TB.*
+				,ROWNUM RN
+			from(
+		  	 	SELECT
+				      a.container_no
+				    , a.container_name
+				    , a.container_location
+				    , a.sztp_code
+				    , a.hazard_damage_info
+				    , a.container_price
+				    , a.container_size
+				    , a.container_type
+				    , a.container_use_yn
+				    , a.logist_mng_no
+				
+				    , c.ship_schedule_no
+				    , c.port_from
+				    , c.port_to
+				    , c.ship_schedule_departure
+				    , c.ship_schedule_arrival
+				    , c.ship_available_yn
+				
+				    , e.user_name
+				    , e.user_email
+				    , e.user_fax AS userFax
+				
+				    , CASE
+				          WHEN TO_NUMBER(a.container_size DEFAULT 0 ON CONVERSION ERROR) = 40 THEN
+				              67.5 - NVL(SUM(TO_NUMBER((i.product_volume * f.CONTAINER_DETAIL_STOWAGE_QTY) DEFAULT 0 ON CONVERSION ERROR)), 0)
+				          ELSE
+				              33.1 - NVL(SUM(TO_NUMBER((i.product_volume * f.CONTAINER_DETAIL_STOWAGE_QTY) DEFAULT 0 ON CONVERSION ERROR)), 0)
+				      END AS residual_volume
+				FROM container a
+					LEFT JOIN container_detail f ON a.container_no = f.container_no
+					LEFT JOIN ship_schedule c ON f.ship_schedule_no = c.ship_schedule_no
+					LEFT JOIN ships d ON c.ship_no = d.ship_no
+					LEFT JOIN user_tb e ON a.logist_mng_no = e.user_no
+					
+					LEFT JOIN stowage g ON f.stowage_no = g.stowage_no
+					LEFT JOIN contract h ON g.contract_no = h.contract_no
+					LEFT JOIN product i ON h.product_no = i.product_no
+				 where a.container_use_yn = 1
+				 <choose>
+					<when test="searchType == 'CONTAINER_NAME'">and a.CONTAINER_NAME like '%'||#{searchWord }||'%'</when>
+					<when test="searchType == 'CONTAINER_LOCATION'">and a.CONTAINER_LOCATION like '%'||#{searchWord }||'%'</when>
+					<when test="searchType == 'CONTAINER_TYPE'">and a.CONTAINER_TYPE like '%'||#{searchWord }||'%'</when>
+					<when test="searchType == 'CONTAINER_SIZE'">and a.CONTAINER_SIZE like '%'||#{searchWord }||'%'</when>
+					<when test="searchType == 'CONTAINER_PRICE'">and a.CONTAINER_PRICE like '%'||#{searchWord }||'%'</when>
+					<otherwise></otherwise>
+				</choose>
+				GROUP BY
+				    a.container_no
+				  , a.container_name
+				  , a.container_location
+				  , a.sztp_code
+				  , a.hazard_damage_info
+				  , a.container_price
+				  , a.container_size
+				  , a.container_type
+				  , a.container_use_yn  
+				  , a.logist_mng_no
+				
+				  , c.ship_schedule_no
+				  , c.port_from
+				  , c.port_to
+				  , c.ship_schedule_departure
+				  , c.ship_schedule_arrival
+				  , c.ship_available_yn
+				  , e.user_name
+				  , e.user_email
+				  , e.user_fax
+				ORDER BY
+					<choose>
+						<when test="searchType != null and searchType != ''">#{searchType }</when>
+						<otherwise>a.container_name</otherwise>
+					</choose>
+					<choose>
+						<when test="sortColumn != null and sortColumn != ''"> ${sortColumn }</when>
+						<otherwise>ASC</otherwise>
+					</choose>
+			) TB
+	    ) 
+		WHERE RN BETWEEN #{startRow} AND #{endRow}
+  	 </select>
+  	 
+  	 <!-- 다진 추가 -->
+  	 <select id="selectMyItemLocation" parameterType="string" resultType="kr.or.ddit.vo.MyItemLocationVO">
+  	 	 select s.stowage_no 
+                       ,s.contract_no 
+                       ,s.stowage_type
+                       ,s.stowage_date 
+                       ,wd.wh_detail_no 
+                       ,wd.wh_no 
+                       ,wd.wh_loading_date
+                       ,wd.wh_detail_status_code 
+                       ,wd.wh_release_date 
+                       ,wd.wh_detail_stowage_qty 
+                       ,w.wh_name
+                       ,w.wh_reg_date
+                       ,w.wh_post
+                       ,w.wh_addr
+                       ,w.wh_detail_addr
+                       ,w.wh_type
+                       ,w.wh_volume
+                       ,w.closure_yn
+                       ,w.wh_use_yn
+                       ,w.wh_price
+                       ,w.logist_mng_no
+                       ,lm.logist_mng_name
+                       ,lm.logist_mng_addr
+                       ,lm.logist_mng_tel
+                 from stowage s
+                 join wh_detail wd on s.stowage_no = wd.stowage_no
+                 join wh w on wd.wh_no = w.wh_no
+                 join logist_mng lm on lm.user_no = w.logist_mng_no
+                where  contract_no = #{contractNo}
+  	 </select>
+  	 
+  	 <select id="selectMyContainerLocation" parameterType="string" resultType="kr.or.ddit.vo.MyItemLocationVO">
+  				  select s.stowage_no 
+                       ,s.contract_no 
+                       ,s.stowage_type
+                       ,s.stowage_date 
+                       ,cd.container_detail_no
+                       ,cd.container_no
+                       ,cd.container_loading_date
+                       ,cd.container_detail_status_code
+                       ,cd.container_detail_stowage_qty
+                       ,c.container_name
+                       ,c.container_location
+                       ,c.container_size
+                       ,c.sztp_code
+                       ,c.hazard_damage_info
+                       ,c.container_type
+                       ,c.container_price
+                       ,c.container_use_yn                 
+                       ,c.logist_mng_no
+                       ,lm.logist_mng_name
+                       ,lm.logist_mng_addr
+                       ,lm.logist_mng_tel
+                  from stowage s
+                  join container_detail cd on s.stowage_no = cd.stowage_no
+                  join container c on c.container_no = cd.container_no
+                  join logist_mng lm on lm.user_no = c.logist_mng_no
+                  where  contract_no = #{contractNo}
+  	 	
+  	 </select>
+  	 
+  	 
+  	 
+  	 
+  	 
+  	 
+  	 
+  	 
+  	 
+  	 
+  	 
+  	 
+  	 
+  	 
+  </mapper>

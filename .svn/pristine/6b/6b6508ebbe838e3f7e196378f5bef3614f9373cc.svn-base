@@ -1,0 +1,18 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>빈 페이지 확인후 지우기</title>
+</head>
+<body>
+<a href="http://localhost:3000">메인으로</a><br/>
+<a href="notice.do">공지사항게시판</a>
+공지사항게시판 내용
+<br/>
+<a href="faq.do">자주묻는질문게시판</a>
+자주묻는질문게시판 내용
+
+</body>
+</html>

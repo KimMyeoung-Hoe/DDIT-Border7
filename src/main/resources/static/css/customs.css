@@ -1,0 +1,451 @@
+/* --- main-content-area 내부 콘텐츠 관련 스타일 --- */
+
+/* 페이지의 큰 제목 */
+.page-title {
+    font-size: 2em; /* 큰 글자 크기 */
+    color: #f0f0f0; /* 밝은 글자색 */
+    margin-bottom: 25px; /* 아래 여백 */
+    text-align: center; /* 중앙 정렬 */
+}
+.main-content-area {
+	flex: 1;
+	padding: 25px;
+	margin-left: 240px; /* 사이드바 너비(200px) + 패딩 40px 정도 확보 */
+	margin-top: 200px;
+	display: flex;
+	flex-direction: column;
+	color: #c5c8cc; /* 기본 텍스트 색상 설정 */
+	/* 전체 배경 적용 */
+	min-height: calc(100vh - 60px); /* 헤더를 제외한 나머지 높이 */
+}
+/* 대시보드 내의 각 섹션 (카드형 배경) */
+.dashboard-section,
+.section { /* .section도 dashboard-section과 동일한 배경 스타일을 갖도록 통합 */
+    background: rgba(255, 255, 255, 0.05); /* 반투명 배경 */
+    border-radius: 12px;
+    padding: 30px; /* 내부 여백 */
+    backdrop-filter: blur(10px); /* 블러 효과 (유리모피즘) */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); /* 그림자 효과 */
+    width: 100%; /* 부모 요소의 전체 너비 차지 */
+    box-sizing: border-box;
+    /* .section에만 있었던 grid-column, grid-row는 main-content-area 외부 레이아웃 관련이므로 여기서는 제외 */
+}
+
+/* 섹션 헤더 (HS 코드 검색 결과나 다른 섹션에 사용) */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #4a4a60; /* 하단 구분선 */
+    padding-bottom: 10px;
+}
+
+.section-header h2 {
+    margin: 0; /* 기본 마진 제거 */
+    font-size: 1.3em;
+    color: #f0f0f0;
+}
+.status-position {
+    position: fixed;
+    top: 0;
+    left: 231px; /* 사이드바 폭만큼 */
+    width: calc(100% - 277px);
+    background-color: #2b2b40;
+    z-index: 1000;
+    padding: 10px 20px;
+    text-align: left; 
+    margin-top: 60px;
+}
+
+/* --- 가로형 상태 바 (Horizontal Status Bar) --- */
+.status-bar-container {
+	
+    display: flex;
+    justify-content: center; /* 중앙 정렬 */
+    align-items: center;
+    margin: 20px auto; /* 중앙 정렬 및 상하 마진 */
+    max-width: 700px; /* 최대 너비 제한 (너무 넓어지지 않게) */
+    position: relative; /* 라인 위치 조정을 위해 */
+}
+
+.status-bar-container .status-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1; /* 원이 라인 위에 오도록 */
+    color: #808080; /* 기본 글자색 */
+}
+
+.status-bar-container .step-circle {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background-color: #e0e0e0; /* 기본 원 배경색 */
+    color: #505050; /* 기본 숫자색 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 1.1em;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s ease;
+}
+
+.status-bar-container .step-text {
+    margin-top: 8px;
+    font-size: 0.9em;
+    white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+    transition: color 0.3s ease;
+}
+
+.status-line {
+    flex-grow: 1; /* 남은 공간을 모두 차지하여 라인 확장 */
+    height: 2px;
+    background-color: #e0e0e0; /* 기본 라인 색상 */
+    margin: 0 -12px; /* 원과 살짝 겹치도록 마진 조정 */
+    margin-bottom: 28px; 
+    position: relative;
+    z-index: 0; /* 라인이 원 뒤에 오도록 */
+    transition: background-color 0.3s ease;
+}
+
+/* 상태 바 활성화 요소 */
+.status-bar-container .status-step.active .step-circle {
+    background-color: #007bff; /* 활성화 시 파란색 */
+    color: white;
+    border-color: #007bff;
+}
+
+.status-bar-container .status-step.active .step-text {
+    color: #007bff; /* 활성화 시 파란색 */
+    font-weight: bold;
+}
+
+.status-bar-container .status-line.active {
+    background-color: #007bff; /* 활성화 시 파란색 */
+}
+
+/* --- 폼 필드 레이아웃 및 스타일 --- */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr; /* 라벨(1) - 입력(2) 비율 */
+    gap: 15px; /* 행 간 간격 */
+    margin-top: 20px;
+}
+
+.form-group {
+    display: contents; /* 자식 요소가 직접 그리드에 참여하도록 */
+}
+
+.form-label {
+    color: #a0a0d0; /* 라벨 글자색 (옅은 회색) */
+    font-weight: normal;
+    font-size: 1.05em;
+    padding: 10px 0; /* 입력 필드와 수직 정렬을 위해 패딩 조정 */
+    display: flex; /* 텍스트 수직 정렬 */
+    align-items: center; /* 가운데 정렬 */
+}
+
+.form-input-wrapper {
+    display: flex; /* 입력/선택 필드 및 드롭다운 포함을 위해 */
+    align-items: center;
+}
+
+.form-input,
+.form-select {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #4a4a60; /* 어두운 테두리 */
+    background-color: #3a3a50; /* 어두운 배경색 */
+    color: #f0f0f0; /* 밝은 글자색 */
+    border-radius: 8px;
+    font-size: 1.05em;
+    box-sizing: border-box; /* 패딩과 보더를 너비/높이에 포함 */
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2); /* 내부 그림자 */
+}
+
+.form-input::placeholder {
+    color: #808080; /* 플레이스홀더 텍스트 색상 */
+}
+
+.form-select {
+    /* 드롭다운 화살표 스타일 (브라우저 기본 스타일 제거 후 커스텀) */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="white"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 1em;
+}
+
+/* --- HS 코드 검색 관련 스타일 --- */
+.hs-search-container {
+    display: flex;
+    gap: 10px; /* 선택 박스와 입력 필드 사이 간격 */
+    align-items: center;
+    margin-bottom: 20px; /* 폼 위 여백 */
+}
+
+.hs-search-container .form-select {
+    width: auto; /* 내용에 맞춰 너비 자동 조절 */
+    min-width: 100px; /* 최소 너비 */
+}
+
+.hs-search-input-wrapper {
+    flex-grow: 1; /* 남은 공간을 입력 필드가 차지 */
+    position: relative;
+}
+
+.dropdown-warp {
+    position: relative; /* 드롭다운을 위한 부모 요소 */
+}
+
+.dropdown {
+    display: block; /* 기본적으로 보이도록 */
+    position: absolute;
+    top: 100%; /* 입력 필드 아래에 위치 */
+    left: 0;
+    margin-top: 5px; /* 입력 필드와 드롭다운 사이 간격 */
+    background: #2b2b40; /* 대시보드 섹션 배경색과 일치 */
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    z-index: 100; /* 다른 콘텐츠 위에 표시되도록 */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-off {
+    display: none; /* 드롭다운 숨김 */
+}
+
+.dropdown-item {
+    color: #e0e0e0; /* 드롭다운 항목 글자색 */
+    max-height: 200px; /* 최대 높이 (이전 300px에서 조정) */
+    overflow-y: auto; /* 스크롤바 표시 */
+    padding: 5px 0; /* 드롭다운 컨테이너 내부 패딩 */
+}
+
+.item-row {
+    padding: 8px 15px; /* 개별 항목 패딩 */
+    max-width: 100%;
+    cursor: pointer;
+}
+
+.item-row:hover {
+    background: rgba(255, 255, 255, 0.1); /* 호버 시 배경색 변경 (이전 검정색 계열에서 변경) */
+}
+
+/* --- 폼 데이터 표시 (item-display-grid) --- */
+.item-display-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr; /* 라벨 - 값 비율 */
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.item-display-grid > div {
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+}
+
+.item-display-grid .label {
+    color: #a0a0d0; /* 라벨 글자색 (옅은 회색) */
+    font-weight: normal;
+}
+
+.item-display-grid .value {
+    color: #f0f0f0; /* 값 글자색 (아주 밝은 회색) */
+    font-weight: bold;
+    background-color: #3a3a50; /* 값 필드 배경색 (입력 필드와 동일) */
+    padding: 8px 12px;
+    border-radius: 5px;
+}
+
+/* --- 제출 버튼 스타일 --- */
+.submit-button-container,
+.action-button-container { /* 두 클래스 모두 버튼 컨테이너로 사용될 수 있으므로 통합 */
+    text-align: center;
+    margin-top: 40px; /* 버튼 위 여백 */
+    /* .action-button-container에만 있던 grid-column: span 2는 여기서는 제외 (그리드 내부의 독립적인 버튼에 해당) */
+}
+
+.submit-button,
+.action-button-container #declBtn { /* 두 버튼에 동일한 스타일 적용 */
+    background-color: #007bff; /* 파란색 버튼 */
+    color: white;
+    border: none;
+    padding: 14px 30px; /* 큰 패딩 (action-button-container의 버튼에 더 큰 패딩 적용) */
+    border-radius: 8px; /* 더 둥근 모서리 */
+    cursor: pointer;
+    font-size: 1.2em; /* 큰 글자 크기 */
+    font-weight: bold;
+    transition: background-color 0.2s, transform 0.1s; /* 부드러운 전환 효과 */
+}
+
+.submit-button:hover,
+.action-button-container #declBtn:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px); /* 살짝 위로 뜨는 효과 */
+}
+
+.submit-button:active {
+    transform: translateY(0); /* 클릭 시 원위치 */
+}
+
+/* --- 문서 업로드 카드 스타일 --- */
+.document-span-grid {
+    display: grid;
+    gap: 30px; /* 카드 간 간격 */
+    margin-top: 40px;
+}
+.span-card {
+    background-color: #2b2b40; /* 카드 배경색 (대시보드 섹션보다 약간 어둡게) */
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); /* 그림자 */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column; /* 자식 요소를 세로로 배열 */
+}
+
+.document-upload-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 2열 그리드 */
+    gap: 30px; /* 카드 간 간격 */
+    margin-top: 40px;
+}
+
+.upload-card {
+    background-color: #2b2b40; /* 카드 배경색 (대시보드 섹션보다 약간 어둡게) */
+    border-radius: 12px;
+    padding: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column; /* 자식 요소를 세로로 배열 */
+}
+
+.upload-card .card-header {
+    display: flex;
+    flex-wrap: wrap; /* 요소가 너무 길면 줄바꿈 허용 */
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    position: relative; /* 필수 라벨 위치 지정을 위해 */
+}
+
+.upload-card .card-header h3 {
+    font-size: 1.3em;
+    color: #f0f0f0;
+    margin: 0;
+    flex-basis: 100%; /* 제목이 전체 너비를 차지하도록 */
+    margin-bottom: 10px; /* 제목 아래 여백 */
+}
+
+.upload-card .card-actions {
+    display: flex;
+    gap: 10px;
+    flex-grow: 1; /* 버튼들이 공간을 차지하도록 */
+}
+
+.upload-card .action-button {
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s, transform 0.1s;
+    font-weight: bold;
+}
+
+.upload-card .action-button.primary {
+    background-color: #007bff;
+    color: white;
+    border: none;
+}
+
+.upload-card .action-button.primary:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+.upload-card .action-button.secondary {
+    background-color: transparent;
+    color: #007bff;
+    border: 1px solid #007bff;
+}
+
+.upload-card .action-button.secondary:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+.upload-card .required-label {
+    background-color: #ffc107; /* "필수" 노란색 배경 */
+    color: #333;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+    position: absolute;
+    top: 0;
+    right: 0;
+    transform: translate(15px, -15px); /* 카드 약간 바깥으로 위치 */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.upload-card .upload-area {
+    border: 2px dashed #4a4a60; /* 점선 테두리 */
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+    flex-grow: 1; /* 남은 수직 공간 채우기 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.upload-card .upload-area:hover {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.upload-card .file-input {
+    display: none; /* 기본 파일 입력 필드 숨기기 */
+}
+
+.upload-card .upload-label {
+    cursor: pointer;
+    display: block; /* 라벨이 영역 전체를 차지하도록 */
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #c0c0c0;
+}
+
+.upload-card .upload-label i {
+    font-size: 3em; /* 큰 아이콘 */
+    margin-bottom: 15px;
+    color: #007bff; /* 파란색 아이콘 */
+}
+
+.upload-card .upload-label p {
+    margin: 0 0 5px 0;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.upload-card .upload-label small {
+    font-size: 0.85em;
+    color: #808080;
+}
+

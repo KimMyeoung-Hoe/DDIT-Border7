@@ -1,0 +1,97 @@
+
+/* Simplified CSS for the header - you'd integrate your actual CSS */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 25px;
+  height: 60px;
+  /* background-color: #2a3344;  */
+  /* background-color: transparent;  */
+  background-color: #17193b; 
+  border-bottom: 1px solid #3a4251;
+  color: #c5c8cc;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1001;
+      font-family: "Nanum Gothic", "Malgun Gothic", Arial, sans-serif;
+}
+
+.header-logo {
+  font-size: 24px;
+  font-weight: bold;
+  color: #7995ff; /* 로고 색상 복원 */
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.header-nav {
+    display: flex;
+    align-items: center;
+    gap: 25px; /* Space between nav items */
+}
+
+.header-nav-item {
+    font-size: 16px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.header-nav-item:hover {
+    color: #3498db; /* Highlight color on hover */
+}
+
+.header-profile {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 10px;
+}
+
+.header-profile-avatar {
+    width: 35px;
+    height: 35px;
+    background-color: #5d6d7e; /* Placeholder background */
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    color: #ecf0f1;
+}
+
+.header-profile-name {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.login-button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.login-button:hover {
+    background-color: #2980b9;
+}
+ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0 10px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.no-dots-list {
+    list-style-type: none; /* 점 제거 */
+    padding: 0;          /* 기본 왼쪽 여백 제거 */
+    margin: 10px;           /* 기본 왼쪽 여백 제거 (브라우저마다 다름) */
+}

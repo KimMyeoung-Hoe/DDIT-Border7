@@ -1,0 +1,126 @@
+
+/* --- COMMERCIAL INVOICE (문서 느낌) 스타일 --- */
+.invoice-table {
+    width: 100%;
+    border-collapse: collapse; /* 셀 경계를 병합하여 깔끔한 선 */
+    font-family: Arial, sans-serif;
+    color: #333; /* 기본 글자색을 어둡게 설정 */
+    background-color: #fff; /* 배경을 흰색으로 설정 */
+    border: 1px solid #c0c0c0; /* 테이블 전체 테두리 */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* 약간의 그림자 추가 */
+}
+
+.invoice-table th,
+.invoice-table td {
+	position: relative;
+    border: 1px solid #c0c0c0; /* 모든 셀에 얇은 테두리 */
+    padding: 10px; /* 충분한 내부 여백 */
+    vertical-align: top; /* 내용이 위쪽에서 시작하도록 */
+    font-size: 0.95em; /* 가독성을 위한 글자 크기 */
+}
+
+/* 테이블 헤더 (COMMERCIAL INVOICE) */
+.invoice-table .invoice-header {
+    text-align: center;
+    font-size: 28px; /* 더 큰 글자 크기 */
+    padding: 15px 10px;
+    background-color: #e0e0e0; /* 연한 회색 배경 */
+    border-bottom: 2px solid #a0a0a0; /* 아래쪽 두꺼운 선 */
+    font-weight: bold;
+    color: #222;
+}
+
+/* 레이블 텍스트 굵게 */
+.invoice-table .label-bold {
+    font-weight: bold;
+    color: #555;
+}
+
+/* 각 행의 높이 */
+.invoice-table .invoice-row {
+    height: 80px; /* 행 높이 조정 */
+}
+
+/* 필드 라벨 셀 */
+.invoice-table .invoice-label {
+    width: 15%; /* 레이블 열 너비 */
+    background-color: #f9f9f9; /* 레이블 셀 배경색 */
+    font-weight: bold;
+    white-space: nowrap; /* 줄바꿈 방지 */
+}
+
+/* 필드 값 셀 */
+.invoice-table .invoice-value {
+    width: 35%; /* 값 열 너비 (각 행마다 다를 수 있음) */
+}
+
+/* 하단 아이템 목록 헤더 */
+.invoice-table .invoice-th-item {
+    padding: 10px 8px;
+    font-weight: bold;
+    text-align: center;
+    background-color: #e9e9e9; /* 아이템 헤더 배경 */
+    border-top: 1px solid #a0a0a0;
+    border-bottom: 1px solid #a0a0a0;
+    color: #444;
+}
+
+/* 텍스트 영역 스타일 */
+.invoice-table textarea {
+    width: 100%;
+    height: 100%; /* 부모 td에 꽉 차게 */
+    border: none; /* 테두리 없음 */
+    padding: 5px;
+    resize: vertical; /* 수직 크기 조절만 허용 */
+    font-family: Arial, sans-serif;
+    font-size: 0.95em;
+    box-sizing: border-box; /* 패딩 포함 너비 */
+    background-color: transparent; /* 배경 투명하게 */
+    color: #333;
+    overflow: auto; /* 내용이 넘치면 스크롤바 */
+}
+
+/* Signed by 섹션 */
+.invoice-table .invoice-signed-by {
+    text-align: right;
+    padding: 20px 15px 15px 15px; /* 패딩 조정 */
+    border-top: 1px solid #a0a0a0; /* 위쪽 테두리 */
+}
+
+.invoice-table .invoice-signed-by textarea {
+    min-height: 50px; /* 최소 높이 지정 */
+    width: 200px; /* 서명 필드 너비 */
+    display: inline-block; /* 텍스트와 함께 정렬 */
+    vertical-align: middle;
+    border-bottom: 1px dashed #666; /* 서명선 느낌 */
+    padding-bottom: 5px;
+    text-align: center;
+}
+
+/* textarea{resize: none; width: 100%; height: 100%;max-width: 100%;} */
+/* --- Submit Button Styling --- */
+.submit-button-container {
+    text-align: center;
+    margin-top: 40px; /* 버튼 위 여백 */
+}
+
+.submit-button {
+    background-color: #007bff; /* 파란색 버튼 */
+    color: white;
+    border: none;
+    padding: 14px 30px; /* 큰 패딩 */
+    border-radius: 8px; /* 더 둥근 모서리 */
+    cursor: pointer;
+    font-size: 1.2em; /* 큰 글자 크기 */
+    font-weight: bold;
+    transition: background-color 0.2s, transform 0.1s; /* 부드러운 전환 효과 */
+}
+
+.submit-button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px); /* 살짝 위로 뜨는 효과 */
+}
+
+.submit-button:active {
+    transform: translateY(0); /* 클릭 시 원위치 */
+}

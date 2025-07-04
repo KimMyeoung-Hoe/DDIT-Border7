@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.or.ddit.mapper.IMyInfoMapper">
+
+	<resultMap id="userDetailResultMap" type="kr.or.ddit.vo.UserVO">
+		<id property="userNo" column="USER_NO" />
+		<result property="authCode" column="AUTH_CODE" />
+		<result property="userId" column="USER_ID" />
+		<result property="userPw" column="USER_PW" />
+		<result property="userName" column="USER_NAME" />
+		<result property="userTel" column="USER_TEL" />
+		<result property="smsYn" column="SMS_YN" />
+		<result property="userFax" column="USER_FAX" />
+		<result property="userEmail" column="USER_EMAIL" />
+		<result property="regDate" column="REG_DATE" />
+		<result property="userStatus" column="USER_STATUS" />
+		<result property="withdrawDate" column="WITHDRAW_DATE" />
+		<result property="userEnable" column="USER_ENABLE" />
+
+		<association property="servantVO" javaType="kr.or.ddit.vo.ServantVO">
+			<result property="userNo" column="SERVANT_NO" />
+			<result property="empNo" column="EMP_NO" />
+			<result property="servantStatusCode" column="SERVANT_STATUS_CODE" />
+			<result property="deptCode" column="DEPT_CODE" />
+			<result property="jobGradeCode" column="JOB_GRADE_CODE" />
+		</association>
+		
+		<association property="deptVO" javaType="kr.or.ddit.vo.DeptVO">
+			<result property="deptCode" column="DEPT_CODE" />
+			<result property="deptName" column="DEPT_NAME" />
+			<result property="deptTel" column="DEPT_TEL" />
+			<result property="servantNo" column="SERVANT_NO" />
+			<result property="deptYn" column="DEPT_YN" />
+			<result property="deptRegDate" column="DEPT_REG_DATE" />
+			<result property="deptUpdDate" column="DEPT_UPD_DATE" />
+			<result property="deptRegWriter" column="DEPT_REG_WRITER" />
+			<result property="deptUpdWriter" column="DEPT_UPD_WRITER" />
+		</association>
+		
+		<association property="consignorVO" javaType="kr.or.ddit.vo.ConsignorVO">
+			<result property="userNo" column="USER_NO" />
+			<result property="businessNumber" column="BUSINESS_NUMBER" />
+			<result property="consignorName" column="CONSIGNOR_NAME" />
+			<result property="consignorPost" column="CONSIGNOR_POST" />
+			<result property="consignorAddr" column="CONSIGNOR_ADDR" />
+			<result property="consignorDetAddr" column="CONSIGNOR_DET_ADDR" />
+			<result property="consignorTel" column="CONSIGNOR_TEL" />
+			<result property="consignorCustomsCode" column="CONSIGNOR_CUSTOMS_CODE" />
+			<result property="consignorProfileImg" column="CONSIGNOR_PROFILE_IMG" />
+		</association>
+	
+		<association property="ccaVO" javaType="kr.or.ddit.vo.CCAVO">
+			<result property="userNo" column="USER_NO" />
+			<result property="ccaRegistrationNumber" column="CCA_REGISTRATION_NUMBER" />
+			<result property="ccaName" column="CCA_NAME" />
+			<result property="ccaPost" column="CCA_POST" />
+			<result property="ccaAddr" column="CCA_ADDR" />
+			<result property="ccaDetAddr" column="CCA_DET_ADDR" />
+			<result property="ccaTel" column="CCA_TEL" />
+			<result property="ccaProfileImg" column="CCA_PROFILE_IMG" />
+			<result property="ccaSanctionScore" column="CCA_SANCTION_SCORE" />
+			<result property="ccaSanctionCount" column="CCA_SANCTION_COUNT" />
+			<result property="ccaDeclScore" column="CCA_DECL_SCORE" />
+		</association>
+			
+		<association property="logistMngVO" javaType="kr.or.ddit.vo.LogistMngVO">
+			<result property="logistMngNo" column="USER_NO" />
+			<result property="businessNumber" column="BUSINESS_NUMBER" />
+			<result property="logistMngName" column="LOGIST_MNG_NAME" />
+			<result property="logistMngPost" column="LOGIST_MNG_POST" />
+			<result property="logistMngAddr" column="LOGIST_MNG_ADDR" />
+			<result property="logistMngDetAddr" column="LOGIST_MNG_DET_ADDR" />
+			<result property="logistMngTel" column="LOGIST_MNG_TEL" />
+			<result property="logistMngProfileImg" column="LOGIST_MNG_PROFILE_IMG" />
+		</association>
+	
+	</resultMap>
+
+	<!-- 유저 정보 조회 -->
+	<select id="myInfoUser" parameterType="int" resultType="kr.or.ddit.vo.UserVO">
+		/** 로그인사용자식별번호로 유저 정보 조회 **/
+		select
+			USER_NAME
+			, USER_TEL
+			, SMS_YN
+			, USER_FAX
+			, USER_EMAIL
+			, REG_DATE
+			, EMAIL_YN
+		from USER_TB
+		where USER_NO = #{userNo}
+	</select>
+	
+	<!-- 공무원 정보 조회 -->
+	<select id="myInfoServant" parameterType="int" resultType="kr.or.ddit.vo.ServantVO">
+		/** 로그인사용자식별번호로 공무원 정보 조회 **/
+		select
+			EMP_NO
+			, SERVANT_STATUS_CODE
+			, DEPT_CODE
+			, JOB_GRADE_CODE
+		from PUBLIC_SERVANT
+		where SERVANT_NO = #{userNo}
+	</select>
+	
+	<!-- 공무원 직급 명칭 조회 -->
+	<select id="selectJobGradeName" parameterType="string" resultType="string">
+		/** 직급코드로 직급명칭 조회 **/
+		select
+			JOB_GRADE_NAME
+		from JOB_GRADE
+		where JOB_GRADE_CODE = #{jobGradeCode}
+	</select>
+	
+	<!-- 공무원 부서 정보 조회 -->
+	<select id="selectDept" parameterType="string" resultType="kr.or.ddit.vo.DeptVO">
+		/** 부서코드로 부서 정보 조회 **/
+		select
+			DEPT_NAME
+			, DEPT_TEL
+			, SERVANT_NO
+			, DEPT_YN
+			, DEPT_REG_DATE
+			, DEPT_UPD_DATE
+			, DEPT_REG_WRITER
+			, DEPT_UPD_WRITER
+		from DEPT
+		where DEPT_CODE = #{deptCode}
+	</select>
+	
+	<!-- 화주 정보 조회 -->
+	<select id="myInfoConsignor" parameterType="int" resultType="kr.or.ddit.vo.ConsignorVO">
+		/** 로그인사용자식별번호로 화주 정보 조회 **/
+		select
+			BUSINESS_NUMBER
+			, CONSIGNOR_NAME
+			, CONSIGNOR_POST
+			, CONSIGNOR_ADDR
+			, CONSIGNOR_DET_ADDR
+			, CONSIGNOR_TEL
+			, CONSIGNOR_CUSTOMS_CODE
+			, CONSIGNOR_PROFILE_IMG
+		from CONSIGNOR
+		where USER_NO = #{userNo}
+	</select>
+	
+	<!-- 관세사 정보 조회 -->
+	<select id="myInfoCca" parameterType="int" resultType="kr.or.ddit.vo.CCAVO">
+		/** 로그인사용자식별번호로 관세사 정보 조회 **/
+		select
+			CCA_REGISTRATION_NUMBER
+			, CCA_NAME
+			, CCA_POST
+			, CCA_ADDR
+			, CCA_DET_ADDR
+			, CCA_TEL
+			, CCA_PROFILE_IMG
+			, CCA_SANCTION_SCORE
+			, CCA_SANCTION_COUNT
+			, CCA_DECL_COUNT
+		from CCA
+		where USER_NO = #{userNo}
+	</select>
+	
+	<!-- 관세사 주력분야코드 조회 -->
+	<select id="myInfoCcaSpecialtyCodeList" parameterType="int" resultType="int">
+		/** 로그인사용자식별번호로 관세사 주력분야코드 조회 **/
+		select
+			SPECIALTY_CODE
+		from SPECIALTY
+		where CCA_NO = #{userNo}
+	</select>
+	
+	<!-- 관세사 주력분야이름 조회 -->
+	<select id="myInfoCcaSpecialtyNameList" parameterType="int" resultType="string">
+		/** 로그인사용자식별번호로 관세사 주력분야이름 조회 **/
+		select
+			b.SPECIALTY_NAME
+		from SPECIALTY a
+		join SPECIALTY_CODE b on a.SPECIALTY_CODE = b.SPECIALTY_CODE
+		where a.CCA_NO = #{userNo}
+	</select>
+	
+	<!-- 관세사 업무이력 조회 -->
+	<select id="myInfoCcaContractList" parameterType="int" resultType="map">
+		/** 관세사 업무이력 조회 **/
+		SELECT
+		    c.CONTRACT_NO
+		    , p.HS_CODE
+		    , h.HS_KR_NAME
+		    , c.LAST_STATUS_CODE
+		    , s.STATUS_CODE_MEDIUM_CATEGORY_NAME
+		    , s.STATUS_CODE_NAME
+		    , r.CONTRACT_RECORD_REG_DATE
+		FROM CONTRACT c
+		JOIN PRODUCT p ON c.PRODUCT_NO = p.PRODUCT_NO
+		JOIN HS_CODE h ON p.HS_CODE = h.HS_CODE
+		JOIN CONTRACT_RECORD r ON c.CONTRACT_NO = r.CONTRACT_NO
+		JOIN STATUS_CODE s ON c.LAST_STATUS_CODE = s.STATUS_CODE
+		WHERE r.CONTRACT_STATUS_CODE = 6 OR r.CONTRACT_STATUS_CODE = 27
+		AND c.CCA_NO = #{userNo}
+		ORDER BY r.CONTRACT_RECORD_REG_DATE DESC
+	</select>
+	
+	<!-- 물류관리자 정보 조회 -->
+	<select id="myInfoLogistMng" parameterType="int" resultType="kr.or.ddit.vo.LogistMngVO">
+		/** 로그인사용자식별번호로 관세사 정보 조회 **/
+		select
+			BUSINESS_NUMBER
+			, LOGIST_MNG_NAME
+			, LOGIST_MNG_POST
+			, LOGIST_MNG_ADDR
+			, LOGIST_MNG_DET_ADDR
+			, LOGIST_MNG_TEL
+			, LOGIST_MNG_PROFILE_IMG
+		from LOGIST_MNG
+		where USER_NO = #{userNo}
+	</select>
+
+	<!-- (공무원)유저 테이블 수정 -->
+	<update id="myInfoUpdateSvt" parameterType="kr.or.ddit.vo.UserVO">
+		/** 유저 테이블 수정 **/
+		update USER_TB set
+			USER_NAME = #{userName}
+			, USER_TEL = #{userTel}
+			, USER_EMAIL = #{userEmail}
+			, USER_FAX = #{userFax}
+		where USER_NO = #{userNo}
+	</update>
+
+	<!-- 유저 테이블 수정 -->
+	<update id="myInfoUserUpdate" parameterType="kr.or.ddit.vo.UserVO">
+		/** 유저 테이블 수정 **/
+		update USER_TB set
+			USER_NAME = #{userName}
+			, USER_TEL = #{userTel}
+			, USER_EMAIL = #{userEmail}
+			, USER_FAX = #{userFax}
+		where USER_NO = #{userNo}
+	</update>
+	
+	<!-- 화주 테이블 수정 -->
+	<update id="myInfoConsignorUpdate" parameterType="kr.or.ddit.vo.ConsignorVO">
+		/** 화주 테이블 수정 **/
+		update CONSIGNOR set
+			CONSIGNOR_TEL = #{consignorTel}
+			, CONSIGNOR_POST = #{consignorPost}
+			, CONSIGNOR_ADDR = #{consignorAddr}
+			, CONSIGNOR_DET_ADDR = #{consignorDetAddr}
+			<if test="consignorProfileImg != null and consignorProfileImg != ''">
+			, CONSIGNOR_PROFILE_IMG = #{consignorProfileImg}
+			</if>
+		where USER_NO = #{userNo}
+	</update>
+
+	<!-- 관세사 테이블 수정 -->
+	<update id="myInfoCcaUpdate" parameterType="kr.or.ddit.vo.CCAVO">
+		/** 관세사 테이블 수정 **/
+		update CCA set
+			CCA_TEL = #{ccaTel}
+			, CCA_POST = #{ccaPost}
+			, CCA_ADDR = #{ccaAddr}
+			, CCA_DET_ADDR = #{ccaDetAddr}
+			<if test="ccaProfileImg != null and ccaProfileImg != ''">
+			, CCA_PROFILE_IMG = #{ccaProfileImg}
+			</if>
+		where USER_NO = #{userNo}
+	</update>
+
+	<!-- 관세사 주력분야 삭제 -->
+	<delete id="myInfoCcaSpecialtyDelete" parameterType="int">
+		/** 관세사 주력분야 수정을 위해 기존 데이터 삭제 **/
+		delete from SPECIALTY
+		where CCA_NO = #{userNo}
+	</delete>
+
+	<!-- 관세사 주력분야 등록 -->
+	<insert id="myInfoCcaSpecialtyInsert" parameterType="map" useGeneratedKeys="true" keyColumn="specialty_no" keyProperty="specialtyNo">
+		<selectKey keyProperty="specialtyNo" resultType="int" order="BEFORE">
+			select
+				SEQ_SPECIALTY_NO.nextval
+			from dual
+		</selectKey>
+		/** 관세사 주력분야 등록 **/
+		insert into SPECIALTY (
+			SPECIALTY_NO
+			, CCA_NO
+			, SPECIALTY_CODE
+		) values (
+			#{specialtyNo}
+			, #{userNo}
+			, #{specialtyCode}
+		) 
+	</insert>
+	
+	<!-- 물류관리자 테이블 수정 -->
+	<update id="myInfoLogistMngUpdate" parameterType="kr.or.ddit.vo.LogistMngVO">
+		/** 물류관리자 테이블 수정 **/
+		update LOGIST_MNG set
+			LOGIST_MNG_TEL = #{logistMngTel}
+			, LOGIST_MNG_POST = #{logistMngPost}
+			, LOGIST_MNG_ADDR = #{logistMngAddr}
+			, LOGIST_MNG_DET_ADDR = #{logistMngDetAddr}
+			<if test="logistMngProfileImg != null and logistMngProfileImg != ''">
+			, LOGIST_MNG_PROFILE_IMG = #{logistMngProfileImg}
+			</if>
+		where USER_NO = #{logistMngNo}
+	</update>
+
+	<!-- 회원 탈퇴 (탈퇴 컬럼 UPDAET) -->
+	<update id="myInfoDelete" parameterType="string">
+		update USER_TB set
+			USER_STATUS = 1
+			, WITHDRAW_DATE = sysdate
+		where USER_ID = #{userId}
+	</update>
+</mapper>

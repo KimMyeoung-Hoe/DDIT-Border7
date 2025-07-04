@@ -1,0 +1,319 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<%@ include file="../modules/header.jsp" %>
+<%@ include file="../modules/sidebar.jsp" %>
+<%@ include file="../modules/modal.jsp" %>
+<link rel="stylesheet" href="/css/main.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<sec:authentication property="principal" var="princ"/>
+<c:set value="${princ.user }" var="userVO"></c:set>
+<style type="text/css">
+.pagination .page-link {
+  border-radius: 999px !important;
+}
+</style>
+</head>
+<body>
+	<div class="app-container">	
+		<main class="main-content-area">	
+			<!-- 브레드크럼 엘리먼트 -->
+			<div class="content-header">
+			   <div class="breadcrumb-warp">
+			      <div class="col-sm-12">
+			         <ol class="breadcrumb">
+			            <li class="breadcrumb-item"><a href="/">Home</a></li>
+			            <li class="breadcrumb-item"><a href="/logistics/myOrder.do?userNo=${userVO.userNo }">내 적재신청 관리</a></li>
+			         </ol>
+			      </div>
+			   </div>
+			
+			   <div class="content-title">내 적재신청 관리</div>
+			   <p class="desc" style="font-size: small;">모든 적재신청을 볼 수 있는 페이지입니다 <br/>
+			</div>
+			<!-- 브레드크럼 엘리먼트 끝 -->
+			
+			<div class="section">
+				<div class="search-filter-section">
+					<div class="filter-group">
+						<select class="form-select" id="searchType" >
+					     	 <option>
+					     		검색 타입선택
+					         </option>
+					         <option value="f.PRODUCT_NAME" <c:if test="${searchType == 'f.PRODUCT_NAME'}">selected</c:if>>
+					         	물품명
+					         </option>
+					         <option value="a.STOWAGE_DATE" <c:if test="${searchType == 'a.STOWAGE_DATE'}">selected</c:if>>
+					        	적재신청 일시
+					         </option>
+					         <option value="a.STOWAGE_TYPE" <c:if test="${searchType == 'a.STOWAGE_TYPE'}">selected</c:if>>
+					         	적재신청 타입
+					         </option>
+				      </select>
+					</div>
+				   <div class="search-input-wrapper">
+				      <div class="search-input-icon"></div>
+				      <input type="text" value="${searchWord }" class="form-input search-input" placeholder="물품명,적재신청일시,적재타입 검색">
+				   </div>
+				   <div class="filter-group">
+				      <select class="form-select" id="sortColumn1">
+				         <option>
+				     		정렬
+				         </option>
+				         <option value="a.STOWAGE_DATE" <c:if test="${fn:startsWith(sortColumn,'a.STOWAGE_DATE')}">selected</c:if>>
+				         	적재신청 일시 정렬
+				         </option>
+				         <option value="i.CD_VALIDITY_YN" <c:if test="${fn:startsWith(sortColumn,'i.CD_VALIDITY_YN')}">selected</c:if>>
+				         	수출입 신고필증 유효여부
+				         </option>
+				         <option value="f.PRODUCT_QTY" <c:if test="${fn:startsWith(sortColumn,'f.PRODUCT_QTY')}">selected</c:if>>
+				         	물품 수량 정렬
+				         </option>
+				         <option value="f.PRODUCT_VOLUME" <c:if test="${fn:startsWith(sortColumn,'f.PRODUCT_VOLUME')}">selected</c:if>>
+				         	물품 부피 정렬
+				         </option>
+				         <option value="f.PRODUCT_PRICE" <c:if test="${fn:startsWith(sortColumn,'f.PRODUCT_PRICE')}">selected</c:if>>
+				         	물품 가격 정렬
+				         </option>
+				         <option value="DETAIL_STATUS_CODE" <c:if test="${fn:endsWith(sortColumn,'DETAIL_STATUS_CODE DESC') || fn:endsWith(sortColumn,'DETAIL_STATUS_CODE ASC')}">selected</c:if>>
+				         	물품 상태 정렬
+				         </option>
+				      </select>
+				      <select class="form-select" id="sortColumn2">
+				         <option>
+					     	정렬 방향
+					     </option>
+				         <option value="DESC" <c:if test="${fn:endsWith(sortColumn,'DESC')}">selected</c:if>>
+				         	내림차순
+				         </option>
+				         <option value="ASC" <c:if test="${fn:endsWith(sortColumn,'ASC')}">selected</c:if>>
+				         	오름차순
+				         </option>
+				      </select>
+				      <button class="btn btn-primary" id="searchBtn">검색</button>
+				   </div>
+				</div>
+				<div class="support-tabs">
+				   <div class="tab-item ${empty param.waitting ? 'active' : ''}" data-tab="list" id="orderList">
+				      <i class="fas fa-bullhorn tab-icon"></i> 적재신청 이력
+				   </div>
+				   <div class="tab-item ${param.waitting == 'container' ? 'active' : ''}" data-tab="new" id="waittingContainer">
+				      <i class="fas fa-question-circle tab-icon"></i> 컨테이너 입고대기 
+				   </div>
+				   <div class="tab-item ${param.waitting == 'wh' ? 'active' : ''}" data-tab="new" id="waittingWh">
+				      <i class="fas fa-question-circle tab-icon"></i> 물류창고 입고대기 
+				   </div>
+				</div>
+				<div class="table-section">
+	  				<table class="data-table" id="stowageTable">
+	  					<thead>
+							<tr>
+								<th>적재신청 번호</th>
+								<th>적재신청 일시</th>
+								<th>대리계약 번호</th>
+								<th>신청타입</th>
+								<th>컨테이너/물류창고 명</th>
+								<th>필증 유효여부</th>
+								<th>물품명</th>
+								<th>물품갯수</th>
+								<th>물품 총부피(m³)</th>
+								<th>물품 가격(원)</th>
+								<th>물품 상태</th>
+							</tr>
+						</thead>
+						<tbody>
+							<c:if test="${not empty stowageList}"> 
+							<c:forEach var="stowage" items="${stowageList }">			
+								<tr>
+									<td><a data-stowage-no="${stowage.stowageNo }" >${stowage.stowageNo }</a></td>
+									<td>${stowage.stowageDate }</td>
+									<td>${stowage.contractNo }</td>
+									<td>${stowage.stowageType }</td>
+									<td>
+										<c:if test="${not empty stowage.warehouseVO}" >
+											<a data-warehouse-no=${stowage.warehouseVO.whNo } 
+												class="detail">
+												${stowage.warehouseVO.whName }
+											</a>
+										</c:if>
+										<c:if test="${not empty stowage.containerVO}">
+											<a data-container-no=${stowage.containerVO.containerNo }
+												class="detail">
+												${stowage.containerVO.containerName }
+											</a>	
+										</c:if>
+									</td>
+									<td>${stowage.cdValidityYn ? '유효' : '무효'}</td>
+									<td>${stowage.productVO.productName }</td>
+									<td>${stowage.productVO.productQty } 개</td>
+									<td>
+									    <fmt:formatNumber value="${stowage.productVO.productQty * stowage.productVO.productVolume}"
+									                      pattern="#0.00" /> CBM
+									</td>
+									<td>
+										<fmt:formatNumber pattern="#,##0" value="${stowage.productVO.productQty  * stowage.productVO.productPrice  }" /> 원
+									</td>
+									<c:if test="${not empty stowage.warehouseVO}" >
+										<td>${stowage.whDetailList[0].whDetailStatusCode}</td>
+									</c:if>
+									<c:if test="${not empty stowage.containerVO}">
+										<td>${stowage.containerDetailList[0].containerDetailStatusCode }</td>
+									</c:if>
+								</tr>					
+							</c:forEach>
+							</c:if>
+	                        <c:if test="${empty stowageList}">
+	                            <tr><td colspan="9" class="text-center">등록된 적재신청이 없습니다.</td></tr>
+	                        </c:if>
+						</tbody>
+					</table>
+				</div>
+				<div class="table-footer">
+					<div class="d-flex justify-content-center mt-4">
+					    <ul class="pagination">
+					        <c:if test="${paginationInfo.startPage > 1}">
+					            <li class="page-item">
+					                <a class="page-link page-link-text" href="#" data-page="${paginationInfo.startPage - paginationInfo.blockSize}">이전</a>
+					            </li>
+					        </c:if>
+					
+					        <c:forEach var="i" begin="${paginationInfo.startPage}" end="${paginationInfo.endPage < paginationInfo.totalPage ? paginationInfo.endPage : paginationInfo.totalPage}">
+					            <li class="page-item ${i == paginationInfo.currentPage ? 'active' : ''}">
+					                <a class="page-link" href="#" data-page="${i}">${i}</a>
+					            </li>
+					        </c:forEach>
+					
+					        <c:if test="${paginationInfo.endPage < paginationInfo.totalPage}">
+					            <li class="page-item">
+					                <a class="page-link page-link-text" href="#" data-page="${paginationInfo.endPage + 1}">다음</a>
+					            </li>
+					        </c:if>
+					    </ul>
+					</div>
+			    </div>
+			</div>
+			
+		</main>
+	</div>
+ 	
+<script type="text/javascript">
+$(function(){
+//--------------------------------------------------------------------------------------------------------
+	// 검색 버튼 이벤트
+	$('#searchBtn').on('click',function(){
+		
+		var contextPath = "<%=request.getContextPath()%>"; 
+	    var searchParams = new URLSearchParams();
+		
+		var searchWord = $(".search-input").val();
+        var searchType = $("#searchType").val();
+        var sortColumn1 = $("#sortColumn1").val();
+        var sortColumn2 = $("#sortColumn2").val();
+        
+     // 검색어와 검색 타입 유효성 검사
+        if (searchWord) {
+            if (!searchType || searchType === "검색 타입선택") {
+                alertify.alert("검색 타입을 선택해주세요.");
+                return;
+            }
+            searchParams.set("searchWord", searchWord);
+            searchParams.set("searchType", searchType);
+        } else if (searchType && searchType !== "검색 타입선택") {
+            alertify.alert("검색어를 입력해주세요.");
+            return;
+        }
+     
+		if(sortColumn2 && sortColumn2 !== "정렬 방향"){
+			if(!sortColumn1 || sortColumn1 === "순서 정렬"){
+				alertify.alert("정렬 종류를 선택해주세요");
+				return
+			}
+		}  
+
+     // 정렬 조건 유효성 검사
+        if (sortColumn1 && sortColumn1 !== "정렬") {
+            if (!sortColumn2 || sortColumn2 === "정렬 방향") {
+                alertify.alert("정렬 방향을 선택해주세요.");
+                return;
+            } else {
+                const sortColumn = sortColumn1 + " " + sortColumn2;
+                searchParams.set("sortColumn", sortColumn);
+            }
+        } else {
+            // 정렬 컬럼 자체가 선택되지 않았으면 아무것도 안 함
+            searchParams.delete("sortColumn");
+        }
+
+
+        // 최종 이동
+        window.location.href = contextPath + "/logistics/myOrder.do?" + searchParams.toString();
+    });
+
+
+//------------------------------------------------------------------
+// 페이지 이동 이벤트
+	$(".pagination .page-link").click(function (e) {
+	    e.preventDefault();
+
+	    var currentPage = $(this).attr("data-page");
+	    var contextPath = "<%=request.getContextPath()%>";
+	    var url = new URL(window.location.href);
+
+	    // 기존 currentPage 파라미터 제거
+	    url.searchParams.delete("currentPage");
+
+	    // 새로운 currentPage 파라미터 추가
+	    url.searchParams.append("currentPage", currentPage);
+
+	    window.location.href = contextPath + "/logistics/myOrder.do" + url.search;
+	});
+//------------------------------------------------------------------------------------------------
+// 상세페이지 이동 이벤트
+	$('#stowageTable').on('click', '.detail', function(event) {
+		
+		const containerNo = $(this).data("containerNo");
+		const warehouseNo = $(this).data("warehouseNo");
+		
+		if(containerNo != null){
+			
+			window.location.href= "<%= request.getContextPath() %>/logistics/containerDetail.do?containerNo=" + containerNo;
+			
+		}
+		
+		if(warehouseNo != null){
+			
+			window.location.href="<%= request.getContextPath() %>/logistics/warehouseDetail.do?whNo=" + warehouseNo;
+			
+		}
+	});
+//--------------------------------------------------------------------------------------------------
+// 탭으로 검색조건 화면전환
+	$('#waittingWh').on('click',function(){
+		
+		window.location.href="<%= request.getContextPath() %>/logistics/myOrder.do?waitting=wh"
+		
+	});
+	$('#waittingContainer').on('click',function(){
+		
+		window.location.href="<%= request.getContextPath() %>/logistics/myOrder.do?waitting=container"
+		
+	});
+	
+	$('#orderList').on('click',function(){
+		
+		window.location.href="<%= request.getContextPath() %>/logistics/myOrder.do"
+		
+	})
+});
+
+</script>
+</body>
+</html>

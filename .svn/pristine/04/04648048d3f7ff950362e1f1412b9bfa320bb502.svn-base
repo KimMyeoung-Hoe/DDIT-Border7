@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="kr.or.ddit.mapper.IMainMapper">
+  
+   <resultMap type="kr.or.ddit.vo.ContractVO" id="contractVOResultMap">
+	  		<id property="contractNo" column="CONTRACT_NO"/>
+	  		<result property="consignorNo" column="CONSIGNOR_NO"/>
+	  		<result property="ccaNo" column="CCA_NO"/>
+	  		<result property="productNo" column="PRODUCT_NO"/>
+	  		<result property="ciNo" column="CI_NO"/>
+	  		<result property="plNo" column="PL_NO"/>
+	  		<result property="contractType" column="CONTRACT_TYPE"/>
+	  		<result property="contractDate" column="CONTRACT_DATE"/>
+	  		<result property="comFileNo" column="COM_FILE_NO"/>
+	  		<result property="lastStatusCode" column="LAST_STATUS_CODE"/>
+	  		<result property="ccaName" column="CCA_NAME"/>
+	  		<result property="consignorName" column="CONSIGNOR_NAME"/>
+	  		<result property="consignorCompanyName" column="CONSIGNOR_COMPANY_NAME"/>
+		    <result property="consignorTel" column="CONSIGNOR_TEL"/>
+		    <result property="consignorUserTel" column="CONSIGNOR_USER_TEL"/>
+		    <result property="consignorUserFax" column="CONSIGNOR_USER_FAX"/>
+		    <result property="consignorUserEmail" column="CONSIGNOR_USER_EMAIL"/>
+		    <result property="ccaCompanyName" column="CCA_COMPANY_NAME"/>
+		    <result property="ccaTel" column="CCA_TEL"/>
+		    <result property="ccaUserTel" column="CCA_USER_TEL"/>
+		    <result property="ccaUserFax" column="CCA_USER_FAX"/>
+		    <result property="ccaUserEmail" column="CCA_USER_EMAIL"/>
+		    
+			<association property="productVO" javaType="kr.or.ddit.vo.ProductVO">
+				      <id property="productNo" column="PRODUCT_NO"/> 
+				      <result property="consignorNo" column="PRODUCT_CONSIGNOR_NO"/>
+				      <result property="hsCode" column="HS_CODE"/>
+				      <result property="productName" column="PRODUCT_NAME"/>
+				      <result property="productOrigin" column="PRODUCT_ORIGIN"/>
+				      <result property="productPrice" column="PRODUCT_PRICE"/>
+				      <result property="productQty" column="PRODUCT_QTY"/>
+				      <result property="productWeight" column="PRODUCT_WEIGHT"/>
+				      <result property="productVolume" column="PRODUCT_VOLUME"/>
+		    </association>
+	  		
+	  		<collection property="contractRecordList" resultMap="contractStatusMap"/>
+	  </resultMap>
+  
+    <resultMap type="kr.or.ddit.vo.ContractRecord" id="contractStatusMap">
+	  	 <result property="contractStatusCode" column="CONTRACT_STATUS_CODE"/>
+	     <result property="contractRecordRegDate" column="CONTRACT_RECORD_REG_DATE"/>
+	     <result property="statusCodeMediumCategoryName" column="STATUS_CODE_MEDIUM_CATEGORY_NAME"/>
+	     <result property="statusCodeName" column="STATUS_CODE_NAME"/>
+	  </resultMap>
+	  
+  
+  	<select id="selectExportCount" resultType="int">
+  		select count(*)
+		  from contract
+		  where contract_type = '수출'
+  	</select>
+  	
+  	<select id="selectImportCount" resultType="int">
+  		  select count(*)
+		    from contract
+		  where contract_type = '수입'
+  	</select>
+  	
+  	<select id="selectHsCodeCount" resultType="int">
+		  select count(*)
+		   from hs_code
+  	</select>
+  	
+  	<select id="selectContractCount" resultType="int">
+  		select count(*)
+		  from contract
+		 where contract_date between sysdate -7 and sysdate
+		 order by contract_date desc
+  	</select>
+  	
+  	<select id="ccaContractList" parameterType="int" resultMap="contractVOResultMap">
+		  	select *
+			  from (
+			         select c.contract_no
+			               ,c.contract_type
+			               ,u.consignor_name
+			               ,s.status_code_medium_category_name
+			               ,s.status_code_name
+			               ,c.contract_date
+			           from contract c
+			           join consignor u on c.consignor_no = u.user_no
+			           join status_code s on c.last_status_code = s.status_code
+			          where cca_no = #{ccaNo}
+			            and last_status_code is not null
+			          order by contract_date desc
+			       )
+			 where rownum &lt;= 5
+  	</select>
+  	
+  	
+  	
+  	
+  	
+  	
+  </mapper>

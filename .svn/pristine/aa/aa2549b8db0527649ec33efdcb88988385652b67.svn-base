@@ -1,0 +1,267 @@
+<%@page import="java.util.Arrays"%>
+<%@page import="java.util.Random"%>
+<%@page import="java.util.List"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec"%>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.fmt" prefix="fmt" %>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수입신고서 작성</title>
+    
+	<%@ include file="../modules/header.jsp" %>
+	<%@ include file="../modules/sidebar.jsp" %>
+	<%@ include file="../modules/modal.jsp" %>
+	<link rel="stylesheet" href="/css/main.css">
+	<link rel="stylesheet" href="/css/decl.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.js"></script> 
+    <style>
+        .container{
+        	width: auto;
+        	background-color: transparent;
+        }
+    </style>
+</head>
+<body>
+	
+	<div class="app-container">
+		<main class="main-content-area">
+		
+			<div class="content-header">
+				<div class="breadcrumb-warp">
+					<div class="col-sm-12">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/">Home</a></li>
+							<li class="breadcrumb-item"><a href="/cca/ccaContract">접수내역</a></li>
+							<li class="breadcrumb-item"><a href="#">의뢰 진행 상세</a></li>
+							<li class="breadcrumb-item"><a href="#">수입신고서 작성</a></li>
+						</ol>
+					</div>
+				</div> 
+
+				<div class="content-title">수입신고서 작성</div>
+				<p class="desc">수입신고서 작성해 주세요.</p>
+
+			</div>
+			
+		    <form action="/contract/declWrite.do" id="declForm" method="post">
+			    <div class="section">
+			
+			        <div class="document-title">
+			            <div class="uni-pass-logo">
+			                <i class="logo-placeholder uni-pass-logo-icon"></i>
+			                <span>Border7</span>
+			            </div>
+			            <h2>수입신고서</h2>
+			        </div>
+			
+			        <table class="info-table">
+			            <tr>
+			                <th>신고번호</th>
+			                <td>${contractVO.declDVO.declDNo }</td>
+			                <th>신고일</th>
+			                <td>${contractVO.declDVO.declDDate }</td>
+			            </tr>
+			            	<%
+							    List<String> customsOffices = Arrays.asList(
+							        "인천본부세관",
+							        "부산본부세관",
+							        "대구본부세관",
+							        "광주본부세관",
+							        "평택직할 세관"
+							    );
+							    Random random = new Random();
+							    String customsAuthority = customsOffices.get(random.nextInt(customsOffices.size()));
+							%>
+			            <tr>
+			                <th>통관지세관 <span class="essential"></span></th>
+			                <td>
+			                	<select name="customsAuthority" id="customsAuthority" >
+				                	<% for (String co : customsOffices) { %>
+									    <option value="<%= co %>"
+									    <% if (customsAuthority != null && customsAuthority.equals(co)) { %>
+									    	selected
+									    <% } %>
+									    >
+	        								<%= co %>
+	    								</option>
+	    							<% } %>
+			                	</select>
+			                </td>
+			                <th>수리일자</th>
+			                <c:set var="getDate">
+			                	<c:choose>
+									<c:when test="${not empty contractVO.declDVO.acceptDate}">
+							            <fmt:formatDate value="${contractVO.declDVO.acceptDate}" pattern="yyyy-MM-dd"/>
+							        </c:when>
+							        <c:otherwise>
+							            <fmt:formatDate value="<%= new java.util.Date() %>" pattern="yyyy-MM-dd"/>
+							        </c:otherwise>
+								</c:choose>
+			                </c:set>
+			                <td><input name="acceptDate" id="acceptDate" type="date" value="${getDate }" placeholder="수리일자를 작성해주세요"/></td>
+			            </tr>
+			            <tr>
+			                <th>화주</th>
+			                <td>${contractVO.consignorVO.consignorName }</td>
+			                <th>신고인부호</th>
+			                <td>${contractVO.ccaVO.ccaName }</td>
+			            </tr>
+			            <tr>
+			                <th>통관고유부호</th>
+			                <td>${contractVO.consignorVO.consignorCustomsCode }</td>
+			                <th>Master B/L 번호 <span class="essential"></span></th>
+			                <td><input name="blNo" id="blNo" type="text" value="${contractVO.declDVO.blNo }" placeholder="bl번호를 작성해주세요"/> </td>
+			            </tr>
+			            <tr>
+			                <th>출발항</th>
+			                <td>${contractVO.declDVO.portFrom != null ? contractVO.declDVO.portFrom : contractVO.ciVO.portFrom }</td>
+			                <th>도착항</th>
+			                <td>${contractVO.declDVO.portTo != null ? contractVO.declDVO.portTo : contractVO.ciVO.portTo}</td>
+			            </tr>
+			        </table>
+			
+			        <div class="item-section">
+			            <h3>품목번호 1 (한국 통계 품목번호: ${contractVO.productVO.hsCode })</h3>
+			            <table class="info-table">
+			                <tr>
+			                    <th>품명</th>
+			                    <td>${contractVO.productVO.productName }</th>
+			                    <th>원산지</th>
+			                    <td>${contractVO.productVO.productOrigin }</td>
+			                </tr>
+			                <tr>
+			                	<th>수량</th>
+			                    <td>${contractVO.productVO.productQty } 개</td>
+			                    <th>중량</th>
+			                    <td>${contractVO.productVO.productWeight } KG</td>
+			                </tr>
+			                <tr>
+			                	<th>부피</th>
+			                    <td>${contractVO.productVO.productVolume } CBM</td>
+			                    <th>단가</th>
+			                    
+			                    <td><fmt:formatNumber value="${contractVO.productVO.productPrice }" pattern="###,###,###,### 원" /></td>
+			                </tr>
+			            </table>
+			        </div>
+					
+					<table class="info-table">
+		                <tr>
+		                    <th>과세가격</th>
+		                    <td><fmt:formatNumber value="${contractVO.declDVO.customsValue }" pattern="###,###,###,### 원" /></th>
+		                    <th>관세율</th>
+		                    <td>${contractVO.hsTariffRate }%</td>
+		                </tr>
+		            </table>
+			
+			        <div class="total-amount-section">
+			            <div class="label">총송장금액</div>
+			            <div class="value"><fmt:formatNumber value="${contractVO.declDVO.totalCost }" pattern="###,###,###,### 원" /></div>
+			        </div>
+			        
+			        <div class="total-amount-section">
+			            <div class="note-label">비고</div>
+			            <div class="note-value"><input name="remarks" id="remarks" type="text" value="${contractVO.declDVO.remarks }"/> </div>
+			        </div>
+			            
+			    </div>
+			    
+			    <div class="btn-container">
+			    	<input type="hidden" name="declDNo" value="${contractVO.declDVO.declDNo }"/>
+			    	<input type="hidden" name="contractNo" value="${contractVO.contractNo }"/>
+			    	<input type="hidden" name="targetUrl" value="contract/decl/detail.do?declDNo=${contractVO.declDVO.declDNo }"/>
+			    	<input class="btn btn-primary btn-c" type="button" id="declBtn" onclick="" value="완료">
+			    	<!-- <input type="button" id="declBtn" onclick="fn_decl_d()" value="완료"> -->
+	            </div>
+		    </form>
+		    
+		    <div class="btn-container autovalbtn">
+				<input class="btn btn-primary btn-c btn-sm" id="autoval" value="자동" readonly/>
+			</div>
+	    </main>
+    </div>
+</body>
+<script>
+	/* 뒤로가기로 쓰자
+		function fn_decl_d(){
+		location.href = "/contract/decl/detail.do?declDNo=${contractVO.declDVO.declDNo}"
+	} */
+	const declBtn = document.getElementById("declBtn");
+	const declForm = document.getElementById("declForm");
+	
+	const customsAuthorityInput = document.getElementById('customsAuthority');
+    const acceptDateInput = document.getElementById('acceptDate');
+    const blNoInput = document.getElementById('blNo');
+    const remarksInput = document.getElementById('remarks');
+	
+	declBtn.addEventListener('click', function() {
+		let isValid = true;
+		if (customsAuthorityInput && customsAuthorityInput.value.trim() === '') {
+            alertify.error('통관지세관을 작성해주세요.');
+            customsAuthorityInput.focus();
+            isValid = false;
+            return;
+        }
+
+        if (acceptDateInput && acceptDateInput.value.trim() === '') {
+            alertify.error('수리일자를 선택해주세요.');
+            acceptDateInput.focus();
+            isValid = false;
+            return;
+        }
+
+        if (blNoInput && blNoInput.value.trim() === '') {
+            alertify.error('Master B/L 번호를 작성해주세요.');
+            blNoInput.focus();
+            isValid = false;
+            return;
+        }
+
+        /* if (remarksInput && remarksInput.value.trim() === '') {
+            alertify.error('비고를 작성해주세요.');
+            remarksInput.focus();
+            isValid = false;
+            return;
+        } */
+        
+
+        if (isValid) {
+        	$.confirm({
+     	       title: '신고서 작성',
+     	       content: '신고서 작성 완료시 수정할 수 없습니다',
+     	       buttons: {
+     	    	  확인: {
+	  					btnClass: 'btn-primary',
+	  					action : function() {
+	  						declForm.submit();
+	  					}
+	  				},
+	  				취소 : {
+	  					btnClass: 'btn-danger',
+	  					action : function() {
+	  						alertify.error('작성을 취소 했습니다.');
+	  					}
+	   	          	}
+
+     	       }
+     	    });
+        	
+        }
+    });
+	const autoval = $("#autoval");
+	autoval.on("click",function(){
+		let randomNum = '';
+		for (let i = 0; i < 9; i++) {
+			randomNum += Math.floor(Math.random() * 10);
+		}
+        document.getElementById('blNo').value = "BORDER7"+randomNum;
+        $("#customsAuthority option:eq(1)").prop("selected", true);
+        
+	});
+</script>
+</html>

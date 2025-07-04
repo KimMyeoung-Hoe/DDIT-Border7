@@ -1,0 +1,257 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="kr.or.ddit.vo.UserVO"%>
+<%@ taglib uri="jakarta.tags.core" prefix="c"%>
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<%@ include file="../modules/header.jsp" %>
+<%@ include file="../modules/sidebar.jsp" %>
+<%@ include file="../modules/modal.jsp" %>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/contract.css">
+<style type="text/css">
+</style>
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec" %>
+
+<sec:authentication property="principal" var="princ"/>
+<c:set value="${princ.user.carrier }" var="userVO"></c:set>
+</head>
+<body>
+
+	
+	<div class="app-container">
+		<main class="main-content-area">
+			
+			<div class="content-header">
+				<div class="breadcrumb-warp">
+					<div class="col-sm-12">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/">Home</a></li>
+							<li class="breadcrumb-item"><a href="/">화물 내역</a></li>
+							<li class="breadcrumb-item"><a href="/">화물 등록</a></li>
+					
+						</ol>
+					</div>
+				</div>
+				<div class="content-title">대행 계약 목록조회</div>
+				<p class="desc">모든 의뢰 상태를 확인하고 관리할 수 있습니다.</p>
+
+			</div>
+			
+			
+			
+			
+			<div class="section">
+				<form action="/servant/InsertBw.do" method="post" id="submitForm">
+					<input type="hidden" id="contractNo" name="contractNo" value="${contractNo}"/>
+				
+		            <div class="hs-search-container">
+		                <label for="hsSearchType" class="form-label" style="margin-right: 10px;">보세창고 번호 선택</label>
+		                <select name="bwhNo" id="bwhSelect" class="form-select" >
+		                	<c:forEach items="${bwhList}" var="bwh">
+		                    	<option value="${bwh.bwhNo}">${bwh.bwhNo} ${bwh.bwhType} </option>
+		                    </c:forEach>
+		                </select>
+		                <label for="hsSearchType" class="form-label" style="margin-right: 10px;">보세창고 섹션 선택</label>
+		                <select name=whSectionNo id="sectionSelect" class="form-select">
+		                	
+		                </select>
+		                
+		            </div>
+	
+	            
+	             
+	
+	                <div class="form-grid">
+	                    
+	                   
+	                    <div class="form-group">
+	                        <label for="productName" class="form-label">출고인 이름</label>
+	                        <div class="form-input-wrapper">
+	                        	<select  class="form-select " id ="importCarrier" name ="importCarrier">
+	                        		<option value="물품 출고인 이름을 입력해주세요">출고인 이름</option>	    
+	                        		<c:forEach var="carrier" items="${princ.user.carrier}">
+										<option  value="${carrier.name}" >[${carrier.affiliation}] ${carrier.name} </option>	               
+									</c:forEach>         	
+	                        	</select>
+	                           
+	                        </div>
+	                    </div>
+	                    <div class="form-group">
+	                        <label for="productOrigin" class="form-label">공무원 식별번호</label>
+	                        <div class="form-input-wrapper">
+	                            <input type="text" name="servantNo" id="servantNo" class="form-input" value="${userNo}"></input>
+	                        </div>
+	                    </div>
+	                    <div class="form-group">
+	                        <label for="productQty" class="form-label">물품 입고일시</label>
+	                        <div class="form-input-wrapper">
+	                         	<c:set var="getDate" value="<%= new java.util.Date() %>"/>
+	                            <input type="date" value="<fmt:formatDate value="${getDate }" pattern="yyyy-MM-dd"/>" name="bwArrivalDate" id="bwArrivalDate" class="form-input" placeholder="물품의 수량을 입력해주세요"/>
+	                        </div>
+	                    </div>
+	                    <div class="form-group">
+	                        <label for="productWeight" class="form-label">신고서접수 일련번호</label>
+	                        <div class="form-input-wrapper">
+	                            <input type="text" name="declNo" id="declNo" class="form-input" value="${declNo}"/>
+	                        </div>
+	                    </div>
+	                   
+	                </div>
+	
+	                <div class="submit-button-container">
+	                    <input type="button" id="submitBtn" value="등록" class="submit-button"/>
+	                </div>
+	                
+	            </form>
+            </div>
+           
+		</main>	
+	</div>
+</body>
+<script type="text/javascript">
+
+
+$("#bwhSelect").on("change", function(){
+		let bwhNo = $(this).val();
+		let html = "";
+		$("#sectionSelect").empty();
+		$.ajax({
+			url : `/servant/whSectionSelect.do?bwhNo=`+bwhNo,
+			type : "get",
+			contentType:"application/json; charset=utf-8",
+			success : function(resp){
+				console.log(resp)
+				for(let i = 0; i<resp.length; i++){
+					if(resp[i].whSectionYn == "0"){
+						html += `
+							<option value="\${resp[i].whSectionNo}">\${resp[i].whSectionNo}</option>
+						`;
+					}
+				}
+				
+				$("#sectionSelect").append(html);
+				html  = "";
+				console.log(html)
+				
+				
+			}
+		})
+
+	})
+	
+$(function(){
+	//인풋에 포커스 잡으면 드롭다운 보이기
+	$("#hsSearchWord").on("focus",function(){
+		$(this).parent().find(".dropdown").removeClass("dropdown-off")
+	});
+	//인풋에서 엔터눌러서 서밋되는거 막기
+	$("#hsSearchWord").on("keydown", function(e) {
+		if (e.key === "Enter") {
+			e.preventDefault();
+		}
+	});
+	//인풋에 포커스아웃되면 잡으면 드롭다운 숨기기
+	$("#hsSearchWord").on("focusout",function(){
+		setTimeout(() => {
+			$(this).parent().find(".dropdown").addClass("dropdown-off");
+			//$(".dropdown .dropdown-item").html("");
+		}, 100);
+	});
+	
+	//누를때마다 검색해서 가져오기
+	$("#hsSearchWord").on("keyup",function(){
+		let hsSearchType = $("#hsSearchType").val();
+		let hsSearchWord = $("#hsSearchWord").val();
+		let data = {
+				hsSearchType : hsSearchType,
+				hsSearchWord : hsSearchWord
+		}
+		
+
+		
+	});
+
+	//row 선택시
+	$(".dropdown-warp").on("click", ".item-row", function(){
+		$("#hsSearchWord").parent().find(".dropdown").addClass("dropdown-off"); // 드롭다운 닫기
+		
+		//엘리먼트에서 데이터 추출
+		let hsCode = $(this).data("hscode"); // HS 코드 가져오기
+		let hskrname = $(this).data("hskrname"); // HS 코드 가져오기
+		
+		//추출한 데이터 넣기
+		$("#hsCode").val(hsCode); // HS 코드 설정
+		$("#productName").val(hskrname); // HS 코드 설정
+		//추가로 넣을 부분
+	});
+	
+	let importCarrier = ""
+	$("select[name=importCarrier]").change(function(){
+
+		  importCarrier = $(this).val()
+		  console.log("importCarrier", importCarrier)
+		});
+	let bwhNo = 0;
+	$("select[name=bwhNo]").change(function(){
+
+		  bwhNo = $(this).val()
+		  console.log("bwhNo1", bwhNo)
+		});
+	
+	console.log("bwhNo2", bwhNo)
+	console.log("importCarrier", importCarrier)
+	const servantNo = $("#servantNo");
+	const bwArrivalDate = $("#bwArrivalDate");
+	const declNo = $("#declNo");
+		
+	const submitForm = $("#submitForm");
+	const submitBtn = $("#submitBtn");
+	
+	submitBtn.on("click",function(){
+	
+		
+		let whSectionNo = $("#sectionSelect").val();
+		console.log("whSectionNo",whSectionNo); 
+	
+	
+		if(whSectionNo == null || whSectionNo == ""){
+			alert("섹션을 입력해주세요");
+			return false;
+		}
+		if(importCarrier == null || importCarrier == ""){
+			alert("출고인 식별번호 입력해주세요");
+		
+			logistMngNo.focus();
+			return false;
+		}
+		if(servantNo.val() == null || servantNo.val() == ""){
+			alert("공무원 식별번호 입력해주세요");
+			servantNo.focus();
+			return false;
+		}
+		if(bwArrivalDate.val() == null || bwArrivalDate.val() == ""){
+			alert("입고일시 입력해주세요");
+			bwArrivalDate.focus();
+			return false;
+		}
+		if(declNo.val() == null || declNo.val() == ""){
+			alert("필증 일련번호 입력해주세요");
+			declNo.focus();
+			return false;
+		}
+		
+		
+		
+		submitForm.submit();
+	});
+	
+});
+function fnSearchAnswer(hsSearchType){
+	
+}
+</script>
+</html>

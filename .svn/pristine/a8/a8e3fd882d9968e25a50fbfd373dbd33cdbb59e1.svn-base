@@ -1,0 +1,753 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="kr.or.ddit.mapper.IBoardMapper">
+  	
+  	
+  	<sql id="boardSearch">
+		<where>
+		  		<if test="searchWord != null and searchWord != ''">
+		  		 (
+		               faq_title  LIKE '%' || #{searchWord} || '%'
+		            or faq_content  LIKE '%' || #{searchWord} || '%'
+		          )
+		  		</if>
+		</where>
+  	</sql>
+  	
+  	<sql id="noticeSearch">
+  		<where>
+  			<if test="searchWord != null and searchWord != ''">
+  					notice_title  LIKE '%' || #{searchWord} || '%'
+  			</if>
+  		</where>
+  	</sql>
+  	
+  	<resultMap type="kr.or.ddit.vo.NoticeVO" id="noticeResultMap">
+  		<id property="noticeNo" column="NOTICE_NO" />
+		<result property="noticeRegDate" column="NOTICE_REG_DATE"/>
+		<result property="regServantNo" column="REG_SERVANT_NO"/>
+		<result property="noticeUpdDate" column="NOTICE_UPD_DATE"/>
+		<result property="updServantNo" column="UPD_SERVANT_NO"/>
+		<result property="noticeTitle" column="NOTICE_TITLE"/>
+		<result property="noticeContent" column="NOTICE_CONTENT"/>
+		<result property="noticeHit" column="NOTICE_HIT"/>
+		<result property="empNo" column="EMP_NO"/>
+		<result property="deptName" column="DEPT_NAME"/>
+		<result property="userName" column="USER_NAME"/>
+		
+		<collection property="noticeFileList" resultMap="comFileList"/>
+  	</resultMap>
+  	
+  	<resultMap type="kr.or.ddit.vo.ComFileDetailVO" id="comFileList">
+  		<result property="comFileDetailNo" column="COM_FILE_DETAIL_NO"/>
+		<result property="comFileNo" column="COM_FILE_NO"/>
+		<result property="comFileDetailType" column="COM_FILE_DETAIL_TYPE"/>
+		<result property="comFileDetailOriginalName" column="COM_FILE_DETAIL_ORIGINAL_NAME"/>
+		<result property="comFileDetailMime" column="COM_FILE_DETAIL_MIME"/>
+		<result property="comFileDetailSize" column="COM_FILE_DETAIL_SIZE"/>
+		<result property="comFileDetailSavePath" column="COM_FILE_DETAIL_SAVE_PATH"/>
+		<result property="comFileDetailSaveName" column="COM_FILE_DETAIL_SAVE_NAME"/>
+		<result property="comFileDetailSaveDate" column="COM_FILE_DETAIL_SAVE_DATE"/>
+		<result property="comFileDetailUseYn" column="COM_FILE_DETAIL_USE_YN"/>
+  	</resultMap>
+  	
+  	<select id="selectFaqList" parameterType="kr.or.ddit.vo.PaginationInfoVO"  resultType="kr.or.ddit.vo.FAQBoardVO">
+  	select
+	        b.*
+	      from
+	        (
+	          select
+	            a.*,row_number() over (order by a.faq_no desc) rnum
+	          from
+	            (   
+                select 
+                         faq_no
+                        ,faq_reg_date
+                        ,faq_title
+                        ,faq_content
+                        ,faq_category
+                  from faq 
+               <include refid="boardSearch"/>
+               order by faq_no desc
+	           ) a
+	        )b
+	        <![CDATA[
+					where 
+						b.rnum >= #{startRow}
+					and
+						b.rnum <= #{endRow}	
+					]]>
+  	</select>
+  	
+  	<select id="selectCategoryList" resultType="kr.or.ddit.vo.FAQBoardVO">
+  		select distinct faq_category
+  		  from faq
+  	</select>
+  	
+  	<select id="selectFaqCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+  		select b.*      
+			  from 
+			       (
+              select count(faq_no)
+                from faq
+                <include refid="boardSearch"/>
+              )b
+  	</select>
+  	
+  	<select id="categoryBoardList" parameterType="string" resultType="kr.or.ddit.vo.FAQBoardVO">
+  			 select 
+                     faq_no
+                    ,faq_reg_date
+                    ,faq_title
+                    ,faq_content
+                    ,faq_category
+               from faq   
+              where
+                 faq_category =#{faqCategory}
+  	</select>
+  	
+  	
+  	<insert id="FaqInsert" parameterType="kr.or.ddit.vo.FAQBoardVO">
+  		INSERT INTO FAQ(  
+					    FAQ_NO
+					  , REG_SERVANT_NO
+					  , FAQ_REG_DATE
+					  , FAQ_TITLE
+					  , FAQ_CONTENT
+					  , FAQ_CATEGORY
+					  , FAQ_SUMMARY
+					  , FAQ_TYPE
+					
+					) VALUES ( 
+					    faq_no_seq.nextval
+					  , #{regServantNo}
+					  , sysdate
+					  , #{faqTitle}
+					  , #{faqContent}
+					  , #{faqCategory}
+					  , #{faqSummary}
+					  , #{faqType}
+					  )
+  		
+  	</insert>
+  	
+  	<select id="faqDetail" parameterType="int" resultType="kr.or.ddit.vo.FAQBoardVO">
+		select 
+			    faq_no
+		       ,reg_servant_no
+		       ,faq_reg_date  
+		       ,upd_servant_no  
+		       ,faq_upd_date  
+		       ,faq_title 
+		       ,faq_content 
+		       ,faq_category  
+		       ,faq_summary 
+		       ,faq_type
+		 from faq
+		 where faq_no = #{faqNo}
+  	</select>
+  	
+  	<delete id="faqRemove" parameterType="int">
+		 delete from faq
+		  where faq_no = #{faqNo}
+  	</delete>
+  	
+  	<update id="faqModify" parameterType="kr.or.ddit.vo.FAQBoardVO" >
+  		update 
+  			faq
+  		  set 
+  		  	upd_servant_no =  #{updServantNo}
+  		  	, faq_upd_date =  sysdate
+  		  	, faq_title = #{faqTitle}
+			, faq_content = #{faqContent}
+			, faq_category =  #{faqCategory}
+			, faq_summary = #{faqSummary}
+			, faq_type = #{faqType}
+		where	
+  		  	faq_no = #{faqNo}
+  	</update>
+  	
+  	<select id="selectNoticeCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+  		select b.*      
+			  from 
+			       (
+              select count(notice_no)
+                from notice
+                <include refid="noticeSearch"/>
+              )b
+  	</select>
+  	
+  	
+  	<select id="selectNoticeList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="kr.or.ddit.vo.NoticeVO">
+  		select
+	        b.*
+	      from
+	        (
+	          select
+	            a.*,row_number() over (order by a.NOTICE_NO desc) rnum
+	          from
+	            (   
+                select 
+                        NOTICE_NO
+                       ,NOTICE_REG_DATE
+                       ,REG_SERVANT_NO
+                       ,u.user_name as reg_servant_name
+                       ,NOTICE_UPD_DATE
+                       ,UPD_SERVANT_NO
+                       ,ut.user_name as upd_servant_name
+                       ,NOTICE_TITLE
+                       ,NOTICE_CONTENT
+                       ,NOTICE_HIT
+                       ,COM_FILE_NO
+                  from notice n
+                  join user_tb u on u.user_no = n.reg_servant_no
+                  left join user_tb ut on ut.user_no = n.upd_servant_no
+              <include refid="noticeSearch"/>
+	           ) a
+	        )b
+	               <![CDATA[
+					where 
+						b.rnum >= #{startRow}
+					and
+						b.rnum <= #{endRow}	
+					]]>
+  	</select>
+  	
+  	<select id="noticeDetail" parameterType="int" resultMap="noticeResultMap">
+					with n_a as (
+					                    select  a.servant_no
+					                              ,a.emp_no
+					                              ,c.dept_name
+					                              ,b.job_grade_name
+					                              ,t.user_name
+					                         from public_servant a
+					                         join job_grade b on a.job_grade_code = b.job_grade_code
+					                         join dept c on a.dept_code = c.dept_code
+					                         join user_tb t on a.servant_no = t.user_no
+					                         where  servant_status_code = 1
+					                    ),
+					       n_b as (
+					                    select com_file_detail_no
+					                           ,a.com_file_no
+					                           ,com_file_detail_type
+					                           ,com_file_detail_original_name
+					                           ,com_file_detail_mime
+					                           ,com_file_detail_size
+					                           ,com_file_detail_save_path
+					                           ,com_file_detail_save_name
+					                           ,com_file_detail_save_date
+					                           ,com_file_detail_use_yn
+					                      from notice a
+					                      join com_file_detail b on a.com_file_no = b.com_file_no 
+					                     where com_file_detail_use_yn = 1
+					                         
+					              )
+					              select 
+					                      t.notice_no
+					                     ,t.notice_title
+					                     ,t.notice_content
+					                     ,t.notice_hit
+					                     ,t.notice_upd_date
+					                     ,t.reg_servant_no as reg_servant_no
+					                     ,t.upd_servant_no as upd_servant_no
+					                     ,n.emp_no
+					                     ,n.dept_name
+					                     ,n.user_name
+					                     ,f.com_file_detail_no
+					                     ,t.com_file_no
+					                     ,f.com_file_detail_type
+					                     ,f.com_file_detail_original_name
+					                     ,f.com_file_detail_mime
+					                     ,f.com_file_detail_size
+					                     ,f.com_file_detail_save_path
+					                     ,f.com_file_detail_save_name
+					                     ,f.com_file_detail_save_date
+					                     ,f.com_file_detail_use_yn
+					                from notice t
+					                join n_a n on n.servant_no = t.reg_servant_no
+					                left join n_a a on a.servant_no = t.upd_servant_no
+					                left join n_b f on f.com_file_no = t.com_file_no
+					                where notice_no =  #{noticeNo}  
+  	</select>
+  	
+  	<update id="incrementHit" parameterType="int">
+		update
+			 notice
+		set	
+			notice_hit = notice_hit + 1
+		where 
+			notice_no = #{noticeNo}  	
+	</update>
+	
+	
+	<insert id="noticeInsetComfile" parameterType="kr.or.ddit.vo.ComFileVO" useGeneratedKeys="true">
+		<selectKey keyProperty="comFileNo" resultType="int" order="BEFORE">
+			select 
+				seq_com_file_no.NEXTVAL
+			  from
+			  	dual	
+		</selectKey>
+		insert into com_file(  
+							  com_file_no
+  						    , user_no
+			       			)
+			        values (  #{comFileNo}
+							, #{userNo}
+						    )
+	</insert>
+	
+	<insert id="noticeInsert" parameterType="kr.or.ddit.vo.NoticeVO"  >
+		insert into notice(  
+							notice_no
+						  , notice_reg_date
+						  , reg_servant_no
+						  , notice_upd_date
+						  , notice_title
+						  , notice_content
+						  , com_file_no
+						  , notice_hit
+						  ) 
+			      values (  seq_notice_no.nextval
+						  , sysdate
+						  , #{regServantNo}
+						  , sysdate
+						  , #{noticeTitle}
+						  , #{noticeContent}
+						  <if test="comFileNo == 0">
+						  ,null
+						  </if>
+						  <if test="comFileNo != 0">
+						  , #{comFileNo}
+						  </if>
+						  ,0
+						  )
+	</insert>
+	
+	
+	<insert id="noticeInsertComfileDetail" parameterType="kr.or.ddit.vo.ComFileDetailVO">
+	
+	insert into com_file_detail( 
+								com_file_detail_no
+							  , com_file_no
+							  , com_file_detail_type
+							  , com_file_detail_original_name
+							  , com_file_detail_mime
+							  , com_file_detail_size
+							  , com_file_detail_save_path
+							  , com_file_detail_save_name
+							  , com_file_detail_save_date
+							  , com_file_detail_use_yn
+	
+								) 
+					     values (  
+					     	    seq_com_file_detail_no.nextval
+							  , #{comFileNo}
+							  , #{comFileDetailType}
+							  , #{comFileDetailOriginalName}
+							  , #{comFileDetailMime}
+							  , #{comFileDetailSize}
+							  , #{comFileDetailSavePath}
+							  , #{comFileDetailSaveName}
+							  , sysdate
+							  , 1
+								)
+	
+	</insert>
+  	
+  	
+  	<select id="getPicture" parameterType="int" resultType="string">
+  		select 
+	      	  com_file_detail_save_path
+	      from 
+	          com_file_detail
+	     where
+	          com_file_detail_no = #{comFileDetailNo}
+  	</select>
+  	
+  	<select id="noticeFileDown" parameterType="int" resultType="kr.or.ddit.vo.ComFileDetailVO">
+		  	select COM_FILE_DETAIL_NO, COM_FILE_DETAIL_ORIGINAL_NAME, COM_FILE_DETAIL_SIZE, COM_FILE_DETAIL_SAVE_PATH
+		    from 
+		      com_file_detail
+		    where
+		      com_file_detail_no = #{comFileDetailNo}
+  	</select>
+  	
+  	<update id="noticeUpdate" parameterType="kr.or.ddit.vo.NoticeVO">
+  		update
+  			notice
+  		  set
+  		  	notice_title = #{noticeTitle},
+  		  	notice_content = #{noticeContent},
+  		  	upd_servant_no = #{updServantNo},
+  		  	notice_upd_date = sysdate
+			 <if test="comFileNo != 0">
+				,com_file_no = #{comFileNo}
+			 </if>
+  		where
+  			notice_no = #{noticeNo}  	
+  	</update>
+  	
+  	
+  	<update id="updateNoticeFileStatus" parameterType="int">
+  		update 
+  			com_file_detail
+  		   set
+  		   	com_file_detail_use_yn = 0
+  		where
+  			com_file_detail_no = #{comFileDetailNo}  	
+  	</update>
+  
+  
+  	<select id="selectComfileNo" parameterType="int" resultType="hashmap">
+  		select 
+  			com_file_no
+  		  from 
+  		  	notice
+  		  where
+  		  	notice_no = #{noticeNo}		
+  	</select>
+  	
+  		<select id="ComfileNoSelect" parameterType="int" resultType="int">
+  		select 
+  			com_file_no
+  		  from 
+  		  	notice
+  		  where
+  		  	notice_no = #{noticeNo}		
+  	</select>
+  	
+  	<delete id="deleteComFileDetail" parameterType="int">
+  		delete from com_file_detail
+  		where
+  			com_file_no = #{comFileNo}
+  	</delete>
+  	
+  	<delete id="deleteComfile" parameterType="int">
+  		delete from com_file
+  		where
+  			com_file_no = #{comFileNo}
+  	</delete>
+  	
+  	<delete id="noticeRemove" parameterType="int">
+  		delete from notice
+  		where
+  			notice_no = #{noticeNo}
+  	</delete>
+  	
+  	<select id="selectFilePath" parameterType="int" resultType="kr.or.ddit.vo.ComFileDetailVO">
+  		 select com_file_detail_save_path
+            from com_file_detail
+           where com_file_no = #{comFileNo}
+  	</select>
+  	
+  	<resultMap id="answerComFileDetailMap" type="kr.or.ddit.vo.ComFileDetailVO">
+	    <id property="comfileDetailNo" column="COMFILE_DETAIL_NO"/>
+	    <result property="comfileNo" column="COMFILE_NO"/>
+	    <result property="comFileDetailType" column="ANSWER_COM_FILE_DETAIL_TYPE"/>	    
+	    <result property="comFileDetailOriginalName" column="ANSWER_COM_FILE_DETAIL_ORIGINAL_NAME"/>
+	    <result property="comFileDetailMime" column="ANSWER_COM_FILE_DETAIL_MIME"/>
+	    <result property="comFileDetailSize" column="ANSWER_COM_FILE_DETAIL_SIZE"/>
+	    <result property="comFileDetailSavePath" column="ANSWER_COM_FILE_DETAIL_SAVE_PATH"/>
+	    <result property="comFileDetailSaveName" column="ANSWER_COM_FILE_DETAIL_SAVE_NAME"/>
+	    <result property="comFileDetailSaveDate" column="ANSWER_COM_FILE_DETAIL_SAVE_DATE"/>
+	    <result property="comFileDetailUseYn" column="ANSWER_COM_FILE_DETAIL_USE_YN"/>
+	</resultMap>
+	
+  	<resultMap id="appealComFileDetailMap" type="kr.or.ddit.vo.ComFileDetailVO">
+	    <id property="comfileDetailNo" column="COMFILE_DETAIL_NO"/>
+	    <result property="comfileNo" column="COMFILE_NO"/>
+	    <result property="comFileDetailType" column="APPEAL_COM_FILE_DETAIL_TYPE"/>	    
+	    <result property="comFileDetailOriginalName" column="APPEAL_COM_FILE_DETAIL_ORIGINAL_NAME"/>
+	    <result property="comFileDetailMime" column="APPEAL_COM_FILE_DETAIL_MIME"/>
+	    <result property="comFileDetailSize" column="APPEAL_COM_FILE_DETAIL_SIZE"/>
+	    <result property="comFileDetailSavePath" column="APPEAL_COM_FILE_DETAIL_SAVE_PATH"/>
+	    <result property="comFileDetailSaveName" column="APPEAL_COM_FILE_DETAIL_SAVE_NAME"/>
+	    <result property="comFileDetailSaveDate" column="APPEAL_COM_FILE_DETAIL_SAVE_DATE"/>
+	    <result property="comFileDetailUseYn" column="APPEAL_COM_FILE_DETAIL_USE_YN"/>
+	</resultMap>
+	
+	<!-- AppealVO 매핑 -->
+	<resultMap id="appealMap" type="kr.or.ddit.vo.AppealVO">
+	    <id property="appealNo" column="APPEAL_NO"/>
+	    <result property="appealType" column="APPEAL_TYPE"/>
+	    <result property="declNo" column="DECL_NO"/>
+	    <result property="appealTitle" column="APPEAL_TITLE"/>
+	    <result property="appealContent" column="APPEAL_CONTENT"/>
+	    <result property="appealAttch" column="APPEAL_ATTCH"/>
+	    <result property="userNo" column="USER_NO"/>
+	    <result property="appealRegDate" column="APPEAL_REG_DATE"/>
+	    <result property="appealAnswer" column="APPEAL_ANSWER"/>
+	    <result property="appealAnswerDate" column="APPEAL_ANSWER_DATE"/>
+	    <result property="appealAnswerFile" column="APPEAL_ANSWER_FILE"/>
+	    
+	    <!-- appealAttach → comfileNo → comfileDetail 테이블 조인으로 매핑 -->
+	    <collection property="appealFileList" ofType="kr.or.ddit.vo.ComFileDetailVO" resultMap="appealComFileDetailMap"/>
+	    <collection property="answerFileList" ofType="kr.or.ddit.vo.ComFileDetailVO" resultMap="answerComFileDetailMap"/>
+	</resultMap>
+	  	
+  	
+  	
+  	<select id="getappealCount" resultType="int" parameterType="kr.or.ddit.vo.PaginationInfoVO">
+  	
+  		select
+  			count(*)
+		  from
+  		  	APPEAL a
+  		  left join
+  		    COM_FILE_DETAIL acf ON acf.COM_FILE_NO = a.APPEAL_ATTCH
+  		  left join
+  		  	COM_FILE_DETAIL bcf ON bcf.COM_FILE_NO = a.APPEAL_ANSWER_FILE  	
+		 where
+		 	USER_NO = #{userNo} 		
+		  	<if test="searchWord != null and searchWord != ''">
+  		 		AND ${searchType} LIKE '%' || #{searchWord} || '%'
+  		 	</if>  		
+  	</select>
+
+  	<select id="appealList" resultMap="appealMap" parameterType="kr.or.ddit.vo.PaginationInfoVO">
+  		select
+  			*
+  	      from(	
+	  		select
+	  			ROWNUM RN
+	  			,TB.*
+	  		  from(	
+		  		select
+		  			a.APPEAL_NO
+					,a.APPEAL_TYPE
+					,a.DECL_NO
+					,a.APPEAL_TITLE
+					,a.APPEAL_CONTENT
+					,a.APPEAL_ATTCH
+					,a.USER_NO
+					,a.SERVANT_NO
+					,a.APPEAL_REG_DATE
+					,a.APPEAL_ANSWER
+					,a.APPEAL_ANSWER_FILE
+					,a.APPEAL_ANSWER_DATE
+					
+					,acf.COM_FILE_DETAIL_TYPE as APPEAL_COM_FILE_DETAIL_TYPE
+					,acf.COM_FILE_DETAIL_ORIGINAL_NAME as APPEAL_COM_FILE_DETAIL_ORIGINAL_NAME
+					,acf.COM_FILE_DETAIL_MIME as APPEAL_COM_FILE_DETAIL_MIME
+					,acf.COM_FILE_DETAIL_SIZE as APPEAL_COM_FILE_DETAIL_SIZE
+					,acf.COM_FILE_DETAIL_SAVE_PATH as APPEAL_COM_FILE_DETAIL_SAVE_PATH
+					,acf.COM_FILE_DETAIL_SAVE_NAME as APPEAL_COM_FILE_DETAIL_SAVE_NAME
+					,acf.COM_FILE_DETAIL_SAVE_DATE as APPEAL_COM_FILE_DETAIL_SAVE_DATE
+					,acf.COM_FILE_DETAIL_USE_YN as APPEAL_COM_FILE_DETAIL_USE_YN
+					
+					,bcf.COM_FILE_DETAIL_TYPE as ANSWER_COM_FILE_DETAIL_TYPE
+					,bcf.COM_FILE_DETAIL_ORIGINAL_NAME as ANSWER_COM_FILE_DETAIL_ORIGINAL_NAME
+					,bcf.COM_FILE_DETAIL_MIME as ANSWER_COM_FILE_DETAIL_MIME
+					,bcf.COM_FILE_DETAIL_SIZE as ANSWER_COM_FILE_DETAIL_SIZE
+					,bcf.COM_FILE_DETAIL_SAVE_PATH as ANSWER_COM_FILE_DETAIL_SAVE_PATH
+					,bcf.COM_FILE_DETAIL_SAVE_NAME as ANSWER_COM_FILE_DETAIL_SAVE_NAME
+					,bcf.COM_FILE_DETAIL_SAVE_DATE as ANSWER_COM_FILE_DETAIL_SAVE_DATE
+					,bcf.COM_FILE_DETAIL_USE_YN as ANSWER_COM_FILE_DETAIL_USE_YN
+					
+		  		  from
+		  		  	APPEAL a
+		  		  left join
+		  		    COM_FILE_DETAIL acf ON acf.COM_FILE_NO = a.APPEAL_ATTCH
+		  		  left join
+		  		  	COM_FILE_DETAIL bcf ON bcf.COM_FILE_NO = a.APPEAL_ANSWER_FILE  
+		  		 	
+		  		 where
+		  		 	USER_NO = #{userNo}
+		  		 	<if test="searchWord != null and searchWord != ''">
+		  		 		AND ${searchType} LIKE '%' || #{searchWord} || '%'
+		  		 	</if>		
+		  		 order by
+		  		 	<choose>
+		  				<when test="sortColumn != null and sortColumn != ''">
+		  					${sortColumn}
+		  				</when>
+		  				<otherwise>
+		  					APPEAL_REG_DATE DESC
+		  				</otherwise>
+		  			</choose>	
+	  			)TB )
+  		 WHERE RN BETWEEN #{startRow} AND #{endRow}	
+  	</select>
+  	
+  	<select id="getappealSvtCount" resultType="int" parameterType="kr.or.ddit.vo.PaginationInfoVO">
+  		select
+  			count(*)
+		  from
+  		  	APPEAL a
+  		  left join
+  		    COM_FILE_DETAIL acf ON acf.COM_FILE_NO = a.APPEAL_ATTCH
+  		  left join
+  		  	COM_FILE_DETAIL bcf ON bcf.COM_FILE_NO = a.APPEAL_ANSWER_FILE  	
+		 where
+		 	SERVANT_NO = #{userNo} 		
+		  	<if test="searchWord != null and searchWord != ''">
+  		 		AND ${searchType} LIKE '%' || #{searchWord} || '%'
+  		 	</if>  		
+  	</select>
+  	
+  	<select id="appealSvtList" resultMap="appealMap" parameterType="kr.or.ddit.vo.PaginationInfoVO">
+  		select
+  			*
+  	      from(	
+	  		select
+	  			ROWNUM RN
+	  			,TB.*
+	  		  from(	
+		  		select
+		  			a.APPEAL_NO
+					,a.APPEAL_TYPE
+					,a.DECL_NO
+					,a.APPEAL_TITLE
+					,a.APPEAL_CONTENT
+					,a.APPEAL_ATTCH
+					,a.USER_NO
+					,a.SERVANT_NO
+					,a.APPEAL_REG_DATE
+					,a.APPEAL_ANSWER
+					,a.APPEAL_ANSWER_FILE
+					,a.APPEAL_ANSWER_DATE
+					
+					,acf.COM_FILE_DETAIL_TYPE as APPEAL_COM_FILE_DETAIL_TYPE
+					,acf.COM_FILE_DETAIL_ORIGINAL_NAME as APPEAL_COM_FILE_DETAIL_ORIGINAL_NAME
+					,acf.COM_FILE_DETAIL_MIME as APPEAL_COM_FILE_DETAIL_MIME
+					,acf.COM_FILE_DETAIL_SIZE as APPEAL_COM_FILE_DETAIL_SIZE
+					,acf.COM_FILE_DETAIL_SAVE_PATH as APPEAL_COM_FILE_DETAIL_SAVE_PATH
+					,acf.COM_FILE_DETAIL_SAVE_NAME as APPEAL_COM_FILE_DETAIL_SAVE_NAME
+					,acf.COM_FILE_DETAIL_SAVE_DATE as APPEAL_COM_FILE_DETAIL_SAVE_DATE
+					,acf.COM_FILE_DETAIL_USE_YN as APPEAL_COM_FILE_DETAIL_USE_YN
+					
+					,bcf.COM_FILE_DETAIL_TYPE as ANSWER_COM_FILE_DETAIL_TYPE
+					,bcf.COM_FILE_DETAIL_ORIGINAL_NAME as ANSWER_COM_FILE_DETAIL_ORIGINAL_NAME
+					,bcf.COM_FILE_DETAIL_MIME as ANSWER_COM_FILE_DETAIL_MIME
+					,bcf.COM_FILE_DETAIL_SIZE as ANSWER_COM_FILE_DETAIL_SIZE
+					,bcf.COM_FILE_DETAIL_SAVE_PATH as ANSWER_COM_FILE_DETAIL_SAVE_PATH
+					,bcf.COM_FILE_DETAIL_SAVE_NAME as ANSWER_COM_FILE_DETAIL_SAVE_NAME
+					,bcf.COM_FILE_DETAIL_SAVE_DATE as ANSWER_COM_FILE_DETAIL_SAVE_DATE
+					,bcf.COM_FILE_DETAIL_USE_YN as ANSWER_COM_FILE_DETAIL_USE_YN
+					
+		  		  from
+		  		  	APPEAL a
+		  		  left join
+		  		    COM_FILE_DETAIL acf ON acf.COM_FILE_NO = a.APPEAL_ATTCH
+		  		  left join
+		  		  	COM_FILE_DETAIL bcf ON bcf.COM_FILE_NO = a.APPEAL_ANSWER_FILE  
+		  		 	
+		  		 where
+		  		 	SERVANT_NO = #{userNo}
+		  		 	<if test="searchWord != null and searchWord != ''">
+		  		 		AND ${searchType} LIKE '%' || #{searchWord} || '%'
+		  		 	</if>		
+		  		 order by
+		  		 	<choose>
+		  				<when test="sortColumn != null and sortColumn != ''">
+		  					${sortColumn}
+		  				</when>
+		  				<otherwise>
+		  					APPEAL_REG_DATE DESC
+		  				</otherwise>
+		  			</choose>	
+	  			)TB )
+  		 WHERE RN BETWEEN #{startRow} AND #{endRow}	
+  	</select>
+  	
+  	<insert id="registAppeal" parameterType="kr.or.ddit.vo.AppealVO">
+  		insert into 
+  			APPEAL(
+  				APPEAL_NO
+  				,APPEAL_TYPE
+  				,DECL_NO
+  				,APPEAL_TITLE
+  				,APPEAL_CONTENT
+  				,USER_NO
+  				,APPEAL_REG_DATE
+  				,SERVANT_NO
+  	
+   		)values(
+  				SEQ_APPEAL_NO.NEXTVAL
+  				,#{appealType}
+  				,#{declNo}
+  				,#{appealTitle}
+  				,#{appealContent}
+  				,#{userNo}
+  				,SYSDATE
+  				,1004
+  		)	
+  			
+  	</insert>
+  	
+  	<update id="registAnswerAppeal" parameterType="kr.or.ddit.vo.AppealVO">
+  		update 
+  			APPEAL
+  			
+  		   SET
+  		   	APPEAL_ANSWER = #{appealAnswer}
+ 	 		, APPEAL_ANSWER_DATE = sysdate
+  		   	
+  		 WHERE
+  			APPEAL_NO = #{appealNo}
+  	</update>
+  	<select id="callRegistAnswerAppealWithFiles" statementType="CALLABLE" resultType="java.lang.Integer">
+        { CALL PROC_REGIST_ANSWER_APPEAL (
+            #{p_appeal_no, mode=IN, jdbcType=NUMERIC},
+            #{p_answer, mode=IN, jdbcType=VARCHAR},
+            #{p_user_no, mode=IN, jdbcType=NUMERIC},
+            #{o_result, mode=OUT, jdbcType=NUMERIC},
+            #{p_file_names, mode=IN, jdbcType=ARRAY, jdbcTypeName="SYS.ODCIVARCHAR2LIST"},
+            #{p_save_names, mode=IN, jdbcType=ARRAY, jdbcTypeName="SYS.ODCIVARCHAR2LIST"},
+            #{p_file_paths, mode=IN, jdbcType=ARRAY, jdbcTypeName="SYS.ODCIVARCHAR2LIST"},
+            #{p_mime_types, mode=IN, jdbcType=ARRAY, jdbcTypeName="SYS.ODCIVARCHAR2LIST"},
+            #{p_file_sizes, mode=IN, jdbcType=ARRAY, jdbcTypeName="SYS.ODCINUMBERLIST"}
+        ) }
+    </select>
+  	
+  	<insert id="registAppealWithFiles" parameterType="map" statementType="CALLABLE">
+	    { call PROC_REGIST_APPEAL_WITH_FILES(
+	      #{appealType, mode=IN, jdbcType=VARCHAR},
+	      #{declNo, mode=IN, jdbcType=VARCHAR},
+	      #{appealTitle, mode=IN, jdbcType=VARCHAR},
+	      #{appealContent, mode=IN, jdbcType=VARCHAR},
+	      #{userNo, mode=IN, jdbcType=INTEGER},
+	      #{result, mode=OUT, jdbcType=INTEGER},
+<!-- 	  #{servantNo, mode=IN, jdbcType=INTEGER},  -->
+	
+	      #{fileNames, mode=IN, jdbcType=ARRAY, jdbcTypeName=SYS.ODCIVARCHAR2LIST},
+	      #{saveNames, mode=IN, jdbcType=ARRAY, jdbcTypeName=SYS.ODCIVARCHAR2LIST},
+	      #{filePaths, mode=IN, jdbcType=ARRAY, jdbcTypeName=SYS.ODCIVARCHAR2LIST},
+	      #{mimeTypes, mode=IN, jdbcType=ARRAY, jdbcTypeName=SYS.ODCIVARCHAR2LIST},
+	      #{fileSizes, mode=IN, jdbcType=ARRAY, jdbcTypeName=SYS.ODCINUMBERLIST}
+	
+  		) }
+
+  	</insert>
+  	
+  	<select id="selectAppeal" parameterType="int" resultType="kr.or.ddit.vo.AppealVO">
+  		select
+  			APPEAL_NO
+			,APPEAL_TYPE
+			,DECL_NO
+			,APPEAL_TITLE
+			,APPEAL_CONTENT
+			,APPEAL_ATTCH
+			,USER_NO
+			,APPEAL_REG_DATE
+			,SERVANT_NO
+			,APPEAL_ANSWER
+			,APPEAL_ANSWER_FILE
+			,APPEAL_ANSWER_DATE
+  		  from	
+  			APPEAL
+  		 where
+  		 	APPEAL_NO = #{appealNo}	
+  	</select>
+  	
+  	<delete id="deleteAppeal" parameterType="int">
+  		DELETE FROM 
+  		    APPEAL
+  		 WHERE
+  		 	APPEAL_NO = #{appealNo}  
+
+  	</delete>
+  	
+  </mapper>

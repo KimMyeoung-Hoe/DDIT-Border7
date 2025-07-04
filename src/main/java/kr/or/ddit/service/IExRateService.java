@@ -1,0 +1,42 @@
+package kr.or.ddit.service;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import kr.or.ddit.vo.AllExchangeRateVO;
+import kr.or.ddit.vo.CurrencyVO;
+import kr.or.ddit.vo.ExRateVO;
+import kr.or.ddit.vo.HsCodeVO;
+import kr.or.ddit.vo.NationVO;
+import reactor.core.publisher.Mono;
+
+public interface IExRateService {
+
+	// 선택한 국가의 통화 코드 가져오는 메서드
+	public String getCurrencyCode(int nationNo);
+
+	// 환율 그래프 메서드 (30일치 환율)
+	public Mono<List<ExRateVO>> getExRate(String source, String tarNation);
+
+	// 전체 통화 코드 가져오는 메서드
+	public List<String> getCurrencyCodeList();
+
+	// 환율 insert 메서드
+	public void insertRate(String currencyCode);
+
+	// 전체 통화 코드 VO List 가져오기
+	public List<CurrencyVO> getCurrencyList();
+
+	/**
+	 * 국가 검색 환율 가져옴
+	 * 
+	 * @param searchMap
+	 * @return
+	 */
+	public List<NationVO> nationSearch(Map<String, String> searchMap);
+
+	public List<AllExchangeRateVO> allExchangeRate(String yesterdayStr);
+
+
+}

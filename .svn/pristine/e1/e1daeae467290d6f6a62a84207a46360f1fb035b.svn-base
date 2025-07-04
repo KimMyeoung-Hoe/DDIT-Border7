@@ -1,0 +1,632 @@
+package kr.or.ddit.contract.controller;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import jakarta.servlet.http.HttpSession;
+import jakarta.websocket.Session;
+import kr.or.ddit.ServiceResult;
+import kr.or.ddit.contract.service.IContractFileService;
+import kr.or.ddit.contract.service.IContractService;
+import kr.or.ddit.pdf.service.PdfService;
+import kr.or.ddit.service.ICCAService;
+import kr.or.ddit.vo.CCAVO;
+import kr.or.ddit.vo.ContractFileAttachVO;
+import kr.or.ddit.vo.ContractVO;
+import kr.or.ddit.vo.DeclDVO;
+import kr.or.ddit.vo.DeclVO;
+import kr.or.ddit.vo.ProductVO;
+import kr.or.ddit.vo.TaxVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+@RequestMapping("/contract")
+public class ContractController {
+	
+	/**통관의뢰 서비스*/
+	@Autowired
+	public IContractService contractService;
+
+	/**pdf 서비스*/
+	@Autowired
+	private PdfService pdfService;
+	
+	/**통관의뢰 파일 서비스*/
+	@Autowired
+	private IContractFileService contractfileService;
+
+	/**관세사 서비스*/
+	@Autowired
+	private ICCAService ccaService;
+	
+	@Value("${kr.or.ddit.upload.pdf.path}")
+	private String pdfuploadPath;
+	
+	/**
+	 * 삭제 예정
+	 * @param model
+	 * @return
+	 */
+	@GetMapping("/list.do")
+	public String contractList(Model model) {
+		return "contract/contractList";
+	}
+	
+	//작성화면
+	//consignor/writeContract.do
+	//return "consignor/writeContract";
+		
+	/**
+	 * 통관의뢰 등록
+	 * +물품등록
+	 * contract에 업데이트
+	 * @param req
+	 * @param contractVO
+	 * @param productVO
+	 * @param model
+	 * @param ra
+	 * @return
+	 */
+	@PostMapping("/insert")
+	public String contractInsert(HttpSession session, ContractVO contractVO, ProductVO productVO,
+			ModelMap model, RedirectAttributes ra){
+		String goPage = "";
+//		contractVO {}ContractVO(contractNo=null, consignorNo=118, ccaNo=426, productNo=0, ciNo=0, plNo=0, contractType=inport, contractDate=null, contractRecept_Date=null, contractApproval_Yn=0, comFile_No=0)
+//		productVO {}ProductVO(productNo=0, consignorNo=118, hsCode=8703329020, productName=차차, productOrigin=차차, productQty=123, productWeight=123, productVolume=123)
+		
+		Map<String, String> errors = new HashMap<>();
+
+		int userNo = (int) session.getAttribute("userNo");
+		log.info("userNo {}" + userNo);
+		int consignorNo = userNo;
+		//지워야함
+		//없을때 임의로 57번 회원 하드코드
+		if (consignorNo == 0) {
+			consignorNo = 57;
+			contractVO.setConsignorNo(consignorNo);
+		}
+		
+		String stringConsignorNo = String.valueOf(contractVO.getConsignorNo());// 숫자 문자로 변환
+		
+		if(StringUtils.isBlank(stringConsignorNo)) {
+			errors.put("consignorNo", "화주가 식별되지 않습니다. 로그인을 확인해주세요.");
+		}
+		String stringCcaNo = String.valueOf(contractVO.getCcaNo());// 숫자 문자로 변환
+		if(StringUtils.isBlank(stringCcaNo)) {
+			errors.put("ccaNo", "관세사가 선택되지 않았습니다. 관세사를 확인해주세요.");
+		}
+		
+		if(errors.size()>0) {//에러가 발생
+			model.addAttribute("errors",errors);
+			model.addAttribute("contractVO",contractVO);
+			//작성중인 정보 다시뿌려줘야하나?
+			goPage = "redirect:consignor/writeContract.do";
+		}else {
+			//서버단에서 회원정보를 가져와서 처리하려면 토큰을 가져와야할듯
+			//현 클라이언트에서 회원정보를 가져옴
+			contractVO.setConsignorNo(consignorNo);
+			productVO.setConsignorNo(consignorNo);
+			ServiceResult result = contractService.insertContract(contractVO,productVO);
+		
+			log.info("contractVO.getContractNo() : {}" + contractVO.getContractNo());
+			if(result.equals(ServiceResult.OK)) {//통관 의뢰 등록 성공
+				ra.addFlashAttribute("message","통관 의뢰 등록 완료");
+				goPage = "redirect:/contract/contractdocform.do?contractNo=" + contractVO.getContractNo();
+			}else{//통관 의뢰 실패
+				model.addAttribute("message", "통관의뢰 등록에서 서버에러, 다시 시도해 주세요");
+				goPage = "redirect:consignor/writeContract.do";
+			}
+		}
+		
+		return goPage;
+	}
+
+	/**
+	 * 관세업무계약 수정 페이지
+	 * @param contractNo
+	 * @param model
+	 * @return
+	 */
+	@GetMapping("/contractEdit.do")
+	public String writeContract(String contractNo, Model model) {
+		ContractVO contractVO = contractService.selectContract(contractNo);
+		log.info("contractVO : {}" + contractVO);
+		model.addAttribute("status", "u");
+		model.addAttribute("contractVO", contractVO);
+		return "consignor/writeContract";
+	}
+	
+	/**
+	 * 통관의뢰 수정
+	 * @param session
+	 * @param contractVO
+	 * @param productVO
+	 * @param model
+	 * @param ra
+	 * @return
+	 */
+	@PostMapping("/update")
+	public String contractUpdate(HttpSession session, ContractVO contractVO, ProductVO productVO,
+			ModelMap model, RedirectAttributes ra){
+		String goPage = "";
+		log.info("contractVO {}" + contractVO);
+		log.info("productVO {}" + productVO);
+//		contractVO {}ContractVO(contractNo=null, consignorNo=118, ccaNo=426, productNo=0, ciNo=0, plNo=0, contractType=inport, contractDate=null, contractRecept_Date=null, contractApproval_Yn=0, comFile_No=0)
+//		productVO {}ProductVO(productNo=0, consignorNo=118, hsCode=8703329020, productName=차차, productOrigin=차차, productQty=123, productWeight=123, productVolume=123)
+		
+		
+		Map<String, String> errors = new HashMap<>();
+
+		int userNo = (int) session.getAttribute("userNo");
+		log.info("userNo {}" + userNo);
+		int consignorNo = userNo;
+		//지워야함
+		//없을때 임의로 57번 회원 하드코드
+		if (consignorNo == 0) {
+			consignorNo = 57;
+			contractVO.setConsignorNo(consignorNo);
+		}
+		
+		String stringConsignorNo = String.valueOf(contractVO.getConsignorNo());// 숫자 문자로 변환
+		
+		if(StringUtils.isBlank(stringConsignorNo)) {
+			errors.put("consignorNo", "화주가 식별되지 않습니다. 로그인을 확인해주세요.");
+		}
+		String stringCcaNo = String.valueOf(contractVO.getCcaNo());// 숫자 문자로 변환
+		if(StringUtils.isBlank(stringCcaNo)) {
+			errors.put("ccaNo", "관세사가 선택되지 않았습니다. 관세사를 확인해주세요.");
+		}
+		
+		if(errors.size()>0) {//에러가 발생
+			model.addAttribute("errors",errors);
+			model.addAttribute("contractVO",contractVO);
+			//작성중인 정보 다시뿌려줘야하나?
+			goPage = "redirect:consignor/writeContract.do";
+		}else {
+			//서버단에서 회원정보를 가져와서 처리하려면 토큰을 가져와야할듯
+			//현 클라이언트에서 회원정보를 가져옴
+			contractVO.setConsignorNo(consignorNo);
+			productVO.setConsignorNo(consignorNo);
+			ServiceResult result = contractService.updateContract(contractVO,productVO);
+		
+			log.info("contractVO.getContractNo() : {}" + contractVO.getContractNo());
+			if(result.equals(ServiceResult.OK)) {//통관 의뢰 등록 성공
+				ra.addFlashAttribute("message","통관 의뢰 등록 완료");
+				goPage = "redirect:/contract/contractdocform.do?contractNo=" + contractVO.getContractNo();
+			}else{//통관 의뢰 실패
+				model.addAttribute("message", "통관의뢰 등록에서 서버에러, 다시 시도해 주세요");
+				goPage = "redirect:consignor/writeContract.do";
+			}
+		}
+		
+		return goPage;
+	}
+	
+	/**
+	 * 화주 ci/pl 작성전 통관의뢰 상세 조회 
+	 * 통관의뢰 상세 조회
+	 * 
+	 * **************미사용***************************
+	 * @param contractNo
+	 * @param model
+	 * @return
+	 */
+	@GetMapping("/detail.do")
+	public String detailContract(String contractNo, Model model) {
+		//******* 필수 ******* JSP 페이지의  Header + 브레드크럼 시작 // 
+		String headerStr = "<div class='content-header'><div class='container'><div class='row mb-2'>";
+			   headerStr += "<div class='col-sm-6'>";
+			   headerStr += "<h1 class='m-0'> 통관 의뢰 신청 확인</h1>";
+			   headerStr += "</div>";
+			   headerStr += "<div class='col-sm-6'>";
+			   headerStr += "<ol class='breadcrumb'>";
+			   headerStr += "<li class='breadcrumb-item'><a href='/'>Home</a></li>";
+			   headerStr += "<li class='breadcrumb-item'><a href='/consignor/ccaList.do'>관세사 정보 보기</a></li>";
+			   headerStr += "<li class='breadcrumb-item active'><a href='/contract/contractdocform.do?contractNo=IMP-2025-00110'>통관 의뢰 신청 확인</a></li>";
+			   headerStr += "</ol>";
+			   headerStr += "</div></div></div></div>";
+		model.addAttribute("headerStr", headerStr);
+        //******* 필수 ******* JSP 페이지의  Header + 브레드크럼 끝 //
+			   
+		String goPage = "";
+		Map<String, String> errors = new HashMap<>();
+		ContractVO contractVO = contractService.selectContract(contractNo);
+		if(contractVO == null) {
+			errors.put("contractVO", "contractVO 없음");
+			model.addAttribute("errors",errors);
+			goPage = "redirect:/";
+		}else {
+			int ccaNo = contractVO.getCcaNo();
+			CCAVO ccaVO = ccaService.detailCcaProfile(ccaNo);
+			contractVO.setCcaVO(ccaVO);
+			model.addAttribute("contractNo",contractNo);
+			model.addAttribute("contractVO",contractVO);
+			log.info("contractVO {}" + contractVO);
+			goPage = "contract/contractDetail";
+		}
+		return goPage;
+	}
+	
+	//수정폼 못하게하기로 함 25.06.11 14시 회의
+	//수정 못하게하기로 함 25.06.11 14시 회의
+	
+	//삭제
+	@PostMapping("/contractDel.do")
+	public String contractDel(String contractNo, Model model) {
+		String goPage = "";
+		Map<String, String> errors = new HashMap<>();
+		
+		ServiceResult result = contractService.contractDel(contractNo);
+		
+		if(result.equals(ServiceResult.OK)) {
+			goPage ="redirect:/consignor/ccaList.do";
+		}else {
+			errors.put("result", "contract 삭제중 서버에러발생");
+			model.addAttribute("errors",errors);
+			goPage = "redirect:/";
+		}
+		return goPage;
+	}
+	
+	/**
+	 * 화주 통관의뢰 CI/PL 작성 폼
+	 * @param model
+	 * @return
+	 */
+	@GetMapping("/contractdocform.do")
+	public String contractdocform(String contractNo, String cont, Model model) {
+		String goPage = "";
+		Map<String, String> errors = new HashMap<>();
+		
+		ContractVO contractVO = contractService.selectContract(contractNo);
+		if(contractVO == null) {
+			errors.put("contractVO", "contractVO 없음");
+			model.addAttribute("errors",errors);
+			goPage = "redirect:/";
+		}else {
+			int ccaNo = contractVO.getCcaNo();
+			CCAVO ccaVO = ccaService.detailCcaProfile(ccaNo);
+			contractVO.setCcaVO(ccaVO);
+			model.addAttribute("contractNo",contractNo);
+			model.addAttribute("contractVO",contractVO);
+			log.info("contractVO {}" + contractVO);
+			log.info("cont : {}" + cont);
+			if (cont != null && !cont.isBlank()) { // cont가 null이 아니고, 공백 문자열이 아닐 때
+			    model.addAttribute("cont", "u");
+			}
+			goPage = "contract/contractdocform";
+		}
+		return goPage;
+	}
+	
+	/**
+	 * 화주가 cipl 작성후 상세 이동예정
+	 * @param model
+	 * @return
+	 */
+	//@PreAuthorize("hasRole('ROLE_LOGISTICS')")
+	//@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_MANDARIN')")
+	@PreAuthorize("true")
+	@GetMapping("/contractdetail.do")
+	public String contract2Detail(String contractNo, Model model) {
+		String goPage = "";
+		Map<String, String> errors = new HashMap<>();
+		
+		if(contractNo == null) {
+			errors.put("contractNo", "contractNo 없음");
+			model.addAttribute("errors",errors);
+			goPage = "redirect:/";
+			
+		}else {
+			ContractVO contractVO = contractService.selectContract(contractNo);
+			model.addAttribute("contractVO",contractVO);
+			goPage = "contract/contract2Detail";
+		}
+		
+		return goPage;
+	}
+	
+	/**
+	 * 관세사의 수출입신고서 작성 화면
+	 * @param model
+	 * @return
+	 */
+	//@PreAuthorize("hasRole('ROLE_LOGISTICS')")
+	//@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_MANDARIN')")
+	@PreAuthorize("true")
+	@GetMapping("/declform.do")
+	public String declform(String contractNo, Model model) {
+		String goPage = "";
+		Map<String, String> errors = new HashMap<>();
+		if(contractNo == null) {//파라미터 없을때
+			errors.put("contractNo", "contractNo 없음 잘못된 접근");
+			model.addAttribute("errors",errors);
+			goPage = "redirect:/";
+		}else {
+			//기존 작성되있는 계약 정보를 가져오기
+			ContractVO  contractVO = contractService.selectdeclDToContract(contractNo);
+			DeclDVO declDVO = new DeclDVO();
+			ServiceResult result = null;
+			///신고서가 있는지 확인
+			int status = contractService.declDCehck(contractNo);
+			log.info("있는지 체크 : {}"+ status);
+
+			/** 과세가격 계산해서 가져오기 */
+			int customsValue = contractService.getCustomsValue(contractVO.getProductVO().getProductQty(),contractVO.getProductVO().getProductPrice());
+			
+			/** 총송장금액 계산해서 가져오기 */
+			int totalCost = contractService.getTotalCost(customsValue, contractVO.getHsTariffRate());
+			
+			String portFrom = contractVO.getCiVO().getPortFrom();
+			String portTo = contractVO.getCiVO().getPortTo();
+			
+			log.info("portFrom : {}"+ portFrom);
+			
+			if(status == 0){//신고서가 없으면 실행
+				declDVO.setContractNo(contractNo);
+				log.info("신고서가 없네");
+				log.info("declDVO : {}"+ declDVO);
+				//수입신고서 생성
+				log.info("수입신고서 생성 실행전 {}");
+				declDVO.setPortFrom(portFrom);
+				declDVO.setPortTo(portTo);
+				declDVO.setCustomsValue(customsValue);
+				declDVO.setTotalCost(totalCost);
+				
+				result = contractService.insertDeclD(declDVO);
+				
+				
+				log.info("수입신고서 생성 실행후 {}");
+				log.info("declDVO : {}"+ declDVO);
+			}
+
+			// 갱신된 신고서 가져오기
+			contractVO = contractService.selectdeclDToContract(contractNo);
+			log.info("contractVO : {}"+ contractVO);
+			
+
+			model.addAttribute("declDVO",declDVO);
+			model.addAttribute("contractVO",contractVO);
+			
+
+			//수입인지 수출인지 작성 폼 변경
+			String port = contractNo.substring(0,3);
+			log.info("port : {}"+port);
+			
+			if(port.equals("IMP")) {
+				goPage = "contract/importdeclform";
+			}
+			if(port.equals("EXP")) {
+				goPage = "contract/exportdeclform";
+			}
+
+			log.info("goPage : {}"+goPage);
+		}
+		return goPage;
+	}
+	
+	/**
+	 * 작성 완료 메서드
+	 * 작성 완료되어있어도 여기 탐
+	 * @param contractNo 계약 번호
+	 * @param declDNo 문서 번호
+	 * @param targetUrl 다운로드할 url
+	 * @param contractFileAttachVO 업로드할 파일 객체 필요 없어보이는디?
+	 * @param model 모데르
+	 * @return
+	 */
+	//@PreAuthorize("hasRole('ROLE_LOGISTICS')")
+	//@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_MANDARIN')")
+	@PreAuthorize("true")
+	@PostMapping("/declWrite.do")
+	public String declWrite(String contractNo, DeclDVO declDVO, String targetUrl,
+			ContractFileAttachVO contractFileAttachVO,RedirectAttributes ra, Model model) {
+		log.info("declWrite() 실행");
+		log.info("declDVO : {}"+ declDVO);
+
+		String goPage = "";
+		try {
+			String declDNo = declDVO.getDeclDNo();
+			//신고서 작성
+			log.info("declDNo : {}"+ declDNo);
+			ServiceResult result =  contractService.updateDeclD(declDVO);
+			
+			if(result.equals(ServiceResult.OK)) {
+				ra.addFlashAttribute("message","신고서 작성완료");
+
+				//첨부파일 진행
+				// 하드코딩으로 테스트
+				// 1. PDF 생성: '완료 버튼 클릭' 시 http://localhost:8080/contract/importdecl/detail.do?declDNo=ID-2025-00214 를 PDF로 저장
+				// targetUrl = "contract/importdecl/detail.do?declDNo=ID-2025-00214";
+				log.info("PDF 생성을 위한 URL: {}", targetUrl);
+				
+				String generatedPdfFilePath = pdfService.createPdf2(targetUrl);
+				log.info("PDF 생성 완료. 파일 경로: {}", generatedPdfFilePath);
+				
+				// 2. 저장한 파일을 가져오기
+				File pdfFile = new File(generatedPdfFilePath);
+				if (!pdfFile.exists() || !pdfFile.isFile() || pdfFile.length() == 0) {
+		            log.error("PDF 파일이 생성되지 않았거나 유효하지 않습니다: {}", generatedPdfFilePath);
+		            // Handle error: perhaps return an error page or message
+		            model.addAttribute("errorMessage", "PDF 파일 생성에 실패했습니다.");
+		            return "errorPage"; // Or wherever you handle errors
+		        }
+				
+				// 3. 가져온 파일을 객체화하기
+				contractFileAttachVO = contractfileService.getContractFileAttachVO(contractNo ,pdfFile);
+		        
+		        // 4. 파일객체를 파일 첨부 테이블에 인서트하기
+		        int attachedFileNo = this.contractfileService.insertFileAttachment(contractFileAttachVO);
+		        log.info("첨부파일 DB 인서트 완료. 생성된 파일 번호: {}", attachedFileNo);
+		        
+		        // 5. 인서트 된 파일 번호를 contract 테이블에 업데이트하기\
+		        // 공무원에게도 신고 인서트
+		        result = contractService.updateContractWithAttachment(contractNo, attachedFileNo,declDNo);
+		        log.info("계약(contractNo: {}) 테이블에 첨부파일(fileNo: {}) 업데이트 완료", contractNo, attachedFileNo);
+		        if(result.equals(ServiceResult.OK)) {
+		        	//정상 모든게 정상
+		        	goPage = "redirect:/cca/ccaDetailContract/"+contractNo;		        	
+		        }else {// 5 번에서 실패
+					model.addAttribute("message", "신고서 작성 중 서버에러, 다시 시도해 주세요");
+					goPage = "redirect:contract/declform.do?contractNo="+contractNo;
+		        }
+			}else{//통관 의뢰 실패
+				model.addAttribute("message", "신고서 작성 중 서버에러, 다시 시도해 주세요");
+				goPage = "redirect:contract/declform.do?contractNo="+contractNo;
+			}
+			
+		} catch (Exception e) {
+	        log.error("통관의뢰서 작성 및 첨부파일 처리 중 오류 발생: {}", e.getMessage(), e);
+	        model.addAttribute("errorMessage", "요청 처리 중 오류가 발생했습니다: " + e.getMessage());
+	        // 개발 중에는 스택 트레이스를 볼 수 있도록 e.printStackTrace();를 남길 수도 있지만,
+	        // 실제 서비스에서는 사용자에게 보여주지 않고 로그로만 남기는 것이 좋습니다.
+	        return "redirect:/"; // 예외 발생 시 보여줄 에러 페이지 경로
+	    }
+		
+		return goPage;
+	}
+	
+	/**
+	 * 수출입신고서 상세 화면 
+	 * pdf화 하기위해, 확인화면 용
+	 * @param model
+	 * @return
+	 */
+	//@PreAuthorize("hasRole('ROLE_LOGISTICS')")
+	//@PreAuthorize("hasAnyRole('ROLE_SVT_ADMIN', 'ROLE_SVT_MANDARIN')")
+	@PreAuthorize("true")
+	@GetMapping("/decl/detail.do")
+	public String importdecl(String declDNo, Model model) {
+		String goPage = "";
+		Map<String, String> errors = new HashMap<>();
+		DeclDVO declDVO = null;
+		ContractVO contractVO = null;
+		if(declDNo == null) {
+			errors.put("declDNo", "잘못된 접근입니다.");
+			model.addAttribute("errors",errors);
+			goPage = "redirect:/";
+		}else {
+			declDVO = contractService.selectdeclD(declDNo);
+			log.info("declDVO : {}", declDVO);
+			String contractNo =  declDVO.getContractNo();
+			log.info("contractNo : {}", contractNo);
+			
+			contractVO = contractService.selectdeclDToContract(contractNo);
+			log.info("contractVO : {}", contractVO);
+			
+			
+			String port = declDNo.substring(0,2);
+			if(port.equals("ID")) {
+				goPage = "contract/importdecl";
+			}
+			if(port.equals("ED")) {
+				goPage = "contract/exportdecl";
+			}
+		}
+		model.addAttribute("contractVO",contractVO);
+		return goPage;
+	}
+	
+	//서버에 저장된 파일을 보고싶을때 경로 어떻게 처리할 것인가.
+	//http://localhost:8080/upload/pdf_output/ID-2025-00237.pdf
+	
+	
+	/** 세금 정보를 포함한 세금고지서 화면 호출
+	 * @return "contract/taxDetail"
+	 */
+	@GetMapping("/taxDetail.do")
+	public String taxDetail(
+			@RequestParam("declNo") String declNo,
+		    Model model) {
+		
+		log.info("넘겨받은 declNo : {}" , declNo);
+		
+		TaxVO taxVO = new TaxVO();
+		taxVO = contractService.taxDetail(declNo);
+		
+		// 납기후금액
+		taxVO.setTaxAmountAfter((int)(taxVO.getTaxAmount() * 1.03));
+		
+		model.addAttribute("taxVO", taxVO);
+		
+		return "contract/taxDetail";
+	}
+	
+	/** 카카오페이 결제준비
+	 * @param map 세금 일련번호, 납부금액을 담음
+	 * @return ResponseEntity<String>
+	 */
+	@PostMapping("/taxReady")
+	public @ResponseBody TaxVO taxReady(HttpSession session, @RequestBody Map<String, Object> map) {
+		log.info("넘겨받은 map : {}" , map);
+
+	    // 카카오페이 결제준비 ------------------------------------------------
+		int taxNo = Integer.valueOf((String)map.get("taxNo")); 	// 세금 일련번호
+		int taxRealAmount = (int)map.get("taxRealAmount"); 		// 납부금액
+		String declNo = (String)map.get("declNo");				// 신고서처리업무 일련번호
+		String contractNo = (String)map.get("contractNo");		// 관세대리업무계약 번호
+		
+		log.info("------------------------------", taxRealAmount);
+		// 카카오페이 결제준비
+		TaxVO taxVO = contractService.taxReady(taxNo, taxRealAmount, declNo, contractNo);
+
+		// 결제 고유번호(tid)를 세션에 저장
+		TaxSessionUtils.addAttribute("tid", taxVO.getTid());
+		log.info("넘겨받은 tid : {}" , taxVO.getTid());
+		
+		// 의뢰 진행 상세 화면으로 돌아가기 위해 관세대리업무계약 번호를 세션에 저장
+		TaxSessionUtils.addAttribute("contractNo", contractNo);
+		
+		return taxVO;
+	}
+	
+	/** 카카오페이 결제승인 화면 호출
+	 * @param pgToken 
+	 * @return
+	 */
+	@GetMapping("/taxCompleted")
+	public String taxCompleted(HttpSession session, @RequestParam("pg_token") String pgToken, Model model) {
+	    String tid = TaxSessionUtils.getStringAttributeValue("tid");
+	    log.info("결제승인 요청을 인증하는 토큰: " + pgToken);
+	    log.info("결제 고유번호: " + tid);
+	
+	    // 카카오 결제 요청하기
+	    TaxVO taxVO = contractService.taxApprove(tid, pgToken);
+	    
+	    // 실제납부금액 저장
+	    int taxRealAmount = taxVO.getQuantity();
+	    
+	    taxVO = contractService.taxDetail(taxVO.getItem_code());
+	    
+	    // 결제 완료 후 실제납부금액을 담아 세금 납부여부, 실제납부금액, 납부일시 업데이트
+	    taxVO.setTaxRealAmount(taxRealAmount);
+	    contractService.updateTax(taxVO);
+	    
+	    model.addAttribute("taxVO", taxVO);
+	    
+	    String contractNo = TaxSessionUtils.getStringAttributeValue("contractNo");
+	    return "redirect:/cca/ccaDetailContract/" + contractNo;
+	}
+}

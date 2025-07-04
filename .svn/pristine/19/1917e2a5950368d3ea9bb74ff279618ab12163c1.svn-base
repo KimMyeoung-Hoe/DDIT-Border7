@@ -1,0 +1,324 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<%@ include file="../modules/header.jsp" %>
+<%@ include file="../modules/sidebar.jsp" %>
+<%@ include file="../modules/modal.jsp" %>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+<link rel="stylesheet" href="/css/main.css">
+<sec:authentication property="principal" var="princ"/>
+<c:set value="${princ.user }" var="userVO"></c:set>
+</head>
+<body>
+	<div class="app-container">
+		<main class="main-content-area p-3">
+			 <!-- 브레드크럼 엘리먼트 -->
+				<div class="content-header">
+				   <div class="breadcrumb-warp">
+				      <div class="col-sm-12">
+				         <ol class="breadcrumb">
+				            <li class="breadcrumb-item"><a href="/">Home</a></li>
+				            <li class="breadcrumb-item"><a href="/">내 메뉴</a></li>
+				            <li class="breadcrumb-item"><a href="/">내 컨테이너 관리</a></li>
+				            <li class="breadcrumb-item"><a href="/">컨테이너 등록</a></li>
+				         </ol>
+				      </div>
+				   </div>
+				 <div class="content-title">내 컨테이너 등록페이지</div>
+				   <p class="desc">컨테이너를 등록하는 페이지입니다.</p>
+				</div>
+				<!-- 브레드크럼 엘리먼트 끝 -->
+				<div class="section">
+					<form id="containerForm">
+						<div class="row">
+							<label class="col-sm-2 col-form-label">컨테이너 명칭</label>
+							<div class="col-sm-10">
+								<input class="form-input" type="text" placeholder="컨테이너 이름" 
+										id="containerName" name="containerName"	/>
+							</div>						
+						</div>
+						<div class="row">
+							<label class="col-sm-2 col-form-label">컨테이너 위치</label>
+							<div class="col-sm-10">
+								<input class="form-input" type="text" placeholder="컨테이너 위치" 
+										id="containerLocation" name="containerLocation"/>
+							</div>						
+						</div>
+						<div class="row">
+						    <label class="col-sm-2 col-form-label">컨테이너 SZTP</label>
+						    <div class="col-sm-5">
+						    	<label class="form-label">컨테이너 종류</label>
+						        <select class="form-select" id="containerType" name="containerType">
+						            <option value="냉동">냉동</option>
+						            <option value="일반">일반</option>
+						        </select>
+						    </div>
+						    <div class="col-sm-5">
+						    	<label class="form-label">컨테이너 크기</label>
+						        <select class="form-select" id="containerSize" name="containerSize">
+						            <option value="20">20ft</option>
+						            <option value="40">40ft</option>
+						        </select>
+						    </div>						
+						</div>
+						<div class="row">
+							<label class="col-sm-2 col-form-label">컨테이너 이용비용</label>
+							<div class="col-sm-10">
+								<input class="form-input" type="number" placeholder="컨테이너 이용비용" 
+										id="containerPrice" name="containerPrice" />
+							</div>						
+						</div>
+						
+						<div class="row mb-3 align-items-center">
+						    <label class="col-sm-2 col-form-label">선적 선박 선택</label>
+						    <div class="col-sm-10">
+						        <span id="selectedShipName" class="me-2 text-primary fw-bold">선택된 선박이 없습니다.</span>
+						        <button type="button" class="btn btn-primary" id="loadShipListBtn">선박 목록 보기</button>
+						        <input type="hidden" id="selectedShipScheduelNo" name="shipScheduleNo" />
+						    </div>
+						</div>
+					</form>
+					<!-- 등록 버튼 -->
+					<div class="d-flex justify-content-end mt-4">
+						<button class="btn btn-success" id="submitBtn">등록하기</button>
+					</div>
+				</div>
+
+				<div class="section mt-4" id="shipListContainer" style="display: none;">
+				    <hr>
+				    <h4 class="mb-3">선박 목록</h4>
+				    
+				    <div class="search-filter-section mb-3">
+				        <div class="search-input-wrapper flex-grow-1 me-2">
+				            <input type="text" class="form-control" id="searchWord" placeholder="검색어를 입력하세요">
+				        </div>
+				        <div class="filter-group">
+				            <select class="form-select" id="searchType">
+				                <option value="">검색종류선택</option>
+				                <option value="b.SHIP_NAME">선박명</option>
+				                <option value="b.SHIP_TYPE">선박 종류</option>
+				                <option value="pf.PORT_NAME">출발항</option>
+				                <option value="pt.PORT_NAME">도착항</option>
+				            </select>
+				            <select class="form-select" id="sortColumn">
+				                <option value="a.SHIP_SCHEDULE_DEPARTURE">출발일 순 (기본)</option>
+				                <option value="b.SHIP_NAME">선박명 순</option>
+				                <option value="b.SHIP_GT">총톤수 순</option>
+				            </select>
+				            <select class="form-select" id="sortDirection">
+				                <option value="ASC">오름차순</option>
+				                <option value="DESC">내림차순</option>
+				            </select>
+				            <button class="btn btn-primary" id="shipSearchBtn">검색</button>
+				        </div>
+				    </div>
+		            <!-- 선박 목록 테이블 (틀만 존재) -->
+		            <table class="data-table">
+		                <thead>
+		                    <tr>
+		                        <th>선박명</th>
+		                        <th>선박종류</th>
+		                        <th>선박 총톤수</th>
+		                        <th>출발항</th>
+		                        <th>출발 시간</th>
+		                        <th>도착항</th>
+		                        <th>도착 예상 시간</th>
+		                        <th>이미지</th>
+		                        <th>3D 모델</th>
+		                    </tr>
+		                </thead>
+		                <tbody id="shipTableBody">
+		                    <!-- 데이터가 여기에 동적으로 삽입됩니다. -->
+		                </tbody>
+		            </table>
+		            <!-- 페이지네이션 (틀만 존재) -->
+		            <div class="table-footer">
+		            <div class="d-flex justify-content-center mt-4">
+		                <ul class="pagination" id="shipPagination">
+							<!-- 페이지 링크가 여기에 동적으로 삽입됩니다. -->
+						</ul>
+		            </div>
+		            </div>
+				</div>
+		</main>
+	</div>
+<script type="text/javascript">
+$(function(){
+
+	var currentSearchParams = new URLSearchParams();
+	
+    $('#loadShipListBtn').on('click', function() {
+        $('#shipListContainer').show();
+        currentSearchParams = new URLSearchParams(); // 검색 조건 초기화
+        currentSearchParams.set("currentPage", 1);
+        
+        // 컨테이너 위치에 따른 선적선박 선택 검색 조건 추가 (편의성)
+        const location = $("#containerLocation").val();
+        currentSearchParams.set("searchWord",location);
+        currentSearchParams.set("searchType","pf.PORT_NAME");
+        
+        console.log(currentSearchParams)
+        
+        loadAndRenderShips();
+    });
+
+    function loadAndRenderShips() {
+        var requestUrl = "<%=request.getContextPath()%>/api/logistics/shipList?" + currentSearchParams.toString();
+        
+        $.ajax({
+            url: requestUrl,
+            type: "GET",
+            dataType: "json",
+            success: function(pagingVO) {
+                console.log("성공적으로 받은 데이터:", pagingVO);
+               updateShipTable(pagingVO.dataList);
+               updateShipPagination(pagingVO);
+            },
+            error: function(xhr) {
+                console.error("데이터 로드 실패:", xhr.responseText);
+                $('#shipTableBody').html('<tr><td colspan="9" class="text-danger text-center">선박 목록을 불러오는 데 실패했습니다.</td></tr>');
+            }
+        });
+    }
+
+    function updateShipTable(dataList) {
+        const tableBody = $('#shipTableBody');
+        tableBody.empty();
+		
+        if (dataList && dataList.length > 0) {
+        	dataList.forEach(dataList => {
+                const shipsVO = dataList.shipsVO;
+                const shipImgHtml = shipsVO.shipImg 
+                    ? `<img src="/images/\${shipsVO.shipImg}" alt="\${shipsVO.shipName}" style="width: 50px; height: auto;">`
+                    : '<span>이미지 없음</span>';
+				const ship3dIcon = shipsVO.ship3dImg 
+                    ? `<i class="fas fa-cube text-success"></i>` 
+                    : `<i class="fas fa-times text-danger"></i>`;
+                
+                const row = `
+                    <tr class="ship-select-row" data-ship-schedule-no="\${dataList.shipScheduleNo}" 
+                    							data-ship-name="\${shipsVO.shipName}" style="cursor:pointer;">
+                        <td>\${shipsVO.shipName || '-'}</td>
+                        <td>\${shipsVO.shipType || '-'}</td>
+                        <td>\${shipsVO.shipGt ? shipsVO.shipGt.toLocaleString() + ' GT' : '-'}</td>
+                        <td>\${dataList.portFromName || '-'}</td>
+                        <td>\${dataList.shipScheduleDeparture || '-'}</td>
+                        <td>\${dataList.portToName || '-'}</td>
+                        <td>\${dataList.shipScheduleArrival || '-'}</td>
+                        <td>\${shipImgHtml}</td>
+                        <td class="text-center">\${ship3dIcon}</td>
+                    </tr>`;
+                tableBody.append(row);
+            });
+        } else {
+            tableBody.html('<tr><td colspan="9" class="text-center">조회된 선박이 없습니다.</td></tr>');
+        }
+    }
+
+    function updateShipPagination(pagingVO) {
+        const pagination = $('#shipPagination');
+        pagination.empty(); // 일단 비우기
+		let html = "";
+		console.log(pagingVO);
+		if (pagingVO.startPage > 1) {
+			html += `<li class="page-item">
+						<a class="page-link page-link-text" href="#" data-page="\${pagingVO.startPage - pagingVO.blockSize}">이전</a>
+					 </li>`;
+		}
+
+		for (let i = pagingVO.startPage; i <= pagingVO.endPage; i++) {
+			html += `<li class="page-item \${i == pagingVO.currentPage ? 'active' : ''}">
+						<a class="page-link" href="#" data-page="\${i}">${i}</a>
+					 </li>`;
+		}
+
+		if (pagingVO.endPage < pagingVO.totalPage) {
+			html += `<li class="page-item">
+						<a class="page-link page-link-text" href="#" data-page="\${pagingVO.endPage + 1}">다음</a>
+					 </li>`;
+		}
+
+		pagination.html(html);
+    }
+
+    const container = $('#shipListContainer');
+
+    // 검색 버튼 클릭 시 모든 필터 값을 파라미터에 추가
+    container.on('click', '#shipSearchBtn', function() {
+    	var searchWord = $('#searchWord').val();
+    	var searchType = $('#searchType').val();
+    	console.log(searchWord);
+    	if(searchWord != null && searchWord != ""){
+    		if(searchType == "" || searchType == null ){
+    			alertify.alert("검색 종류를 선택해주세요.");
+    	        $('#searchType').focus();
+    	        return; // 검색 실행 중단
+    		}
+    	}
+    	
+        currentSearchParams.set("searchWord", searchWord);
+        currentSearchParams.set("searchType", searchType);
+   
+        var sortColumn = $("#sortColumn").val();
+        var sortDirection  = $("#sortDirection").val();
+        
+        currentSearchParams.set("sortColumn", sortColumn + " " + sortDirection );
+        currentSearchParams.set("currentPage", 1); // 새 검색은 1페이지부터
+        loadAndRenderShips();
+    });
+
+    // 페이지 번호 클릭
+    container.on('click', '.page-link', function(e) {
+        e.preventDefault();
+        const page = $(this).data('page');
+        currentSearchParams.set("currentPage", page);
+        loadAndRenderShips();
+    });
+
+    // 테이블 행 클릭
+    container.on('click', '.ship-select-row', function() {
+        const shipName = $(this).data('shipName');
+        const shipScheduleNo = $(this).data('shipScheduleNo');
+        $('#selectedShipName').text(`선택됨: \${shipName}`);
+        $('#selectedShipScheduelNo').val(shipScheduleNo);
+        $('#shipListContainer').hide();
+    });
+	
+	// 등록 버튼 클릭
+	$('#submitBtn').on('click', function(){
+		const formData = $('#containerForm').serialize(); // form에 id="containerForm" 필요
+		console.log("전송할 데이터:", formData);
+		
+		// 등록요청 ajax
+		 $.ajax({
+	            url: "<%=request.getContextPath()%>/logistics/registContainer.do",
+	            type: "POST",
+	            dataType: "text",
+	            success: function(cnt) {
+	                if(cnt>0){
+	                	alertify.alert("등록성공!");
+	                	window.location.href="<%= request.getContextPath()%>/logistics/myContainer.do";
+	                }
+	            },
+	            error: function(xhr) {
+	                console.error("데이터 로드 실패:", xhr.responseText);
+	                $('#shipTableBody').html('<tr><td colspan="9" class="text-danger text-center">선박 목록을 불러오는 데 실패했습니다.</td></tr>');
+	            }
+	        });
+	});
+//-----------------------------------------------
+
+});
+</script>
+</body>
+</html>

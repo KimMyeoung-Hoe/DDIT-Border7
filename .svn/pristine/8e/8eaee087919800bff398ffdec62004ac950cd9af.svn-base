@@ -1,0 +1,645 @@
+package kr.or.ddit.controller;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.io.File;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.GetMapping; 
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.View;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.websocket.Session;
+import kr.or.ddit.ServiceResult;
+import kr.or.ddit.service.IMyMailService;
+import kr.or.ddit.user.service.IUserService;
+import kr.or.ddit.util.UploadFileUtils;
+import kr.or.ddit.vo.ComFileDetailVO;
+import kr.or.ddit.vo.CustomUser;
+import kr.or.ddit.vo.MyMailVO;
+import kr.or.ddit.vo.PaginationInfoVO;
+import kr.or.ddit.vo.UserVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+@RequestMapping("/myPage")
+public class MyMailController {
+
+	@Autowired 
+	private IMyMailService myMailService;
+	
+	@Autowired
+	private IUserService userService;
+	
+	@Value("${kr.or.ddit.upload.path}")
+	private String uploadPath;
+	
+    public MyMailController(IMyMailService myMailService, IUserService userService) {
+        this.myMailService = myMailService;
+        this.userService = userService;
+    }
+	
+	/** 내 메일 목록 화면 요청
+	 * @param currentPage (int)현재 페이지
+	 * @param searchCategory (String)메일함
+	 * @param searchType (String)검색타입
+	 * @param searchWord (String)검색단어
+	 * @param session
+	 * @param model
+	 * @return "myPage/myMail"
+	 */
+	@GetMapping(value = "/myMail.do")
+	public String myMail(
+			@RequestParam(name="page", required = false, defaultValue = "1") int currentPage,
+			@RequestParam(required = false, defaultValue = "all") String searchCategory,
+			@RequestParam(required = false, defaultValue = "emailTitle") String searchType,
+			@RequestParam(required = false) String searchWord,
+			Model model) {
+		
+		// 시큐리티에 저장된 유저정보
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		UserVO user = userSec.getUser();
+		
+		// 화면 페이징을 위한 VO 생성
+		PaginationInfoVO<Map<String, Object>> pagingVO = new PaginationInfoVO<>(20,5);
+		pagingVO.setCurrentPage(currentPage);							// 현재페이지
+
+		// 현재 조회중인 메일함
+		pagingVO.setSearchCategory(searchCategory);		
+		model.addAttribute("searchCategory", searchCategory);
+		
+		// 검색단어가 존재할 경우 검색타입과 검색단어를 페이징VO와 model에 저장
+		if(StringUtils.isNotBlank(searchWord)) {
+			pagingVO.setSearchType(searchType);							// 검색타입
+			pagingVO.setSearchWord(searchWord);							// 검색단어
+			
+		    model.addAttribute("searchType", searchType);
+		    model.addAttribute("searchWord", searchWord);
+		}
+		
+		// 메일함 사이드바 표기를 위해 메일함에 대한 COUNT 수를 구함(검색조건 반영 x)
+		int userNo = user.getUserNo();
+		pagingVO.setUserNo(userNo);
+		MyMailVO myMailVO = myMailService.selectMailAllCount(userNo);
+		myMailVO.setAllCount(myMailVO.getRecipCount(), myMailVO.getSendCount());
+		model.addAttribute("myMailVO", myMailVO);
+		
+		// 현재 조회중인 메일함의 totalRecord를 구하고 해당하는 서비스 호출해 조회중인 메일함의 메일 데이터 설정
+		switch (searchCategory) {
+			case "all":
+				pagingVO.setTotalRecord(myMailVO.getAllCount());
+				pagingVO.setDataList(myMailService.selectMailList(pagingVO));
+				break;
+			case "send":
+				pagingVO.setTotalRecord(myMailVO.getSendCount());
+				pagingVO.setDataList(myMailService.selectMailList(pagingVO));
+				break;
+			case "recip":
+				pagingVO.setTotalRecord(myMailVO.getRecipCount());
+				pagingVO.setDataList(myMailService.selectMailList(pagingVO));
+				break;
+			case "trash":
+				pagingVO.setTotalRecord(myMailVO.getTrashCount());
+				pagingVO.setDataList(myMailService.selectTrashMailList(pagingVO));
+				break;
+			case "temp":
+				pagingVO.setTotalRecord(myMailVO.getTempCount());
+				pagingVO.setDataList(myMailService.selectTempMailList(pagingVO));
+				break;
+			case "unread":
+				pagingVO.setTotalRecord(myMailVO.getUnreadCount());
+				pagingVO.setDataList(myMailService.selectMailList(pagingVO));
+				break;
+			case "star":
+				pagingVO.setTotalRecord(myMailVO.getUnreadCount());
+				pagingVO.setDataList(myMailService.selectMailList(pagingVO));
+				break;
+			case "files":
+				pagingVO.setTotalRecord(myMailVO.getFilesCount());
+				pagingVO.setDataList(myMailService.selectMailList(pagingVO));
+				break;
+		}
+
+		model.addAttribute("pagingVO", pagingVO);
+		System.out.println("==================" + pagingVO);
+		return "myPage/myMail";
+	}
+	
+	/** 메일 작성 화면 요청
+	 * @return "myPage/mailEdit"
+	 */
+	@GetMapping(value = "/mailEdit.do")
+	public String mailEdit(Model model) {
+		// 일단 각각의 메일함에 대한 COUNT 수를 구함
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		UserVO user = userSec.getUser();
+		int userNo = user.getUserNo();
+
+		MyMailVO myMailVO = myMailService.selectMailAllCount(userNo);
+		myMailVO.setAllCount(myMailVO.getRecipCount(), myMailVO.getSendCount());
+		
+		model.addAttribute("myMailVO", myMailVO);
+		
+		return "myPage/mailEdit";
+	}
+	
+	/** 메일 이어서 작성 화면 요청
+	 * @return "myPage/mailEdit"
+	 */
+	@PostMapping(value = "/mailEdit.do")
+	public String mailEditPost(Model model, @RequestParam("emailNo") int emailNo) {
+		// 일단 각각의 메일함에 대한 COUNT 수를 구함
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		UserVO user = userSec.getUser();
+		int userNo = user.getUserNo();
+
+		MyMailVO myMailVO = myMailService.selectMailAllCount(userNo);
+		myMailVO.setAllCount(myMailVO.getRecipCount(), myMailVO.getSendCount());
+		model.addAttribute("myMailVO", myMailVO);
+		
+		// 이어서 작성하기 위해 기존 메일 번호로 상세 내용을 가져옴
+		MyMailVO emailData = myMailService.mailDetail(emailNo);
+		model.addAttribute("emailData", emailData);
+		
+		return "myPage/mailEdit";
+	}
+	
+	/** 메일 상세 내용 기능 */
+	@PostMapping("/mailDetailContent")
+	@ResponseBody
+	public MyMailVO mailDetailContent(int emailNo) {
+		log.info("실행 {} : 메일 상세 내용 기능");
+		
+		log.info("화면에서 전달받은 이메일 번호 : " + emailNo);
+
+		MyMailVO myMailVO = myMailService.mailDetail(emailNo);
+		
+		int comFileNo = myMailVO.getComFileNo();
+		if(comFileNo > 0) {
+			List<ComFileDetailVO> emailFileList = myMailService.mailDetailFiles(comFileNo);
+			myMailVO.setEmailFileList(emailFileList);
+		}
+		
+		//안읽은 메일수도 담기
+        // 실제 메일 서비스에서 읽지 않은 메일 수를 조회하는 메서드를 호출합니다.
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		UserVO user = userSec.getUser();
+		int userNo = user.getUserNo();
+        MyMailVO myMailVO2 = myMailService.selectMailAllCount(userNo);
+        int mailCount = myMailVO2.getUnreadCount();
+        myMailVO.setUnreadCount(mailCount);
+        return myMailVO;
+	}
+	
+	/** 파일 다운
+	 * @param comFileDetailNo
+	 * @param model
+	 * @return
+	 * @throws Exception 
+	 */
+	@GetMapping("download.do")
+	public void mailFileDownload(int comFileDetailNo , ModelMap model, HttpServletRequest request, HttpServletResponse response) throws Exception {
+		ComFileDetailVO comFileDetailVO = myMailService.mailDetailFileOne(comFileDetailNo);
+		
+		String fileName = comFileDetailVO.getComFileDetailOriginalName();
+		long fileSize = comFileDetailVO.getComFileDetailSize();
+		String fileSavepath = comFileDetailVO.getComFileDetailSavePath();
+		File saveFile = new File(fileSavepath);
+		String agent = request.getHeader("User-Agent");
+		
+		if (StringUtils.containsIgnoreCase(agent,"msie")||
+				StringUtils.containsIgnoreCase(agent, "trident")) {
+			fileName = URLEncoder.encode(fileName,"UTF-8");
+		}else {
+			fileName = new String(fileName.getBytes(),"ISO-8859-1");
+		}
+		response.setHeader("Content-Disposition","attachment; filename=\""+fileName+"\"");
+		response.setHeader("Content-Length", String.valueOf(fileSize));
+		
+		try(
+			OutputStream os = response.getOutputStream();
+		) {
+			FileUtils.copyFile(saveFile, os);
+		}
+		return;
+	}
+	
+	/** 메일 발송 기능 
+	 * @throws Exception 
+	 * @throws IOException */
+	@ResponseBody
+	@PostMapping("/mailSend")
+	public ResponseEntity<Map<String, Object>> mailSend(
+	        @RequestPart("emailData") MyMailVO emailData,
+	        @RequestPart(value = "files", required = false) MultipartFile[] files) throws IOException, Exception {
+	    log.info("실행 {} : 메일 발송 기능");
+
+	    Map<String, Object> responseData = new HashMap<>();
+	    ServiceResult result = null;
+
+	    log.info("화면에서 전달받은 입력항목의 데이터 (emailData) : " + emailData);
+
+	    // 첨부파일 받아서 VO에 담고 LOCAL에도 저장
+	    if (files != null) {
+	    	List<ComFileDetailVO> emailFileList = new ArrayList<>();
+	        for (MultipartFile file : files) {
+	            log.info("화면에서 전달받은 첨부파일 : " + file.getOriginalFilename());
+	            
+	            String comFileDetailSavePath = "";
+	            comFileDetailSavePath = UploadFileUtils.uploadFile(
+					uploadPath + "\\mail",
+					file.getOriginalFilename(),
+					file.getBytes()
+				);
+	            comFileDetailSavePath = uploadPath + "/mail" + comFileDetailSavePath;
+	            
+				if(StringUtils.isBlank(file.getOriginalFilename())) {
+					continue; //이름 없을때까지 돌린다
+				}
+				
+		        // 마지막 슬래시(/)의 인덱스를 찾습니다.
+		        int lastSlashIndex = comFileDetailSavePath.lastIndexOf('/');
+		        if (lastSlashIndex == -1) {
+		            lastSlashIndex = comFileDetailSavePath.lastIndexOf('\\');
+		        }
+
+		        String fileName;
+		        if (lastSlashIndex != -1) {
+		            // 마지막 슬래시 또는 역슬래시 다음부터 문자열을 잘라냅니다.
+		            fileName = comFileDetailSavePath.substring(lastSlashIndex + 1);
+		        } else {
+		            // 경로에 슬래시나 역슬래시가 없는 경우 (파일명만 있는 경우)
+		            fileName = comFileDetailSavePath;
+		        }
+
+				ComFileDetailVO comFileDetailVO = new ComFileDetailVO(file);
+				comFileDetailVO.setComFileDetailMime(file.getContentType());
+				comFileDetailVO.setComFileDetailSavePath(comFileDetailSavePath);
+				comFileDetailVO.setComFileDetailSaveName(fileName);
+				emailFileList.add(comFileDetailVO);
+				emailData.setEmailFileList(emailFileList);
+			}
+	    } else {
+	        log.info("첨부파일 없음");
+	    }
+	    
+		// 수신자 목록을 쉼표로 구분하여 list에 담고 다시 메일VO에 담는다.
+		String emailRecipsString = emailData.getRecipEmails();
+	    String[] recipientArray = emailRecipsString.split(",");
+
+	    List<String> recipientList = Arrays.stream(recipientArray)
+                .map(String::trim)
+                .collect(Collectors.toList());
+	    
+	    emailData.setRecipList(recipientList);
+	    
+	    // 수신자 목록 중 border7메일이면 userNo를 list에 저장한다.
+	    List<Integer> recipUserNoList = new ArrayList<>();
+	    for (String recipient : recipientList) {
+            if (recipient.endsWith("@border7.kr")) {
+                // "@border7.kr" 앞에 있는 문자열만 자른다.
+                String recipUserId = recipient.substring(0, recipient.length() - "@border7.kr".length());
+                try {
+                	int recipUserNo = userService.selectUserNo(recipUserId);
+                	recipUserNoList.add(recipUserNo);
+				} catch (Exception e) {
+					recipUserNoList.add(0);
+				}
+            } else {
+                // "@border7.kr"로 끝나지 않으면 "0"을 담는다.
+            	recipUserNoList.add(0);
+            }
+        }
+	    emailData.setRecipUserNoList(recipUserNoList);
+	    
+		// userNo를 메일VO에 담는다.
+		String userId = emailData.getUserId();
+		int userNo = userService.selectUserNo(userId);
+		emailData.setUserNo(userNo);
+		result = myMailService.mailSend(emailData);
+		
+		// 메일 발송하고,
+		// 메일 발송 진행 결과를 화면으로 전달한다.
+		if(result.equals(ServiceResult.OK)) {
+            responseData.put("status", result.toString());
+            responseData.put("message", "메일 발송이 완료되었습니다.");
+            responseData.put("emailNo", emailData.getEmailNo());
+
+            return new ResponseEntity<>(responseData, HttpStatus.OK);
+		}else {
+			responseData.put("status", "FAILED");
+            responseData.put("message", "메일 발송에 실패했습니다.");
+
+            return new ResponseEntity<>(responseData, HttpStatus.BAD_REQUEST);
+		}
+	}
+		
+	/** 메일 임시저장 기능 */
+	@ResponseBody
+	@PostMapping("/mailTempSave")
+	public ResponseEntity<Map<String, Object>> mailTempSave(
+        @RequestPart("emailData") MyMailVO emailData,
+        @RequestPart(value = "files", required = false) MultipartFile[] files) throws IOException, Exception {
+	    log.info("실행 {} : 메일 발송 기능");
+	
+	    Map<String, Object> responseData = new HashMap<>();
+	    ServiceResult result = null;
+	
+	    log.info("화면에서 전달받은 입력항목의 데이터 (emailData) : " + emailData);
+	
+	    // 첨부파일 받아서 VO에 담고 LOCAL에도 저장
+	    if (files != null) {
+	    	List<ComFileDetailVO> emailFileList = new ArrayList<>();
+	        for (MultipartFile file : files) {
+	            log.info("화면에서 전달받은 첨부파일 : " + file.getOriginalFilename());
+	            
+	            String comFileDetailSavePath = "";
+	            comFileDetailSavePath = UploadFileUtils.uploadFile(
+					uploadPath + "\\mail",
+					file.getOriginalFilename(),
+					file.getBytes()
+				);
+	            comFileDetailSavePath = uploadPath + "/mail" + comFileDetailSavePath;
+	            
+				if(StringUtils.isBlank(file.getOriginalFilename())) {
+					continue; //이름 없을때까지 돌린다
+				}
+				
+		        // 마지막 슬래시(/)의 인덱스를 찾습니다.
+		        int lastSlashIndex = comFileDetailSavePath.lastIndexOf('/');
+		        if (lastSlashIndex == -1) {
+		            lastSlashIndex = comFileDetailSavePath.lastIndexOf('\\');
+		        }
+	
+		        String fileName;
+		        if (lastSlashIndex != -1) {
+		            // 마지막 슬래시 또는 역슬래시 다음부터 문자열을 잘라냅니다.
+		            fileName = comFileDetailSavePath.substring(lastSlashIndex + 1);
+		        } else {
+		            // 경로에 슬래시나 역슬래시가 없는 경우 (파일명만 있는 경우)
+		            fileName = comFileDetailSavePath;
+		        }
+	
+				ComFileDetailVO comFileDetailVO = new ComFileDetailVO(file);
+				comFileDetailVO.setComFileDetailMime(file.getContentType());
+				comFileDetailVO.setComFileDetailSavePath(comFileDetailSavePath);
+				comFileDetailVO.setComFileDetailSaveName(fileName);
+				emailFileList.add(comFileDetailVO);
+				emailData.setEmailFileList(emailFileList);
+			}
+	    } else {
+	        log.info("첨부파일 없음");
+	    }
+	    
+		// 수신자 목록을 쉼표로 구분하여 list에 담고 다시 메일VO에 담는다.
+		String emailRecipsString = emailData.getRecipEmails();
+	    String[] recipientArray = emailRecipsString.split(",");
+	
+	    List<String> recipientList = Arrays.stream(recipientArray)
+	            .map(String::trim)
+	            .collect(Collectors.toList());
+	    
+	    emailData.setRecipList(recipientList);
+	    
+	    // 수신자 목록 중 border7메일이면 userNo를 list에 저장한다.
+	    List<Integer> recipUserNoList = new ArrayList<>();
+	    for (String recipient : recipientList) {
+	        if (recipient.endsWith("@border7.kr")) {
+	            // "@border7.kr" 앞에 있는 문자열만 자른다.
+	            String recipUserId = recipient.substring(0, recipient.length() - "@border7.kr".length());
+	            try {
+	            	int recipUserNo = userService.selectUserNo(recipUserId);
+	            	recipUserNoList.add(recipUserNo);
+				} catch (Exception e) {
+					recipUserNoList.add(0);
+				}
+	        } else {
+	            // "@border7.kr"로 끝나지 않으면 "0"을 담는다.
+	        	recipUserNoList.add(0);
+	        }
+	    }
+	    emailData.setRecipUserNoList(recipUserNoList);
+	    
+		// userNo를 메일VO에 담는다.
+		String userId = emailData.getUserId();
+		int userNo = userService.selectUserNo(userId);
+		emailData.setUserNo(userNo);
+		result = myMailService.mailSend(emailData);
+		
+		// 메일 발송하고,
+		// 메일 발송 진행 결과를 화면으로 전달한다.
+		if(result.equals(ServiceResult.OK)) {
+	        responseData.put("status", result.toString());
+	        responseData.put("message", "메일 발송이 완료되었습니다.");
+	        responseData.put("emailNo", emailData.getEmailNo());
+	
+	        // 메일번호로 DB의 메일상세정보를 가져와 저장일시와 파일번호를 저장한다.
+            MyMailVO myMailVO = myMailService.mailDetail(emailData.getEmailNo());
+            System.out.println(myMailVO);
+            String emailDate = myMailVO.getEmailDate();
+            responseData.put("emailDate", emailDate);
+            int comFileNo = myMailVO.getComFileNo();
+            responseData.put("comFileNo", comFileNo);
+            
+            // 일단 각각의 메일함에 대한 COUNT 수를 구함
+    		myMailVO = myMailService.selectMailAllCount(userNo);
+    		myMailVO.setAllCount(myMailVO.getRecipCount(), myMailVO.getSendCount());
+    		responseData.put("myMailVO", myMailVO);
+            
+	        return new ResponseEntity<>(responseData, HttpStatus.OK);
+		}else {
+			responseData.put("status", "FAILED");
+	        responseData.put("message", "메일 발송에 실패했습니다.");
+	
+	        return new ResponseEntity<>(responseData, HttpStatus.BAD_REQUEST);
+		}
+	}
+	
+	/** 복수의 메일 읽음/휴지통/삭제 기능 */
+	@ResponseBody
+	@PostMapping("/mailAction")
+	public ResponseEntity<String> mailAction(@RequestBody Map<String, Object> selectData) throws Exception {
+		
+		ResponseEntity<String> entity = null;
+		ServiceResult result = null;
+		
+		// 읽음/휴지통/삭제 구분
+		String actionType = (String)selectData.get("actionType");
+
+		// 받은 메일번호와 카테고리 정보가 담긴 리스트
+		List<Map<String, Object>> selectMailList = (List<Map<String, Object>>)selectData.get("selectEmailData");
+
+		System.out.println(selectMailList);
+        try {
+            if ("read".equals(actionType)) { // 읽음 처리
+            	result = myMailService.mailRead(selectMailList);
+            } else if ("trash".equals(actionType)) { // 휴지통 이동
+            	result = myMailService.mailTrash(selectMailList);
+            } else if ("delete".equals(actionType)) { // 삭제
+            	result = myMailService.mailDelete(selectMailList);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        if(result.equals(ServiceResult.OK)) {
+			entity = new ResponseEntity<String>(result.toString(), HttpStatus.OK);
+		}else {
+			entity = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+		}
+        
+        return entity;
+	}
+	
+	/** 중요한 메일 설정 기능
+	 * @param emailNo
+	 * @param recipNo
+	 * @param isLiked
+	 * @return
+	 */
+	@PostMapping("/updateStar")
+	public ResponseEntity<Map<String, Object>> updateStar(
+			@RequestParam("emailNo") int emailNo,
+            @RequestParam(required = false, defaultValue = "0") int recipNo,
+            @RequestParam("isLiked") boolean isLiked) {
+		log.info("실행 {} : 중요한 메일 설정 기능");
+		
+		Map<String, Object> responseData = new HashMap<>();
+		ServiceResult result = null;
+		
+		log.info("화면에서 전달받은 emailNo : " + emailNo);
+		log.info("화면에서 전달받은 recipNo : " + recipNo);
+		log.info("화면에서 전달받은 isLiked : " + isLiked);
+		
+		MyMailVO mailVO = new MyMailVO();
+		
+		mailVO.setEmailNo(emailNo);
+		mailVO.setRecipNo(recipNo);
+		mailVO.setStarYn(isLiked);
+		
+		result = myMailService.updateStar(mailVO);
+		
+		// 중요한 메일 설정 진행 결과를 화면으로 전달한다.
+		if(result.equals(ServiceResult.OK)) {
+            responseData.put("status", result.toString());
+            responseData.put("message", "중요한 메일 설정이 완료되었습니다.");
+
+            return new ResponseEntity<>(responseData, HttpStatus.OK);
+		}else {
+			responseData.put("status", "FAILED");
+            responseData.put("message", "중요한 메일 설정에 실패했습니다.");
+
+            return new ResponseEntity<>(responseData, HttpStatus.BAD_REQUEST);
+		}
+	}
+	
+	
+	// 메일 템플릿 목록 출력 기능
+	
+	
+	// 메일 템플릿 불러오기 기능 + 템플릿 사용 카운트+1 같이 처리해야 함
+	
+	
+	/** 메일 템플릿 삭제 기능
+	 * @param map 삭제할 메일 템플릿 일련번호
+	 * @return ResponseEntity<String>
+	 * @throws Exception
+	 */
+	@ResponseBody
+	@PostMapping("/mailTDelete")
+	public ResponseEntity<String> mailTDelete (@RequestBody Map<String, Object> map) throws Exception {
+		log.info("실행 {} : 메일 템플릿 삭제 기능");
+		
+		ResponseEntity<String> entity = null;
+		ServiceResult result = null;
+		
+		log.info("화면에서 전달받은 입력항목의 데이터 : " + map);
+        
+        int emailTempNo = Integer.valueOf((String)map.get("emailTempNo"));
+		
+		result = myMailService.mailTDelete(emailTempNo);
+
+		// 정보 수정 진행 결과를 화면으로 전달한다.
+		if(result.equals(ServiceResult.OK)) {
+			entity = new ResponseEntity<String>(result.toString(), HttpStatus.OK);
+		}else {
+			entity = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+		}
+		
+		return entity;
+	}
+	
+	/** 메일 템플릿 저장 기능
+	 * @param session 로그인사용자 정보를 담음
+	 * @param map 메일 제목과 본문 정보를 담음
+	 * @return ResponseEntity<String>
+	 * @throws Exception
+	 */
+	@ResponseBody
+	@PostMapping("/mailTInsert")
+	public ResponseEntity<String> mailTInsert (@RequestBody Map<String, Object> map) throws Exception {
+		log.info("실행 {} : 메일 템플릿 저장 기능");
+		
+		ResponseEntity<String> entity = null;
+		ServiceResult result = null;
+		
+		// session에 저장된 로그인사용자ID를 통해 사용자식별번호를 가져온다.
+		CustomUser userSec = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		UserVO user = userSec.getUser();
+		int userNo = user.getUserNo();
+
+        log.info("화면에서 전달받은 입력항목의 데이터 : " + map);
+        
+		// map에서 데이터를 꺼내와 메일VO에 담는다.
+        String emailTempName = (String)map.get("emailTempName");			// 템플릿 이름
+		String emailTempTitle = (String)map.get("emailTitle");				// 메일 제목
+		String emailTempContent = (String)map.get("emailContent");			// 메일 본문
+		
+		MyMailVO myMailVO = new MyMailVO();
+		myMailVO.setUserNo(userNo);
+		myMailVO.setEmailTempName(emailTempName);
+		myMailVO.setEmailTempTitle(emailTempTitle);
+		myMailVO.setEmailTempContent(emailTempContent);
+		
+		result = myMailService.mailTInsert(myMailVO);
+
+		// 정보 수정 진행 결과를 화면으로 전달한다.
+		if(result.equals(ServiceResult.OK)) {
+			entity = new ResponseEntity<String>(result.toString(), HttpStatus.OK);
+		}else {
+			entity = new ResponseEntity<String>(HttpStatus.BAD_REQUEST);
+		}
+		
+		return entity;
+	}
+
+}

@@ -1,0 +1,622 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib uri="jakarta.tags.core" prefix="c"%>
+<%@ taglib uri="jakarta.tags.fmt" prefix="fmt" %>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프로필 페이지</title>
+<%@ include file="../modules/header.jsp" %>
+<%@ include file="../modules/sidebar.jsp" %>
+<%@ include file="../modules/modal.jsp" %>
+<link rel="stylesheet" href="/css/main.css">
+<style>
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+	background-color: #f8f9fa;
+	color: #333;
+	line-height: 1.5;
+}
+
+/* Header */
+.header {
+	padding: 15px 20px;
+	border-bottom: 1px solid #e9ecef;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.back-btn {
+	background: none;
+	border: none;
+	font-size: 18px;
+	color: #6c757d;
+	cursor: pointer;
+	padding: 5px;
+}
+
+.header-title {
+	font-size: 14px;
+	color: #6c757d;
+}
+
+/* Profile Section */
+.profile-section {
+	padding: 20px;
+	display: flex;
+	gap: 15px;
+	align-items: flex-start;
+	position: relative;
+}
+
+.profile-avatar {
+	width: 60px;
+	height: 60px;
+	background-color: #e9ecef;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 24px;
+	color: #6c757d;
+	flex-shrink: 0;
+}
+
+.profile-info {
+	flex: 1;
+}
+
+.profile-name {
+	font-size: 18px;
+	font-weight: bold;
+	margin-bottom: 5px;
+	color: #212529;
+}
+
+.profile-details {
+	font-size: 13px;
+	color: #6c757d;
+}
+
+.contact-info {
+	font-size: 12px;
+	color: #6c757d;
+}
+
+.contact-info div {
+	margin: 3px 0;
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.edit-link {
+	position: absolute;
+	top: 20px;
+	right: 20px;
+	font-size: 12px;
+	color: #007bff;
+	text-decoration: none;
+}
+
+/* Stats Section */
+.stats-section {
+	padding: 20px;
+	display: flex;
+	gap: 40px;
+	border-top: 1px solid #e9ecef;
+	position: relative;
+	align-items: center;
+	justify-content: space-around;
+}
+
+.stat-item {
+	text-align: center;
+	position: relative;
+}
+
+.stat-number {
+	font-size: 28px;
+	font-weight: bold;
+	margin-bottom: 5px;
+}
+
+.stat-number.red {
+	color: #dc3545;
+}
+
+.stat-number.green {
+	color: #28a745;
+}
+
+.stat-label {
+	font-size: 11px;
+	color: #6c757d;
+	line-height: 1.3;
+}
+
+/* Office Location */
+.office-section {
+	margin: 20px;
+	border: 2px solid #dee2e6;
+	border-radius: 8px;
+	text-align: center;
+	background-color: #f8f9fa;
+	position: relative;
+}
+
+.office-title {
+	font-size: 18px;
+	color: #495057;
+	font-weight: 500;
+}
+
+/* Work Categories */
+.categories-section {
+	padding: 20px;
+	border-top: 1px solid #e9ecef;
+}
+
+.categories-title {
+	font-size: 13px;
+	font-weight: bold;
+	margin-bottom: 15px;
+	color: #495057;
+}
+
+.category-options {
+	display: flex;
+	gap: 20px;
+	margin-bottom: 20px;
+}
+
+.category-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+	color: #495057;
+}
+
+.category-checkbox {
+	width: 16px;
+	height: 16px;
+	accent-color: #28a745;
+}
+
+/* Update Button */
+.update-btn {
+	width: 100%;
+	padding: 12px;
+	background-color: #007bff;
+	color: white;
+	border: none;
+	border-radius: 6px;
+	font-size: 13px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+}
+
+.update-btn:hover {
+	background-color: #0056b3;
+}
+
+/* 탭 컨테이너 */
+.tabs-container {
+	width: 100%;
+	margin: 20px 0;
+	border: 1px solid #ddd;
+	border-radius: 5px;
+	overflow: hidden; /* 내용이 넘칠 경우 스크롤 처리 */
+}
+
+/* 탭 헤더 (버튼 부분) */
+.tabs-header {
+	display: flex; /* 버튼들을 가로로 나열 */
+	background-color: #f1f1f1;
+	border-bottom: 1px solid #ddd;
+}
+
+/* 각 탭 버튼 */
+.tab-button {
+	padding: 15px 20px;
+	cursor: pointer;
+	text-align: center;
+	flex-grow: 1; /* 버튼들이 균등하게 공간을 차지하도록 */
+	transition: background-color 0.3s ease; /* 호버 효과 */
+	border-right: 1px solid #eee; /* 버튼 구분선 */
+}
+
+.tab-button:last-child {
+	border-right: none; /* 마지막 버튼은 오른쪽 선 제거 */
+}
+
+.tab-button:hover {
+	background-color: #e9e9e9;
+}
+
+/* 활성화된 탭 버튼 */
+.tab-button.active {
+	background-color: #fff;
+	border-bottom: 2px solid #007bff; /* 활성화된 탭 하단에 강조선 */
+	color: #007bff;
+	font-weight: bold;
+}
+
+/* 탭 내용 */
+.tabs-content {
+	padding: 20px;
+	background-color: #fff;
+}
+.tabs-content.tabs-content-recent{
+	max-height: 400px;
+	overflow: auto;
+}
+/* 각 탭 패널 (내용 부분) */
+.tab-pane {
+	display: none; /* 기본적으로 숨김 */
+}
+
+/* 활성화된 탭 패널 */
+.tab-pane.active {
+	display: block; /* 활성화되면 보임 */
+}
+
+/* Icons */
+.icon {
+	width: 12px;
+	height: 12px;
+	display: inline-block;
+}
+</style>
+</head>
+<body>
+	<div class="app-container">
+		<main class="main-content-area">
+			<div class="content-header">
+					<!-- 브레드크럼 엘리먼트 -->
+					<div class="breadcrumb-warp">
+						<div class="col-sm-12">
+							<ol class="breadcrumb">
+								<li class="breadcrumb-item"><a href="/">Home</a></li>
+								<li class="breadcrumb-item"><a href="/consignor/ccaList.do">관세사 정보 보기</a></li>
+								<li class="breadcrumb-item"><a href="#">관세사 상세 정보</a></li>
+							</ol>
+						</div>
+					</div>
+
+					<div class="content-title">관세사 상세 정보</div>
+					<p class="desc">관세사의 상세 정보를 볼 수 있습니다.</p>
+				</div>
+			<div class="container section">
+				<!-- Progress Section -->
+				<div class="progress-section">
+					<div class="progress-bar-container">
+						<div class="progress-bar">
+							<div class="progress-step">
+								<button class="step-circle active">1</button>
+								<span class="step-label">관세사 선택</span>
+							</div>
+							<div class="progress-step">
+								<button class="step-circle inactive"> 2 </button>
+								<span class="step-label">기본 정보 입력</span>
+							</div>
+							<div class="progress-step">
+								<button class="step-circle inactive"> 3 </button>
+								<span class="step-label">서류 제출</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Profile Section -->
+				<div class="profile-section">
+					<c:if
+						test="${ccavo.ccaProfileImg == null  ||ccavo.ccaProfileImg == '' }">
+						<div class="profile-avatar">👤</div>
+					</c:if>
+					<c:if
+						test="${!(ccavo.ccaProfileImg == null  ||ccavo.ccaProfileImg == '' )}">
+						<img src="/myPage/displayFile?fileName=${ccavo.ccaProfileImg}" alt="프로필 이미지" style="width: 200px; height: 250px; border-radius: 50%">
+					</c:if>
+					<div class="profile-info">
+						<div class="profile-name">${ccavo.ccaName } 
+							<button class="" style="border: 1px solid;" id="maskedBtn"><i class="fas fa-eye"></i></button>
+						</div>
+						<div class="profile-details">
+							주력분야:
+							<c:forEach items="${ccavo.specialtyNameList }" var="cca"
+								varStatus="status">
+								<span class="profile-details"> ${cca.specialtyName } <c:if
+										test="${!status.last }">
+                   				,
+                   			</c:if>
+								</span>
+							</c:forEach>
+						</div>
+						<div class="contact-info">
+							<div>
+								<span class="">📧 </span> <span>이메일:
+									${ccavo.userEmail }</span>
+							</div>
+							<div>
+								<span class="">📱 </span> <span>휴대폰: <span id="userTel">${ccavo.userTel }</span></span>
+							</div>
+							<div>
+								<span class="">☎️ </span> <span>내선번호: ${ccavo.ccaTel } </span>
+							</div>
+							<div>
+								<span class="">📠 </span> <span>팩스번호: ${ccavo.userFax }</span>
+							</div>
+						</div>
+					</div>
+					<div>
+						<button class="btn btn-primary" id="updateBtn">📝의뢰하기</button>
+						<button class="btn btn-primary" id="backBtn">목록가기</button>					
+					</div>
+				</div>
+
+				<!-- Stats Section -->
+				<div class="stats-section">
+					<div class="stat-item">
+						 <%-- <div class="stat-number red">${ccavo.ccaSanctionScore }</div>  --%>
+						 <c:if test="${totalScore.sanctionScore == '' || totalScore.sanctionScore == null }">
+						 	<div class="stat-number red">0점</div>
+						 </c:if>
+						 <c:if test="${! empty totalScore.sanctionScore }">
+						 	 <div class="stat-number red">${totalScore.sanctionScore }점</div> 
+						 </c:if>
+						 
+						<div class="stat-label">오류점수</div>
+					</div>
+					<div class="stat-item">
+						<div class="stat-number green">${ccavo.infallible }%</div>
+						<div class="stat-label">무오류 처리율</div>
+					</div>
+				</div>
+
+				<!-- Office Location -->
+				<div class="office-section">
+					<input type="hidden" id="ccaAddr" value="${ccavo.ccaAddr }">
+					<input type="hidden" id="ccaDetAddr" value="${ccavo.ccaDetAddr }">
+					<div id="map" style="width: 100%; height: 300px; display: none;"></div>
+				</div>
+
+				<!-- Work Categories -->
+				<div class="categories-section">
+					<div class="tabs-container">
+						<div class="tabs-header">
+							<!-- <div class="tab-button  categories-title" data-tab="field">업무
+								분야</div> -->
+							<div class="tab-button active categories-title" data-tab="recent">나의 의뢰 내역</div>
+							<div class="tab-button categories-title" data-tab="error">오류
+								점수 부과 내역</div>
+						</div>
+
+						<div class="tabs-content tabs-content-recent">
+
+						<%-- 	<div class="tab-pane active category-options" id="field">
+								<c:forEach items="${ccavo.specialtyNameList }" var="cca"
+									varStatus="status">
+									<input type="checkbox" class="category-checkbox" checked>
+									<span class="profile-details"> ${cca.specialtyName } </span>
+								</c:forEach> 
+							</div> --%>
+
+						<%-- 	<div class="tab-pane" id="recent">
+								<c:if test="${empty withMeContract }">
+									<span>의뢰 내역이 없습니다</span>
+								</c:if>
+								<c:forEach items="${withMeContract }" var="me">
+									<div>
+										<span>접수 번호: ${me.contractNo }</span>
+										<span>, 접수 타입: ${me.contractType }</span>
+										<span>, 접수 타입: ${me.contractType }</span>
+										<span>, 접수 현황: ${me.contractRecordList[0].statusCodeMediumCategoryName } ${me.contractRecordList[0].statusCodeName } </span>
+									</div>
+								</c:forEach>									
+							</div> --%>
+							
+							<div class="tab-pane" id="recent">
+							    <c:if test="${empty withMeContract}">
+							        <span class="no-contract-message">나와의 의뢰 내역이 없습니다.</span>
+							    </c:if>
+							  
+							        <%-- <div class="contract-item" style="margin-bottom: 10px">
+							            <div class="contract-header">
+							                <span class="contract-no">접수 번호: <strong></strong></span>
+							                <span class="contract-type"></span>
+							            </div>
+							            <div class="contract-status">
+							                <span class="status-category">접수 현황: ${me.contractRecordList[0].statusCodeMediumCategoryName}</span>
+							                <span class="status-name"></span>
+							            </div>
+							        </div> --%>
+							        
+							        <c:if test="${! empty withMeContract }">
+								         <table class="data-table">
+											<thead>
+												<tr>
+													<th>접수 번호</th>
+													<th>의뢰 타입</th>
+													<th>접수 내역</th>
+													<th>접수 상태</th>
+													<th>접수일</th>
+												</tr>
+											</thead>
+											<tbody>
+											  <c:forEach items="${withMeContract}" var="me">
+												<tr>
+													<td><a href="/consignor/detailContract/${me.contractNo }"> ${me.contractNo}</a></td>
+													<td>${me.contractType}</td>
+													<td>${me.contractRecordList[0].statusCodeMediumCategoryName }</td>
+													<c:choose>
+														<c:when test="${me.contractRecordList[0].statusCodeName eq '대기'  || me.contractRecordList[0].statusCodeName eq '완료' }">
+															<td><strong style="color: green;">${me.contractRecordList[0].statusCodeName}</strong></td> 
+														</c:when>
+														<c:otherwise>
+															<td><strong style="color: red;">${me.contractRecordList[0].statusCodeName}</strong></td> 
+														</c:otherwise>
+													</c:choose>
+													<fmt:parseDate value="${me.contractDate }" var="parseDate" pattern="yyyy-MM-dd"/>
+													<td><fmt:formatDate value="${parseDate }" pattern="yyyy-MM-dd" /></td>
+												</tr>
+												 </c:forEach>
+											</tbody>
+										</table>
+							        </c:if>
+							      
+						
+							</div>
+
+							<div class="tab-pane" id="error">
+								<c:if test="${empty sanctionScoreList }">
+									<span><span>🎉</span>오류 점수 내역이 없습니다.<span>🎉</span></span>
+								</c:if>
+								<c:forEach items="${sanctionScoreList }" var="score">
+									<div>
+										<fmt:parseDate value="${score.sanctionDate }" pattern="yyyy-MM-dd" var="date"/>
+										<fmt:formatDate value="${date }" pattern="yyyy-MM-dd"/>  - ${score.sanctionName } : <span style="color: red">${score.sanctionScore }점</span>
+									</div>
+								</c:forEach>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+	</div>
+	<script type="text/javascript"
+		src="//dapi.kakao.com/v2/maps/sdk.js?appkey=e8306615f01d266edffd26c9c180c3c4&libraries=services"></script>
+	<script
+		src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+	<script type="text/javascript">
+		$(function() {
+
+			let backBtn = $("#backBtn");
+			let updateBtn = $("#updateBtn");
+
+			updateBtn
+					.on(
+							"click",
+							function() {
+								//console.log(window.location.href);
+								location.href = "/consignor/writeContract.do?ccaNo=${ccavo.userNo}";
+							})
+
+			backBtn.on("click", function() {
+				location.href = "/consignor/ccaList.do";
+			})
+			
+			
+			
+			//개인정보 마스킹
+			let maskedBtn = $("#maskedBtn");
+			let userTel = $("#userTel");
+			let isMasked = true;
+			
+			function maskPhoneNumber(phoneNumber){
+				 if (!phoneNumber || phoneNumber.length < 10) {
+			            return phoneNumber; 
+			        }
+				return phoneNumber.replace(/(\d{3})-?(\d{4})-?(\d{4})/, "$1-****-$3");
+			}
+			
+			const originalPhoneNumber = userTel.text().trim();
+			const maskedPhoneNumber = maskPhoneNumber(originalPhoneNumber);
+			
+			userTel.text(maskedPhoneNumber); //페이지 로딩시 마스킹된거 보이게 ㅇㅇ
+			
+			maskedBtn.on("click",function(){
+				isMasked = !isMasked;
+				
+				if(isMasked){
+					userTel.text(maskedPhoneNumber);
+				}else{
+					userTel.text(originalPhoneNumber);
+				}
+			})
+			
+			//지도
+			let address1 = $("#ccaAddr").val(); // 기본주소값
+			let address2 = $("#ccaDetAddr").val(); // 상세주소값
+
+			if (address1 && address1.trim() !== "") {
+				let $mapContainer = $("#map"); // jQuery 객체로 선택 (변수명 앞에 '$'를 붙여 구별하면 좋습니다)
+				$mapContainer.show(); // jQuery 메서드로 display 속성 변경
+
+				// *** 이 부분이 핵심입니다: jQuery 객체에서 순수한 DOM 요소로 변환 ***
+				let mapDomElement = $mapContainer[0]; // 또는 $mapContainer.get(0);
+
+				let mapOption = {
+					center : new kakao.maps.LatLng(33.450701, 126.570667),
+					level : 3
+				};
+
+				// 지도를 생성합니다 (이제 mapDomElement는 순수한 DOM 요소입니다)
+				var map = new kakao.maps.Map(mapDomElement, mapOption);
+
+				var geocoder = new kakao.maps.services.Geocoder();
+
+				geocoder
+						.addressSearch(
+								address1 + " " + address2,
+								function(result, status) {
+
+									if (status === kakao.maps.services.Status.OK) {
+										var coords = new kakao.maps.LatLng(
+												result[0].y, result[0].x);
+										var marker = new kakao.maps.Marker({
+											map : map,
+											position : coords
+										});
+										var infowindow = new kakao.maps.InfoWindow(
+												{
+													content : '<div style="width:150px;text-align:center;padding:6px 0;">사무실 위치</div>'
+												});
+										infowindow.open(map, marker);
+										map.setCenter(coords);
+									} else {
+										console.error("주소 검색 실패:", status);
+									}
+								});
+				// $("#card-signup").css("top","140px"); 
+			} else {
+				let $mapContainer = $("#map");
+				if ($mapContainer.length) {
+					$mapContainer.hide();
+				}
+				console.log("주소 정보가 없어서 지도를 생성하지 않습니다.");
+			}
+
+			//
+			$(document).ready(function() {
+				$(".tab-button").on("click", function() {
+					$(".tab-button").removeClass("active");
+					$(this).addClass("active");
+
+					$(".tab-pane").removeClass("active");
+					var targetTab = $(this).data('tab');
+					$('#' + targetTab).addClass('active');
+
+				})
+				$('.tab-button.active').click();
+				
+			})
+
+		});
+	</script>
+</body>
+</html>

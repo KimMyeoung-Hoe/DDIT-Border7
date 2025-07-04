@@ -1,0 +1,104 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<%@ include file="../modules/header.jsp" %>
+<%@ include file="../modules/sidebar.jsp" %>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/contract.css">
+<script src="<%= request.getContextPath() %>/lib/jQuery/jquery-3.7.1.min.js"></script>
+<style type="text/css">
+
+</style>
+</head>
+<body>
+	<div class="app-container">
+		<main class="main-content-area">			
+			<div class="page-header">
+			    <h1 class="page-title">물품 이력</h1>
+			    <p class="page-description">모든 의뢰 상태를 확인하고 관리할 수 있습니다.</p>
+			</div>
+			
+			<div class="search-filter-section">
+			    <div class="search-input-wrapper">
+			        <input type="text" class="form-input search-input" placeholder="의뢰번호, 제목, 관세사, 국가, 물품 검색">
+			    </div>
+			    <div class="filter-group">
+			        <select class="form-select filter-select">
+			            <option>모든 상태</option>
+			        </select>
+			        <select class="form-select filter-select">
+			            <option>날짜순</option>
+			        </select>
+			        <button class="action-button primary">상태순</button>
+			    </div>
+			</div>
+			
+			<div class="dashboard-section table-section">
+			    <table class="data-table">
+			        <thead>
+			            <tr>
+			                <th>물품 일련번호</th>
+			                <th>섹션 일련번호</th>
+			                <th>물류관리자 식별번호</th>
+			                <th>공무원 식별번호</th>
+			                <th>물품 입고일시</th>
+			                <th>물품 출고일시</th>
+			                <th>누적 보관기간</th>
+			                <th>필증 일련번호</th>
+			          	</tr>
+			        </thead>
+			        <tbody>
+			        	<c:forEach items="${bwList}" var="bwVO">
+			            	<tr>
+				                <td>${bwVO.bwNo}</td>
+				                <td>${bwVO.whSectionNo}</td>
+				                <td>${bwVO.servantNo}</td>
+				                <td>${bwVO.bwArrivalDate}</td>
+				                <td>${bwVO.bwDepartureDate}</td>
+				                <td>${bwVO.bwSporageDuration}</td>
+				                <td>${bwVO.declNo}</td>
+			               </tr>
+			           </c:forEach>
+			        </tbody>
+			    </table>
+			
+			    <div class="table-footer">
+			        <div class="pagination">
+			            <a href="#">&lt;&lt;</a>
+			            <a href="#">&lt;</a>
+			            <a href="#">6</a>
+			            <a href="#">7</a>
+			            <a href="#">8</a>
+			            <a href="#" class="active">9</a>
+			            <a href="#">10</a>
+			            <a href="#">&gt;</a>
+			            <a href="#">&gt;&gt;</a>
+			        </div>
+			        <div class="footer-buttons">
+			            <button class="action-button secondary">위치보기</button>
+			            <button class="action-button primary">물품 등록하기</button>
+			        </div>
+			    </div>
+			</div>
+			
+			
+			<a href="/contract/declform.do" style="color: #007bff; margin-top: 20px; display: inline-block;">문서작성 페이지(테스트 링크용)</a>
+		</main>	
+	</div>
+</body>
+<script type="text/javascript">
+
+		$(".whHistory").on("click", function (e) {
+			alertify.alert("클릭");
+			    let whSectionNo = $(this).attr("value");
+			    location.href = "/servant/whSectionHistory.do?whSectionNo="+whSectionNo;			
+		});
+		
+	
+</script>
+</html>

@@ -1,0 +1,468 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.IStatisticsMapper">
+	<sql id="qrntAgreeSearch">
+	    <if test="startDate != null and endDate != null">
+        AND Q.QRNT_RECEPT_DATE BETWEEN TO_DATE(#{startDate}, 'YYYY-MM-DD')
+                                   AND TO_DATE(#{endDate}, 'YYYY-MM-DD')
+    	</if>
+	</sql>
+	<select id="qrntAgree" parameterType="map" resultType="map">
+		SELECT *
+			FROM (
+			    SELECT
+			        P.HS_CODE									/* 대상 HS코드 */
+			        , HSC.HS_KR_NAME
+			        , COUNT(*) AS TOTAL_QRNT					/* 전체 검사 횟수 */
+			        , SUM(CASE WHEN
+			        			Q.QRNT_YN = 1 
+			        		THEN 
+			        			1 ELSE 0 END) AS PASS_COUNT		/* 통과 검사 횟수 */
+			        , ROUND(100.0 * SUM(CASE WHEN 
+			        						Q.QRNT_YN = 1 
+			        					THEN 
+			        						1 ELSE 0 END
+			        					)
+			        					/ COUNT(*)
+			        		, 2) AS PASS_RATE_PERCENT			/* 통과 퍼센트 */
+			    FROM
+			        QRNT Q
+				    JOIN DECL D ON Q.DECL_NO = D.DECL_NO
+				    JOIN DECL_D DD ON D.DECL_D_NO = DD.DECL_D_NO
+				    JOIN CONTRACT C ON DD.CONTRACT_NO = C.CONTRACT_NO
+				    JOIN PRODUCT P ON C.PRODUCT_NO = P.PRODUCT_NO
+				    JOIN HS_CODE HSC ON P.HS_CODE = HSC.HS_CODE
+			    WHERE
+			        Q.QRNT_YN IN (0, 1)
+			        <include refid="qrntAgreeSearch"/>
+			    GROUP BY
+			        P.HS_CODE
+			        , HSC.HS_KR_NAME
+			        
+			    ORDER BY
+			        PASS_RATE_PERCENT DESC
+			)
+			WHERE ROWNUM &lt; 6
+	</select>
+	<select id="qrntDisAgree" parameterType="map" resultType="map">
+		SELECT *
+			FROM (
+			    SELECT
+			        P.HS_CODE									/* 대상 HS코드 */
+			        , HSC.HS_KR_NAME
+			        , COUNT(*) AS TOTAL_QRNT					/* 전체 검사 횟수 */
+			        , SUM(CASE WHEN
+			        			Q.QRNT_YN = 1 
+			        		THEN 
+			        			1 ELSE 0 END) AS PASS_COUNT		/* 통과 검사 횟수 */
+			        , ROUND(100.0 * SUM(CASE WHEN 
+			        						Q.QRNT_YN = 1 
+			        					THEN 
+			        						1 ELSE 0 END) / COUNT(*)
+			        		, 2) AS PASS_RATE_PERCENT			/* 통과 퍼센트 */
+			    FROM
+			        QRNT Q
+				    JOIN DECL D ON Q.DECL_NO = D.DECL_NO
+				    JOIN DECL_D DD ON D.DECL_D_NO = DD.DECL_D_NO
+				    JOIN CONTRACT C ON DD.CONTRACT_NO = C.CONTRACT_NO
+				    JOIN PRODUCT P ON C.PRODUCT_NO = P.PRODUCT_NO
+				    JOIN HS_CODE HSC ON P.HS_CODE = HSC.HS_CODE
+			    WHERE
+			        Q.QRNT_YN IN (0, 1)
+			        <include refid="qrntAgreeSearch"/>
+			    GROUP BY
+			        P.HS_CODE
+			        , HSC.HS_KR_NAME
+			        
+			    ORDER BY
+			        PASS_RATE_PERCENT ASC
+			)
+			WHERE ROWNUM &lt; 6
+	</select>
+	
+	<select id="selectSanctionList" parameterType="int" resultType="hashmap">
+		 select to_char(sanction_date,'YYYY-MM') as year_month,count(*)
+		    from sanction
+		   where sanction_code = #{sanctionCode}
+		   group by to_char(sanction_date,'YYYY-MM')
+		   order by year_month asc
+	</select>
+	
+	<resultMap id="HsStatMap" type="kr.or.ddit.vo.HsStatResult">
+	    <result property="period" column="PERIOD"/>
+	    <result property="count" column="CNT"/>
+	    <result property="amount" column="AMOUNT"/>
+	
+	    <association property="hsCode" javaType="kr.or.ddit.vo.HsCodeVO">
+	        <result property="hsCode" column="HS_CODE"/>
+	        <result property="hsRegDate" column="HS_REG_DATE"/>
+	        <result property="hsEndDate" column="HS_END_DATE"/>
+	        <result property="hsKrName" column="HS_KR_NAME"/>
+	        <result property="hsEnName" column="HS_EN_NAME"/>
+	        <result property="hsQty" column="HS_QTY"/>
+	        <result property="hsWeight" column="HS_WEIGHT"/>
+	        <result property="hsExportNatureCode" column="HS_EXPORT_NATURE_CODE"/>
+	        <result property="hsImportNatureCode" column="HS_IMPORT_NATURE_CODE"/>
+	        <result property="hsNcc" column="HS_NCC"/>
+	        <result property="hsNccName" column="HS_NCC_NAME"/>
+	        <result property="hsTariffRateType" column="HS_TARIFF_RATE_TYPE"/>
+	        <result property="hsTariffRate" column="HS_TARIFF_RATE"/>
+	    </association>
+	</resultMap>
+
+	<select id="logisticsStatisticsHsCodeAndPeriod" parameterType="int" resultMap="HsStatMap">
+		
+		SELECT
+		    a.HS_CODE            AS HS_CODE,
+		    a.HS_REG_DATE        AS HS_REG_DATE,
+		    a.HS_END_DATE        AS HS_END_DATE,
+		    a.HS_KR_NAME         AS HS_KR_NAME,
+		    a.HS_EN_NAME         AS HS_EN_NAME,
+		    a.HS_QTY             AS HS_QTY,
+		    a.HS_WEIGHT          AS HS_WEIGHT,
+		    a.HS_EXPORT_NATURE_CODE AS HS_EXPORT_NATURE_CODE,
+		    a.HS_IMPORT_NATURE_CODE AS HS_IMPORT_NATURE_CODE,
+		    a.HS_NCC             AS HS_NCC,
+		    a.HS_NCC_NAME        AS HS_NCC_NAME,
+		    a.HS_TARIFF_RATE_TYPE AS HS_TARIFF_RATE_TYPE,
+		    a.HS_TARIFF_RATE     AS HS_TARIFF_RATE,
+		
+		    TO_CHAR(c.CONTRACT_DATE, 'YYYY-MM') AS PERIOD,
+		    COUNT(*)               AS CNT,
+		    SUM(b.PRODUCT_PRICE * b.PRODUCT_QTY)   AS AMOUNT
+		
+		FROM 
+			HS_CODE a
+		LEFT JOIN 
+			PRODUCT b ON b.HS_CODE = a.HS_CODE
+		LEFT JOIN 
+			CONTRACT c ON c.PRODUCT_NO = b.PRODUCT_NO
+		LEFT JOIN
+			STOWAGE d ON d.CONTRACT_NO = c.CONTRACT_NO
+		LEFT JOIN
+			WH_DETAIL e ON e.STOWAGE_NO = d.STOWAGE_NO
+		LEFT JOIN
+		    CONTAINER_DETAIL f ON f.STOWAGE_NO = d.STOWAGE_NO
+		LEFT JOIN
+			WH g ON g.WH_NO = e.WH_NO
+		LEFT JOIN
+			CONTAINER h ON h.CONTAINER_NO = f.CONTAINER_NO	    		
+		WHERE 
+			c.LAST_STATUS_CODE IN (21, 41)
+		  AND
+		  	(g.LOGIST_MNG_NO = #{userNo}
+		  OR
+		    h.LOGIST_MNG_NO = #{userNo})
+		 
+		GROUP BY 
+			a.HS_CODE,
+		    a.HS_REG_DATE,
+		    a.HS_END_DATE,
+		    a.HS_KR_NAME,
+		    a.HS_EN_NAME,
+		    a.HS_QTY,
+		    a.HS_WEIGHT,
+		    a.HS_EXPORT_NATURE_CODE,
+		    a.HS_IMPORT_NATURE_CODE,
+		    a.HS_NCC,
+		    a.HS_NCC_NAME,
+		    a.HS_TARIFF_RATE_TYPE,
+		    a.HS_TARIFF_RATE,
+		    TO_CHAR(c.CONTRACT_DATE, 'YYYY-MM')
+
+	</select>
+	
+	<select id="consignorStatisticsHsCodeAndPeriod" parameterType="int" resultMap="HsStatMap">
+		SELECT
+		    a.HS_CODE            AS HS_CODE,
+		    a.HS_REG_DATE        AS HS_REG_DATE,
+		    a.HS_END_DATE        AS HS_END_DATE,
+		    a.HS_KR_NAME         AS HS_KR_NAME,
+		    a.HS_EN_NAME         AS HS_EN_NAME,
+		    a.HS_QTY             AS HS_QTY,
+		    a.HS_WEIGHT          AS HS_WEIGHT,
+		    a.HS_EXPORT_NATURE_CODE AS HS_EXPORT_NATURE_CODE,
+		    a.HS_IMPORT_NATURE_CODE AS HS_IMPORT_NATURE_CODE,
+		    a.HS_NCC             AS HS_NCC,
+		    a.HS_NCC_NAME        AS HS_NCC_NAME,
+		    a.HS_TARIFF_RATE_TYPE AS HS_TARIFF_RATE_TYPE,
+		    a.HS_TARIFF_RATE     AS HS_TARIFF_RATE,
+		
+		    TO_CHAR(c.CONTRACT_DATE, 'YYYY-MM') AS PERIOD,
+		    COUNT(*)               AS CNT,
+		    SUM(b.PRODUCT_PRICE * b.PRODUCT_QTY)   AS AMOUNT
+		
+		FROM 
+			HS_CODE a
+		LEFT JOIN 
+			PRODUCT b ON b.HS_CODE = a.HS_CODE
+		LEFT JOIN 
+			CONTRACT c ON c.PRODUCT_NO = b.PRODUCT_NO	
+
+		WHERE 
+			c.LAST_STATUS_CODE IN (21, 41)
+		  AND
+		    c.CONSIGNOR_NO = #{userNO}
+		    
+		GROUP BY 
+			a.HS_CODE,
+		    a.HS_REG_DATE,
+		    a.HS_END_DATE,
+		    a.HS_KR_NAME,
+		    a.HS_EN_NAME,
+		    a.HS_QTY,
+		    a.HS_WEIGHT,
+		    a.HS_EXPORT_NATURE_CODE,
+		    a.HS_IMPORT_NATURE_CODE,
+		    a.HS_NCC,
+		    a.HS_NCC_NAME,
+		    a.HS_TARIFF_RATE_TYPE,
+		    a.HS_TARIFF_RATE,
+		    TO_CHAR(c.CONTRACT_DATE, 'YYYY-MM')
+
+	
+	</select>
+	
+	<select id="ccaStatisticsHsCodeAndPeriod" parameterType="int" resultMap="HsStatMap">
+	
+				SELECT
+		    a.HS_CODE            AS HS_CODE,
+		    a.HS_REG_DATE        AS HS_REG_DATE,
+		    a.HS_END_DATE        AS HS_END_DATE,
+		    a.HS_KR_NAME         AS HS_KR_NAME,
+		    a.HS_EN_NAME         AS HS_EN_NAME,
+		    a.HS_QTY             AS HS_QTY,
+		    a.HS_WEIGHT          AS HS_WEIGHT,
+		    a.HS_EXPORT_NATURE_CODE AS HS_EXPORT_NATURE_CODE,
+		    a.HS_IMPORT_NATURE_CODE AS HS_IMPORT_NATURE_CODE,
+		    a.HS_NCC             AS HS_NCC,
+		    a.HS_NCC_NAME        AS HS_NCC_NAME,
+		    a.HS_TARIFF_RATE_TYPE AS HS_TARIFF_RATE_TYPE,
+		    a.HS_TARIFF_RATE     AS HS_TARIFF_RATE,
+		
+		    TO_CHAR(c.CONTRACT_DATE, 'YYYY-MM') AS PERIOD,
+		    COUNT(*)               AS CNT,
+		    SUM(b.PRODUCT_PRICE * b.PRODUCT_QTY)   AS AMOUNT
+		
+		FROM 
+			HS_CODE a
+		LEFT JOIN 
+			PRODUCT b ON b.HS_CODE = a.HS_CODE
+		LEFT JOIN 
+			CONTRACT c ON c.PRODUCT_NO = b.PRODUCT_NO
+
+		WHERE 
+			c.LAST_STATUS_CODE IN (21, 41)
+		  AND
+		    c.CCA_NO = #{userNo}
+		    
+		GROUP BY 
+			a.HS_CODE,
+		    a.HS_REG_DATE,
+		    a.HS_END_DATE,
+		    a.HS_KR_NAME,
+		    a.HS_EN_NAME,
+		    a.HS_QTY,
+		    a.HS_WEIGHT,
+		    a.HS_EXPORT_NATURE_CODE,
+		    a.HS_IMPORT_NATURE_CODE,
+		    a.HS_NCC,
+		    a.HS_NCC_NAME,
+		    a.HS_TARIFF_RATE_TYPE,
+		    a.HS_TARIFF_RATE,
+		    TO_CHAR(c.CONTRACT_DATE, 'YYYY-MM')
+
+	</select>
+	
+	<select id="allStatisticsHsCodeAndPeriod" parameterType="int" resultMap="HsStatMap">
+		SELECT
+		    a.HS_CODE            AS HS_CODE,
+		    a.HS_REG_DATE        AS HS_REG_DATE,
+		    a.HS_END_DATE        AS HS_END_DATE,
+		    a.HS_KR_NAME         AS HS_KR_NAME,
+		    a.HS_EN_NAME         AS HS_EN_NAME,
+		    a.HS_QTY             AS HS_QTY,
+		    a.HS_WEIGHT          AS HS_WEIGHT,
+		    a.HS_EXPORT_NATURE_CODE AS HS_EXPORT_NATURE_CODE,
+		    a.HS_IMPORT_NATURE_CODE AS HS_IMPORT_NATURE_CODE,
+		    a.HS_NCC             AS HS_NCC,
+		    a.HS_NCC_NAME        AS HS_NCC_NAME,
+		    a.HS_TARIFF_RATE_TYPE AS HS_TARIFF_RATE_TYPE,
+		    a.HS_TARIFF_RATE     AS HS_TARIFF_RATE,
+		
+		    TO_CHAR(c.CONTRACT_DATE, 'YYYY-MM') AS PERIOD,
+		    COUNT(*)               AS CNT,
+		    SUM(b.PRODUCT_PRICE * b.PRODUCT_QTY)   AS AMOUNT
+		
+		FROM 
+			HS_CODE a
+		LEFT JOIN 
+			PRODUCT b ON b.HS_CODE = a.HS_CODE
+		LEFT JOIN 
+			CONTRACT c ON c.PRODUCT_NO = b.PRODUCT_NO
+		WHERE 
+			c.LAST_STATUS_CODE IN (21, 41)
+		GROUP BY 
+			a.HS_CODE,
+		    a.HS_REG_DATE,
+		    a.HS_END_DATE,
+		    a.HS_KR_NAME,
+		    a.HS_EN_NAME,
+		    a.HS_QTY,
+		    a.HS_WEIGHT,
+		    a.HS_EXPORT_NATURE_CODE,
+		    a.HS_IMPORT_NATURE_CODE,
+		    a.HS_NCC,
+		    a.HS_NCC_NAME,
+		    a.HS_TARIFF_RATE_TYPE,
+		    a.HS_TARIFF_RATE,
+		    TO_CHAR(c.CONTRACT_DATE, 'YYYY-MM')
+
+
+	</select>
+
+	<select id="servantWorkCount" resultType="hashmap">
+		 with a_a as (
+             --민원 테이블의 공무원별 업무 개수
+			             select
+			                   t.user_name
+			                  ,a.servant_no
+			                  ,to_char(a.appeal_reg_date,'YYYY-MM') as work_month
+			                  ,count(a.appeal_title) as appeal_count 
+			              from 
+			                   appeal a
+			              join 
+			                   public_servant p on a.servant_no = p.servant_no
+			              join 
+			                   user_tb t on p.servant_no = t.user_no
+			              group by
+			                    t.user_name, p.servant_no , to_char(a.appeal_reg_date,'YYYY-MM')
+			             ),
+			      a_b as (
+			             --제재 테이블의 공무원별 업무 개수
+			              select 
+			                     t.user_name
+			                    ,s.servant_no
+			                    ,to_char(s.sanction_date,'YYYY-MM') as work_month
+			                    ,count(s.sanction_no) as sanction_count
+			                from 
+			                     sanction s
+			                join
+			                     public_servant p on s.servant_no = p.servant_no
+			                join
+			                     user_tb t on p.servant_no = t.user_no     
+			                group by
+			                      t.user_name, s.servant_no ,to_char(s.sanction_date,'YYYY-MM')
+			             ),
+			      a_c as (     
+			             --검사/검역 테이블 공무원별 업무 개수
+			              select 
+			                     t.user_name
+			                    ,q.servant_no
+			                    ,to_char(q.qrnt_recept_date,'YYYY-MM') as work_month
+			                    ,count(q.decl_no) as qrnt_count
+			                from 
+			                     qrnt q
+			                join
+			                     public_servant p on q.servant_no = p.servant_no
+			                join
+			                     user_tb t on q.servant_no = t.user_no
+			                group by
+			                      t.user_name, q.servant_no, to_char(q.qrnt_recept_date,'YYYY-MM')             
+			              ),
+			       a_d as (
+			              --화상상담 테이블 공무원별 업무 개수
+			              select 
+			                     t.user_name
+			                    ,c.servant_no
+			                    ,to_char(c.consultant_recept_date,'YYYY-MM') as work_month
+			                    ,count(c.consultant_no) as consultant_count
+			                from 
+			                     consultant c
+			                join
+			                     public_servant p on c.servant_no = p.servant_no
+			                join
+			                     user_tb t on c.servant_no = t.user_no
+			                group by
+			                      t.user_name, c.servant_no ,to_char(c.consultant_recept_date,'YYYY-MM')       
+			              ) 
+			          SELECT
+			                user_name  
+			               ,servant_no 
+			               ,work_month
+			               ,SUM(
+			                   appeal_count + sanction_count + qrnt_count + consultant_count
+			                ) AS total_count
+			            FROM (
+			                SELECT user_name, servant_no, work_month, appeal_count, 0 AS sanction_count, 0 AS qrnt_count, 0 AS consultant_count FROM a_a
+			                UNION ALL
+			                SELECT user_name, servant_no, work_month, 0 AS appeal_count, sanction_count, 0 AS qrnt_count, 0 AS consultant_count FROM a_b
+			                UNION ALL
+			                SELECT user_name, servant_no, work_month, 0 AS appeal_count, 0 AS sanction_count, qrnt_count, 0 AS consultant_count FROM a_c
+			                UNION ALL
+			                SELECT user_name, servant_no, work_month, 0 AS appeal_count, 0 AS sanction_count, 0 AS qrnt_count, consultant_count FROM a_d
+			                )  combined_data
+			            GROUP BY
+			                user_name,servant_no,work_month
+			            order by
+			                  work_month
+	
+	</select>
+	
+	<select id="selectAppealList" parameterType="String" resultType="hashMap">
+        SELECT 
+            TO_CHAR(APPEAL_REG_DATE, 'YYYY-MM') AS YEAR_MONTH
+            , COUNT(*)
+        FROM 
+            APPEAL
+        WHERE 
+            APPEAL_TYPE = #{appealType}
+        GROUP BY 
+            TO_CHAR(APPEAL_REG_DATE, 'YYYY-MM')
+        ORDER BY 
+            YEAR_MONTH ASC
+    </select>
+
+	<select id="selectUserCountList" resultType="hashMap">
+		SELECT
+		    TO_CHAR(STAT_DATE, 'YYYY-MM') AS MONTH,
+		    AUTH_CODE,
+		    SUM(JOIN_COUNT) AS JOIN_COUNT,
+		    SUM(WITHDRAW_COUNT) AS WITHDRAW_COUNT
+		FROM (
+		    -- 월별 가입자 수
+		    SELECT
+		        TRUNC(REG_DATE, 'MM') AS STAT_DATE,
+		        AUTH_CODE,
+		        COUNT(USER_NO) AS JOIN_COUNT,
+		        0 AS WITHDRAW_COUNT
+		    FROM
+		        USER_TB
+		    WHERE
+		        AUTH_CODE IN ('ROLE_CONSIGNOR', 'ROLE_CCA', 'ROLE_LOGISTICS')
+		    GROUP BY
+		        TRUNC(REG_DATE, 'MM'), AUTH_CODE
+		
+		    UNION ALL
+		
+		    -- 월별 탈퇴자 수
+		    SELECT
+		        TRUNC(WITHDRAW_DATE, 'MM') AS STAT_DATE,
+		        AUTH_CODE,
+		        0 AS JOIN_COUNT,
+		        COUNT(USER_NO) AS WITHDRAW_COUNT
+		    FROM
+		        USER_TB
+		    WHERE
+		        AUTH_CODE IN ('ROLE_CONSIGNOR', 'ROLE_CCA', 'ROLE_LOGISTICS')
+		        AND USER_STATUS = 1
+		        AND WITHDRAW_DATE IS NOT NULL
+		    GROUP BY
+		        TRUNC(WITHDRAW_DATE, 'MM'), AUTH_CODE
+		)
+		GROUP BY
+		    TO_CHAR(STAT_DATE, 'YYYY-MM'), AUTH_CODE
+		ORDER BY
+		    MONTH, AUTH_CODE
+	</select>
+</mapper>

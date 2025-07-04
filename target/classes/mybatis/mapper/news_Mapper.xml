@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.INewsMapper">
+  	<insert id="newsInsert" parameterType="kr.or.ddit.vo.NewsVO" useGeneratedKeys="true">
+  		<selectKey keyProperty="newsNo" resultType="int" order="BEFORE"> 
+  		select seq_news_no.nextval from dual
+  		</selectKey>
+  		INSERT INTO NEWS (
+            NEWS_NO, OTHBC_DT, NEWS_WRTER_NM, INDST_CD_LIST, NATN, CNTNT_SUMAR, BBS_SN, OVROF_INFO,
+            HS_CD_NM, CMDLT_NM_KORN, NEWS_TITL, INDST_CL, BBSTX_SN, INFO_CL, NEWS_BDT,
+            REGN, DATA_TYPE, KWRD, KOTRA_NEWS_URL
+        ) VALUES (
+      		#{newsNo}, TO_DATE(#{othbcDt}, 'YYYY-MM-DD'), -- 날짜 포맷에 맞게 TO_DATE 사용
+            #{newsWrterNm},
+            #{indstCdList},
+            #{natn},
+            #{cntntSumar},
+            #{bbsSn},
+            #{ovrofInfo},
+            #{hsCdNm},
+            #{cmdltNmKorn},
+            #{newsTitl},
+            #{indstCl},
+            #{bbstxSn},
+            #{infoCl},
+            #{newsBdt},
+            #{regn},
+            #{dataType},
+            #{kwrd},
+            #{kotraNewsUrl}
+        )
+  	</insert>
+  	
+  	<select id="getDBNews" resultType="kr.or.ddit.vo.NewsVO">
+  		select othbc_dt,kotra_news_url, cntnt_sumar, news_titl
+  		from news
+  		order by othbc_dt desc
+  	</select>
+</mapper>

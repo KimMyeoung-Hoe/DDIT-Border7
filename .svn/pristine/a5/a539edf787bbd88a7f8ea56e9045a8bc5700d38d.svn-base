@@ -1,0 +1,412 @@
+package kr.or.ddit.contract.service;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import kr.or.ddit.ServiceResult;
+import kr.or.ddit.contract.mapper.IContractMapper;
+import kr.or.ddit.mapper.IMyCalendarMapper;
+import kr.or.ddit.vo.CCAVO;
+import kr.or.ddit.vo.ConsignorVO;
+import kr.or.ddit.vo.ContractVO;
+import kr.or.ddit.vo.DeclDVO;
+import kr.or.ddit.vo.DeclVO;
+import kr.or.ddit.vo.HsCodeVO;
+import kr.or.ddit.vo.MyCalendarVO;
+import kr.or.ddit.vo.ProductVO;
+import kr.or.ddit.vo.TaxVO;
+import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class ContractService implements IContractService {
+	
+	@Autowired
+	private IContractMapper contractMapper;
+	
+	@Autowired
+	private IMyCalendarMapper myCalendarMapper;
+
+	//비동기 hscode 조회
+	/**
+	 * 
+	 * @param searchMap 으로 변경
+	 * @return
+	 */
+	@Override
+	public List<HsCodeVO> hsCodeSearch(Map<String, String> searchMap) {
+		//검색 타입이 없을때
+		if(!searchMap.containsKey("hsSearchType") || searchMap.get("hsSearchType") == null || searchMap.get("hsSearchType").isEmpty()){
+			searchMap.put("hsSearchType", "code");
+		}
+		return contractMapper.hsCodeSearch(searchMap);
+	}
+
+	//통관으뢰 등록
+	@Override
+	public ServiceResult insertContract(ContractVO contractVO,ProductVO productVO) {
+		ServiceResult result = null;
+		int status = contractMapper.insertProduct(productVO);
+		log.info("insertProduct(productVO) 실행 {}"+status);
+		
+		contractVO.setProductNo(productVO.getProductNo());
+		
+		if(status>0) {
+			status = contractMapper.insertContract(contractVO);
+			log.info("insertContract(contractVO) 실행 {}"+status);
+
+			if(status>0) {
+				
+				result = ServiceResult.OK;
+				
+			}
+    	}else {
+    		result = ServiceResult.FAILED;
+		}
+    	
+		return result;
+	}
+	
+	@Override
+	public ServiceResult updateContract(ContractVO contractVO, ProductVO productVO) {
+		ServiceResult result = null;
+		int status = contractMapper.updateProduct(productVO);
+		log.info("insertProduct(productVO) 실행 {}"+status);
+		
+		contractVO.setProductNo(productVO.getProductNo());
+		
+		if(status>0) {
+			status = contractMapper.updateContract(contractVO);
+			log.info("insertContract(contractVO) 실행 {}"+status);
+
+			if(status>0) {
+				
+				result = ServiceResult.OK;
+				
+			}
+    	}else {
+    		result = ServiceResult.FAILED;
+		}
+    	
+		return result;
+	}
+
+	
+	@Override
+	public ContractVO selectContract(String contractNo) {
+		return contractMapper.selectContract(contractNo);
+	}
+
+	@Override
+	public ServiceResult insertDeclD(DeclDVO declDVO) {
+		ServiceResult result = null;
+		int status = contractMapper.insertDeclD(declDVO);
+		if(status>0) {
+			result = ServiceResult.OK;
+		}else {
+    		result = ServiceResult.FAILED;
+		}
+		return result;
+	}
+
+	@Override
+	public int declDCehck(String contractNo) {
+		return contractMapper.declDCehck(contractNo);
+	}
+
+	@Override
+	public ContractVO selectdeclDToContract(String contractNo) {
+		return contractMapper.selectdecld(contractNo);
+	}
+
+	/**
+     * 계약 테이블에 첨부 파일 번호를 업데이트합니다.
+     * @param contractNo 업데이트할 계약 번호
+     * @param attachedFileNo 첨부된 파일 번호
+     * @return 업데이트된 행 수
+     */
+	@Override
+	public ServiceResult updateContractWithAttachment(
+			String contractNo, int attachedFileNo, String declDNo) {
+		ServiceResult result = null;
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("contractNo", contractNo);
+		map.put("attachedFileNo", attachedFileNo);
+		//0. 현재의 상태코드를 가져오기
+		int statusCode = contractMapper.getStatusCode(contractNo);
+		map.put("statusCode", statusCode);
+		
+		//1. 업로드된 파일의 번호를 통관계약에 넣기
+		int status = contractMapper.updateContractAttachment(map);
+		if(status>0) {
+			//2. 업데이트 된 현재 코드 가져오기
+			statusCode = contractMapper.getStatusCode(contractNo);
+			map.put("statusCode", statusCode);
+			//3. 이력에 추가
+			status = contractMapper.insertContractRecord(map);
+			
+			if(status>0) {
+				DeclVO declVO = new DeclVO();
+				
+				// 4. decl이 있는지 확인
+				declVO = contractMapper.selectDecl(declDNo);
+				
+				// 동적으로 공무원 가져오기
+				//servantNo = 
+				
+				//이미 할당되어있으면 업데이트
+				if(declVO != null) {
+					String getdeclNo = declVO.getDeclNo();
+					
+					DeclVO declVO2 = new DeclVO();
+					declVO2.setDeclNo(getdeclNo);
+					declVO2.setDeclDNo(declDNo);
+					declVO2.setServantNo(1004);
+					status = contractMapper.updateDecl(declVO);
+				}else {// 없으면
+					// 5. 공무원에게 전달 insert
+					DeclVO declVO3 = new DeclVO();
+					// decl insert
+					// 공무원쪽 서비스로 옴겨야하나?
+					
+					declVO3.setDeclDNo(declDNo);
+					// 공무원 번호 하드코딩
+					declVO3.setServantNo(1004);
+					
+					//declVO.setServantNo(servantNo);
+					
+					//컬럼2개추가
+					//decld 번호도 설정
+					//예정 완료일시는 오늘날의 +20
+					status = contractMapper.insertDecl(declVO3);
+				}
+				
+				// 달력에 일정 추가
+				if(status>0) {
+					ContractVO contractVO = contractMapper.selectContract(contractNo);
+					int ccaNo = contractVO.getCcaNo();
+					int consignorNo = contractVO.getConsignorNo();
+					
+					DeclVO declVO4 = contractMapper.selectDecl(declDNo);
+					
+					Date receptDate = declVO4.getDeclReceptDate();
+			        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			        String receptDateStr = format.format(receptDate);
+			        
+			        Date antcDate = declVO4.getDeclAntcDate();
+			        SimpleDateFormat format2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			        String antcDateStr = format.format(antcDate);
+			        MyCalendarVO myCalendarVO = new MyCalendarVO();
+			        
+					myCalendarVO.setUserNo(ccaNo);
+					myCalendarVO.setCalendarTitle(contractNo + " 접수일 ~ 완료예정일");
+					myCalendarVO.setCalendarStrDate(receptDateStr);
+					myCalendarVO.setCalendarEndDate(antcDateStr);
+					myCalendarVO.setCalendarAllYn(true);
+					myCalendarVO.setCalendarType("border");
+					myCalendarVO.setCalendarColor("ffc107");
+					try {
+						myCalendarMapper.calendarInsert(myCalendarVO);
+						myCalendarVO.setUserNo(consignorNo);
+						myCalendarMapper.calendarInsert(myCalendarVO);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+				
+				if(status>0) {
+					result = ServiceResult.OK;
+					
+				}else {
+					//에러 단계 표기해야함 4에서 에러
+		    		result = ServiceResult.FAILED;
+				}
+				
+				
+			}else {
+				//에러 단계 표기해야함 3에서 에러
+	    		result = ServiceResult.FAILED;
+			}
+		}else {
+			//에러 단계 표기해야함 1에서 에러
+    		result = ServiceResult.FAILED;
+		}
+		return result;
+	}
+
+	@Override
+	public int getStatusCode(String contractNo) {
+		return contractMapper.getStatusCode(contractNo);
+	}
+
+	@Override
+	public ServiceResult insertContractRecord(String contractNo) {
+		ServiceResult result = null;
+		Map<String,Object> map = new HashMap<String,Object>();
+		
+		ContractVO contractVO = contractMapper.selectContract(contractNo);
+		
+		//현 코드 가저오기
+		int statusCode = contractVO.getLastStatusCode();
+		
+		map.put("contractNo", contractNo);
+		map.put("statusCode", statusCode);
+		
+		//이력에 추가
+		int status = contractMapper.insertContractRecord(map);
+		if(status > 0) {
+    		result = ServiceResult.OK;
+		}else {
+			result = ServiceResult.FAILED;
+		}
+		return result;
+	}
+
+	@Override
+	public DeclDVO selectdeclD(String declDNo) {
+		return contractMapper.selectdeclD(declDNo);
+	}
+
+	@Override
+	public ServiceResult updateDeclD(DeclDVO declDVO) {
+		ServiceResult result = null;
+
+		int status = contractMapper.updateDeclD(declDVO);
+		if(status > 0) {
+    		result = ServiceResult.OK;
+		}else {
+			result = ServiceResult.FAILED;
+		}
+		return result;
+	}
+
+	/**
+	 * 통관의뢰 관세 값 구하기
+	 */
+	@Override
+	public int getCustomsValue(String productQty, int productPrice) {
+		///과세가격 CustomsValue = 개수 * 단가
+		String[] getQty = productQty.split(" ");
+		int qty = Integer.parseInt(getQty[0]);
+		int Price = productPrice;
+		int CustomsValue = qty * Price;
+		return CustomsValue;
+	}
+	
+	/**
+	 * 통관의롸 총 값 구하기 
+	 */
+	@Override
+	public int getTotalCost(int customsValue, int hsTariffRate) {
+		///총송장금액 totalCost = CustomsValue * hscode세율 
+		double Rate = customsValue * (hsTariffRate / 100.0);
+		int tax = (int) Math.round(Rate);
+		int totalCost = customsValue + tax;
+		return totalCost;
+	}
+
+	@Override
+	public ContractVO checkContract(int userNO) {
+		return contractMapper.checkContract(userNO);
+	}
+
+	@Override
+	public ServiceResult contractDel(String contractNo) {
+		ServiceResult result = null;
+
+		int status = contractMapper.contractDel(contractNo);
+		if(status > 0) {
+    		result = ServiceResult.OK;
+		}else {
+			result = ServiceResult.FAILED;
+		}
+		return result;
+	}
+
+	@Override
+	public TaxVO taxDetail(String declNo) {
+		TaxVO taxVO = new TaxVO();		
+		taxVO = contractMapper.taxDetail(declNo);
+
+		return taxVO;
+	}
+
+	@Override
+	public TaxVO taxReady(int taxNo, int taxRealAmount, String declNo, String contractNo) {
+		Map<String, String> map = new HashMap<>();
+		map.put("cid", "TC0ONETIME");                                  					// 가맹점 코드(테스트ID)
+		map.put("partner_order_id", "poi");                     						// 주문번호(테스트ID)
+		map.put("partner_user_id", "pui");                        						// 회원 아이디(테스트ID)
+		map.put("item_name", String.valueOf(taxNo));                       				// 상품명 - 세금 일련번호
+		map.put("item_code", String.valueOf(declNo));                       			// 상품코드 - 신고서처리업무 일련번호
+		map.put("quantity", String.valueOf(taxRealAmount));                                     					// 상품 수량(테스트ID)
+		map.put("total_amount", String.valueOf(taxRealAmount));           				// 상품 총액 - 세금 납부금액
+		map.put("tax_free_amount", "0");                                 				// 상품 비과세 금액(테스트ID)
+        map.put("approval_url", "http://localhost:8080/contract/taxCompleted"); 		// 결제 성공 시 URL
+        map.put("cancel_url", "http://localhost:8080/contract/taxCancel.do");     	 	// 결제 취소 시 URL
+        map.put("fail_url", "http://localhost:8080/contract/taxFail.do");          		// 결제 실패 시 URL
+        
+        // HttpEntity : HTTP 요청 또는 응답에 해당하는 Http Header와 Http Body를 포함하는 클래스
+        HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(map, this.getHeaders());
+
+        // RestTemplate
+        // : Rest 방식 API를 호출할 수 있는 Spring 내장 클래스
+        //   REST API 호출 이후 응답을 받을 때까지 기다리는 동기 방식 (json, xml 응답)
+        RestTemplate template = new RestTemplate();
+        String url = "https://open-api.kakaopay.com/online/v1/payment/ready";
+        // RestTemplate의 postForEntity : POST 요청을 보내고 ResponseEntity로 결과를 반환받는 메소드
+        ResponseEntity<TaxVO> responseEntity = template.postForEntity(url, requestEntity, TaxVO.class);
+        
+        log.info("결제준비 응답객체2: " + responseEntity.getBody());
+        return responseEntity.getBody();
+	}
+
+	// 카카오페이 측에 요청 시 헤더부에 필요한 값
+    private HttpHeaders getHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "SECRET_KEY DEV4883EB27DE586E468450578B09E802A760E60");
+        headers.set("Content-type", "application/json");
+
+        return headers;
+    }
+
+	@Override
+	public TaxVO taxApprove(String tid, String pgToken) {
+		Map<String, String> map = new HashMap<>();
+		map.put("cid", "TC0ONETIME");           // 가맹점 코드(테스트용)
+		map.put("tid", tid);                    // 결제 고유번호
+		map.put("partner_order_id", "poi"); 	// 주문번호
+		map.put("partner_user_id", "pui");    	// 회원 아이디
+		map.put("pg_token", pgToken);           // 결제승인 요청을 인증하는 토큰
+
+        HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(map, this.getHeaders());
+
+        RestTemplate template = new RestTemplate();
+        String url = "https://open-api.kakaopay.com/online/v1/payment/approve";
+        TaxVO taxVO = template.postForObject(url, requestEntity, TaxVO.class);
+        log.info("결제승인 응답객체2: " + taxVO);
+        
+        return taxVO;
+	}
+
+	/** 세금 납부여부, 실제납부금액, 납부일시 업데이트*/
+	@Override
+	public void updateTax(TaxVO taxVO) {
+		contractMapper.updateTax(taxVO);			// 세금 테이블 업데이트
+		contractMapper.updateStatusCode(taxVO);		// 진행코드 테이블 업데이트
+		contractMapper.insertContractRecode(taxVO);	// 진행이력 추가
+	}
+
+}

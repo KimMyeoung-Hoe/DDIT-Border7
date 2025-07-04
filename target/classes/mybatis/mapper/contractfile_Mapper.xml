@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.contract.mapper.IContractFileMapper">
+
+	<insert id="insertFile" parameterType="kr.or.ddit.vo.ContractFileAttachVO" useGeneratedKeys="true">
+		<selectKey keyProperty="contractFileNo" resultType="int" order="BEFORE">
+			SELECT SEQ_CONTRACT_FILE_ATTACH.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO CONTRACT_FILE_ATTACH (
+            CONTRACT_FILE_ATTACH_NO,
+            CONTRACT_FILE_NO,
+			CONTRACT_NO,
+            CONTRACT_FILE_TYPE,
+            CONTRACT_FILE_ORIGINAL_NAME,
+            CONTRACT_FILE_EXTENSION,
+            CONTRACT_FILE_SIZE,
+            CONTRACT_FILE_PATH,
+            CONTRACT_FILE_SAVED_NAME,
+            CONTRACT_FILE_DATE,
+            CONTRACT_FILE_YN
+        ) VALUES (
+            (SELECT NVL(MAX(CONTRACT_FILE_ATTACH_NO),0)+1 FROM CONTRACT_FILE_ATTACH where CONTRACT_FILE_NO = #{contractFileNo}),
+			#{contractFileNo},
+			#{contractNo},
+            #{contractFileType},
+            #{contractFileOriginalName},
+            #{contractFileExtension},
+            #{contractFileSize},
+            #{contractFilePath},
+            #{contractFileSavedName},
+            #{contractFileDate},
+            #{contractFileYn}
+        )
+    </insert>
+</mapper>

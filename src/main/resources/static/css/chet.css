@@ -1,0 +1,442 @@
+/*
+#chatArea {
+	border: 1px solid #ccc;
+	height: 200px;
+	overflow-y: scroll;
+	padding: 10px;
+	margin-top: 10px;
+}
+
+#webSocketChetIpt {
+	width: 80%;
+	padding: 8px;
+	margin-top: 5px;
+}
+
+#sendBtn {
+	width: 15%;
+	padding: 8px;
+	margin-left: 5px;
+}
+
+#localStream {
+	max-width: 100%;
+	width: 500px;
+	display: none;
+}
+
+#remoteStreamDiv {
+	width: 100%;
+	display: inline;
+	flex-wrap: wrap;
+}
+
+#startSteamBtn {
+	display: none;
+}
+
+.subimg {
+	max-width: 100%;
+	width: 500px;
+	display: none;
+}
+
+#endSteamBtn {
+	display: none;
+}
+
+.visible {
+	display: block;
+}
+
+.flex_div {
+	display: flex;
+	gap: 20px;
+}
+*/
+
+
+
+/* 온라인 사용자 목록 스타일 추가 */
+
+
+
+/*
+#onlineUsersContainer {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-top: 20px;
+    background-color: #f9f9f9;
+}
+#onlineUsersList ul {
+    list-style-type: none;
+    padding: 0;
+}
+#onlineUsersList li {
+    padding: 5px 0;
+    border-bottom: 1px dotted #eee;
+}
+#onlineUsersList li:last-child {
+    border-bottom: none;
+}
+*/
+
+
+/* 화상 통화 영역 (왼쪽) */
+.consultant-wrap {
+    flex: 2; /* 더 많은 공간 차지 */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.flex_div {
+    display: flex;
+    gap: 10px; /* 버튼 간 간격 */
+    align-items: center; /* 세로 중앙 정렬 */
+    margin-bottom: 15px; /* 아래 여백 추가 */
+}
+
+/* 버튼 스타일 */
+button, input[type="button"], .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+}
+
+button#enterRoomBtn, .btn-primary { /* 입장하기, 상담 내용 작성하기 버튼 */
+    background-color: #007bff;
+    color: white;
+}
+
+button#enterRoomBtn:hover, .btn-primary:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+button#startSteamBtn, button#sendBtn {
+    background-color: #28a745; /* 녹색 계열 */
+    color: white;
+}
+
+button#startSteamBtn:hover, button#sendBtn:hover {
+    background-color: #218838;
+    transform: translateY(-2px);
+}
+
+button#endSteamBtn {
+    background-color: #dc3545; /* 빨간색 계열 */
+    color: white;
+}
+
+button#endSteamBtn:hover {
+    background-color: #c82333;
+    transform: translateY(-2px);
+}
+
+input[type="text"], textarea {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 1rem;
+    box-sizing: border-box; /* 패딩이 너비에 포함되도록 */
+}
+
+/* 비디오 영역 */
+.video-ele-wrap {
+    display: flex;
+    gap: 15px; /* 비디오 간 간격 */
+    flex-wrap: wrap; /* 작은 화면에서 줄바꿈 */
+    background-color: #000; /* 비디오 배경을 어둡게 */
+    padding: 15px;
+    border-radius: 8px;
+    justify-content: center; /* 비디오 중앙 정렬 */
+    min-height: 300px; /* 최소 높이 설정 */
+    align-items: center;
+    max-width:100%; 
+}
+
+#localStream, #remoteStreamDiv {
+    background-color: #333; /* 비디오 영역 배경 */
+    border-radius: 8px;
+    overflow: hidden; /* 모서리 둥글게 */
+    position: relative; /* 자식 video 요소 포지셔닝 기준 */
+    /* min-width: 300px */; /* 최소 너비 */
+    flex: 1; /* 가변 너비 */
+    display: flex; /* 비디오 요소를 중앙에 배치하기 위함 */
+    align-items: center;
+    justify-content: center;
+    width: 500px
+}
+
+#localStream video, #remoteStreamDiv video {
+    width: 100%;
+    height: auto; /* 비율 유지 */
+    display: block; /* 하단 여백 제거 */
+    border-radius: 8px;
+    max-height: 540px;
+}
+
+/* 초기에는 비디오 숨기기 (JavaScript로 .visible 클래스 토글) */
+* #localStream{
+    display: none;
+}
+/* #localStream, #remoteStreamDiv {
+    display: none; 기본 숨김
+}
+.video-ele-wrap .visible { .video-ele-wrap 안에 있는 .visible 클래스가 추가된 요소에만 적용
+    display: block;
+}
+ */
+
+/* 채팅 영역 */
+#chatArea {
+    border: 1px solid #e0e0e0;
+    height: 250px; /* 채팅창 높이 증가 */
+    overflow-y: auto; /* 스크롤바 항상 보이도록 auto */
+    padding: 15px;
+    margin-top: 20px;
+    border-radius: 8px;
+    background-color: #fefefe;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); /* 내부 그림자 */
+    line-height: 1.5; /* 줄 간격 */
+    max-width: 100%;
+    
+}
+
+#webSocketChetIpt {
+    width: calc(85% - 10px); /* 버튼 너비와 간격 고려 */
+    margin-top: 10px;
+    display: inline-block; /* 버튼과 같은 라인에 */
+    vertical-align: middle; /* 세로 정렬 */
+}
+
+#sendBtn {
+    width: calc(15% - 10px); /* 너비 조정 */
+    margin-left: 10px; /* 입력창과의 간격 */
+    display: inline-block; /* 입력창과 같은 라인에 */
+    vertical-align: middle;
+}
+
+/* 상담 내용 작성 영역 (오른쪽) */
+.consultant-ipt-wrap {
+    flex: 1; /* 적은 공간 차지 */
+    background-color: #f9f9f9;
+    padding: 25px;
+    border-radius: 10px;
+    border: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.consultant-ipt-wrap.show {
+    display: flex; /* JavaScript로 .show 클래스 토글 */
+}
+
+.content-header {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+}
+
+.content-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #444;
+    margin-bottom: 5px;
+}
+
+.desc {
+    color: #777;
+    font-size: 0.9rem;
+}
+
+textarea#consultantContent {
+    width: 100%; /* 너비 꽉 채우기 */
+    min-height: 150px; /* 최소 높이 */
+    resize: vertical; /* 세로로만 크기 조절 가능 */
+    margin-bottom: 15px;
+}
+
+.btn-container {
+    text-align: right; /* 버튼 오른쪽 정렬 */
+}
+
+
+/* 유틸리티 클래스 */
+.visible {
+    display: block !important; /* 중요: JavaScript로 토글될 때 사용 */
+}
+
+.flex_div {
+    display: flex;
+    gap: 20px;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+    .main-content-area {
+        flex-direction: column; /* 세로로 쌓이도록 변경 */
+    }
+    .consultant-wrap, .consultant-ipt-wrap {
+        flex: none; /* 유연성 제거 */
+        width: 100%; /* 너비 꽉 채움 */
+    }
+    .video-ele-wrap {
+        flex-direction: column; /* 비디오도 세로로 쌓이도록 */
+        min-height:none;
+    }
+    #localStream, #remoteStreamDiv {
+        min-width: unset; /* 최소 너비 제한 해제 */
+    }
+    #webSocketChetIpt {
+        width: calc(100% - 70px); /* 모바일에서 입력창 너비 조정 */
+    }
+    #sendBtn {
+        width: 60px; /* 모바일에서 버튼 너비 고정 */
+        margin-left: 10px;
+    }
+}
+/* 개별 메시지 행 스타일 (프로필 이미지와 버블을 감쌈) */
+.message-row {
+    display: flex;
+    margin-bottom: 10px; /* 메시지 행 간 간격 */
+    align-items: flex-start; /* 프로필 이미지가 항상 상단에 오도록 */
+}
+
+/* 프로필 이미지 래퍼 */
+.profile-image-wrapper {
+    width: 40px; /* 프로필 이미지 크기 */
+    height: 40px;
+    border-radius: 50%; /* 원형으로 만듦 */
+    overflow: hidden;
+    margin-right: 10px; /* 이미지와 버블 사이 간격 */
+    flex-shrink: 0; /* 공간이 부족해도 줄어들지 않게 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #3498db;
+}
+
+.profile-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* 이미지가 잘리지 않고 채워지도록 */
+}
+
+/* 메시지 버블 공통 스타일 */
+.message-bubble {
+    position: relative; /* 꼬리 생성을 위한 기준점 */
+    max-width: 70%; /* 메시지 버블 최대 너비 */
+    padding: 10px 12px; /* 패딩 조정 */
+    border-radius: 10px; /* 더 부드러운 모서리 */
+    word-wrap: break-word;
+    display: flex; /* 내부 컨텐츠 (텍스트, 시간) 정렬을 위해 */
+    flex-direction: column; /* 텍스트와 시간을 세로로 쌓음 */
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1); /* 미세한 그림자 */
+    width: max-content;
+}
+
+/* 메시지 내용 */
+.message-content {
+    font-size: 0.95em; /* 폰트 크기 조정 */
+    color: #333;
+    line-height: 1.4;
+}
+
+.message-flex{
+	display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+/* 타임스탬프 (시간) */
+.timestamp {
+	position:absolute;
+    font-size: 0.7em; /* 시간 텍스트 크기 */
+    color: #888;
+    align-self: flex-end; /* 시간을 메시지 버블의 오른쪽 하단에 배치 */
+    margin-left: 5px; /* 내용과 시간 사이 간격 */
+    bottom: 0;
+}
+.mymessage .timestamp{
+	left: -40px;
+}
+.send .timestamp{
+    right: -30px;
+}
+
+/* 내가 보낸 메시지 */
+.message-row.mymessage {
+    justify-content: flex-end; /* 메시지 행 전체를 오른쪽으로 정렬 */
+    padding-right: 15px; /* 오른쪽 끝과 버블 사이 여백 */
+}
+
+.message-row.mymessage .profile-image-wrapper {
+    display: none; /* 내가 보낸 메시지에는 프로필 이미지 숨김 */
+}
+
+.message-row.mymessage .message-bubble {
+    background-color: #82CB5B; /* LINE의 내 메시지 색상 */
+    color: white; /* 텍스트 색상 흰색 */
+    border-radius: 10px 2px 10px 10px; /* 오른쪽 상단 모서리 덜 둥글게 */
+    margin-right: 0; /* 버블 간격을 위해 */
+}
+
+/* 알림 메시지 */
+.mymessage.alert{
+	text-align: center;
+	margin: 0;
+}
+.send.alert{
+	text-align: center;
+	margin: 0;
+}
+
+/* 상대방이 보낸 메시지 */
+.message-row.send {
+    justify-content: flex-start; /* 메시지 행 전체를 왼쪽으로 정렬 */
+    padding-left: 15px; /* 왼쪽 끝과 버블 사이 여백 */
+}
+
+.message-row.send .message-bubble {
+    background-color: #FFFFFF; /* 상대방 메시지 배경 흰색 */
+    color: #333;
+    border-radius: 2px 10px 10px 10px; /* 왼쪽 상단 모서리 덜 둥글게 */
+    margin-left: 0; /* 버블 간격을 위해 */
+    background: #3498db;
+}
+
+/* 말풍선 꼬리 (pseudo-elements 활용) */
+.message-row.mymessage .message-bubble{
+	border-radius:10px;
+}
+/* 내가 보낸 메시지 꼬리 */
+.message-row.mymessage .message-bubble::after {
+    content: '';
+    position: absolute;
+    right: -8px;
+    top: 50%;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 8px 0 8px 8px;
+    border-color: transparent transparent transparent #82CB5B;
+    transform: translateY(-50%);
+}
+
+/* 상대방이 보낸 메시지 꼬리 */
+.message-row.send .message-bubble::before {
+    content: '';
+    position: absolute;
+    left: -8px; /* 버블 바깥쪽으로 빼내기 */
+    top: 0; /* 버블 상단에 맞춤 */
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 8px 8px 8px 0; /* 꼬리 모양 */
+    border-color: transparent #FFFFFF transparent transparent; /* 버블 색상과 동일 */
+}

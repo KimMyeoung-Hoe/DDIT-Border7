@@ -1,0 +1,79 @@
+
+/* Sidebar Styles 수정 */
+.sidebar {
+  width: 220px; /* 사이드바 너비 200px로 변경 */
+  /* background-color: #2a3344; */
+  background-color: #ffffff;
+  padding: 20px 15px; /* 좌우 패딩 약간 줄임 */
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #3a4251;
+  flex-shrink: 0;
+  position: fixed;
+  top: 60px;
+  left: 0;
+  bottom: 0;
+  z-index: 1000;
+  overflow-y: auto;
+  font-family: "Nanum Gothic", "Malgun Gothic", Arial, sans-serif;
+  -ms-overflow-style: none;
+  color: #000000;
+}
+.sidebar::-webkit-scrollbar{
+  display:none;
+}
+.sidebar:hover{
+	scrollbar-width: none;
+}
+.nav-section-title{
+	color: rgb(52, 152, 219);
+}
+.sidebar-header {
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #4a5568;
+  text-align: center;
+}
+
+.user-type-display {
+  font-size: 20px; /* 사이드바 너비에 맞춰 폰트 크기 약간 줄임 */
+  color: #3498db;
+  font-weight: bold;
+  padding: 10px 0;
+}
+
+/* Nav Menu Item 패딩 조정 */
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 8px; /* 패딩 약간 줄임 */
+  border-radius: 6px;
+  color: #c5c8cc;
+  text-decoration: none;
+  margin-bottom: 5px;
+  font-size: 14px; /* 폰트 크기는 유지 */
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  color:#000000;
+}
+
+.nav-item-icon {
+  margin-right: 8px; /* 아이콘과 텍스트 간격 약간 줄임 */
+  font-size: 16px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.sub-menu {
+  padding-left: 15px; /* 들여쓰기 약간 줄임 */
+  border-left: 2px solid #4a5568;
+  margin-left: 8px; /* 맞춤 조정 */
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+.sub-menu .nav-item {
+  padding-top: 8px; /* 패딩 약간 줄임 */
+  padding-bottom: 8px;
+}
+
+.nav-item:hover{background: rgba(0, 0, 0, 0.24)}

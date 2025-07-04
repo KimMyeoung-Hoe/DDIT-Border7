@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.or.ddit.mapper.IMyCalendarMapper">
+	
+	<!-- 달력 일정 조회 -->
+	<select id="calendarList" parameterType="int" resultType="kr.or.ddit.vo.MyCalendarVO">
+		select
+			CALENDAR_NO
+			, CALENDAR_TITLE
+			, CALENDAR_STR_DATE
+			, CALENDAR_END_DATE
+			, CALENDAR_ALL_YN
+			, CALENDAR_TYPE
+			, CALENDAR_COLOR
+			, CALENDAR_REG_DATE
+			, CALENDAR_TYPE
+		from CALENDAR
+		where USER_NO = #{userNo}
+	</select>
+	
+	<!-- 달력 일정 추가 -->
+	<insert id="calendarInsert" parameterType="kr.or.ddit.vo.MyCalendarVO" useGeneratedKeys="true" keyColumn="calendar_no" keyProperty="calendarNo">
+		<selectKey keyProperty="calendarNo" resultType="int" order="BEFORE">
+			select
+				SEQ_CALENDAR_NO.nextval
+			from dual
+		</selectKey>
+        insert into calendar(
+            CALENDAR_NO
+            , USER_NO
+			, CALENDAR_TITLE
+			, CALENDAR_STR_DATE
+			, CALENDAR_END_DATE
+			, CALENDAR_ALL_YN
+			, CALENDAR_TYPE
+			, CALENDAR_COLOR
+			, CALENDAR_REG_DATE
+        ) values (
+        	#{calendarNo}
+        	, #{userNo}
+            , #{calendarTitle}
+            , to_date(#{calendarStrDate}, 'yyyy-mm-dd hh24:mi:ss')
+            , to_date(#{calendarEndDate}, 'yyyy-mm-dd hh24:mi:ss')
+            , #{calendarAllYn}
+            , #{calendarType}
+            , #{calendarColor}
+            , sysdate
+        )
+    </insert>
+    
+    <!-- 달력 일정 수정 -->
+    <update id="calendarUpdate" parameterType="kr.or.ddit.vo.MyCalendarVO">
+        update calendar set
+            calendar_title = #{calendarTitle},
+            calendar_str_date = to_date(#{calendarStrDate}, 'yyyy-mm-dd hh24:mi:ss'),
+            calendar_end_date = to_date(#{calendarEndDate}, 'yyyy-mm-dd hh24:mi:ss'),
+            calendar_all_yn = #{calendarAllYn},
+            calendar_color = #{calendarColor},
+            calendar_reg_date = sysdate
+        where calendar_no = #{calendarNo}
+    </update>
+    
+    <!-- 달력 일정 삭제 -->
+    <delete id="calendarDelete" parameterType="int">
+        delete from calendar where calendar_no = #{calendarNo}
+    </delete>
+</mapper>

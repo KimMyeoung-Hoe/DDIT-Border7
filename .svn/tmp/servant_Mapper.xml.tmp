@@ -1,0 +1,2369 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.servant.mapper.IServantMapper">
+	<sql id="customsSearch">
+	    <if test="searchWord != null and searchWord != ''">
+	        <choose>
+	            <when test="searchType == 'declDNo'">
+	                AND declDNo LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'contractNo'">
+	                AND contractNo LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'consignorName'">
+	                AND consignorName LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'ccaName'">
+	                AND ccaName LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'svtName'">
+	                AND svtName LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'statusCode'">
+	                AND statusCode LIKE '%' || #{searchWord} || '%'
+	            </when>
+	        </choose>
+	    </if>
+	</sql>
+	
+	<sql id="inspectReviewSearch">
+	    <if test="searchWord != null and searchWord != ''">
+	        <choose>
+	            <when test="searchType == 'declDNo'">
+	                AND D.DECL_D_NO LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'userName'">
+	                AND U.USER_NAME LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'contractNo'">
+	                AND C.CONTRACT_NO LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'qrntStatusCode'">
+	                AND Q.QRNT_STATUS_CODE LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'qrntType'">
+	                AND Q.QRNT_TYPE LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <otherwise>
+	                AND (
+	                    D.DECL_D_NO LIKE '%' || #{searchWord} || '%' OR
+	                    U.USER_NAME LIKE '%' || #{searchWord} || '%' OR
+	                    C.CONTRACT_NO LIKE '%' || #{searchWord} || '%' OR
+	                    Q.QRNT_STATUS_CODE LIKE '%' || #{searchWord} || '%' OR
+	                    Q.QRNT_TYPE LIKE '%' || #{searchWord} || '%'
+	                )
+	            </otherwise>
+	        </choose>
+	    </if>
+	</sql>
+	
+	<!-- 제재(제재건별) 검색조건 -->
+	<sql id="sanctionSDynamic">
+	    <if test="searchWord != null and searchWord != ''">
+	        <choose>
+	            <when test="searchType == 'sanctionName'">
+	                AND b.SANCTION_NAME LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'declDNo'">
+	                AND c.DECL_D_NO LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'userId'">
+	                AND (d.USER_ID LIKE '%' || #{searchWord} || '%'
+	                OR d.USER_NAME LIKE '%' || #{searchWord} || '%')
+	            </when>
+	            <when test="searchType == 'ccaRegistrationNumber'">
+	                AND h.CCA_REGISTRATION_NUMBER LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'ccaName'">
+	                AND h.CCA_NAME LIKE '%' || #{searchWord} || '%'
+	            </when>
+	        </choose>
+	    </if>
+	</sql>
+	
+	<!-- 제재(관세사별) 검색조건 -->
+	<sql id="sanctionCDynamic">
+		<where>
+			<if test="searchWord != null and searchWord != ''">
+		        <choose>
+		            <when test="searchType == 'ccaName'">
+		                AND CCA_NAME LIKE '%' || #{searchWord} || '%'
+		            </when>
+		            <when test="searchType == 'ccaRegistrationNumber'">
+		                AND CCA_REGISTRATION_NUMBER LIKE '%' || #{searchWord} || '%'
+		            </when>
+		        </choose>
+		    </if>
+		</where>
+	</sql>
+	
+	<!-- 사용자 계정 검색-->
+	<sql id="userMngSearch">
+	    <if test="searchWord != null and searchWord != ''">
+	        <choose>
+	            <when test="searchType == 'userName'">
+	                AND U.USER_NAME LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'userEnable'">
+	                AND (
+	                    CASE
+	                        WHEN U.AUTH_CODE = 'ROLE_CCA' THEN C.CCA_NAME
+	                        WHEN U.AUTH_CODE = 'ROLE_CONSIGNOR' THEN CO.CONSIGNOR_NAME
+	                        WHEN U.AUTH_CODE = 'ROLE_LOGISTICS' THEN LM.LOGIST_MNG_NAME
+	                        ELSE NULL
+	                    END
+	                ) LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'userEmail'">
+	                AND U.USER_EMAIL LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'userTel'">
+	                AND U.USER_TEL LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'authCode'">
+	                <choose>
+	                    <when test="searchWord == '화주'">AND U.AUTH_CODE = 'ROLE_CONSIGNOR'</when>
+	                    <when test="searchWord == '관세사'">AND U.AUTH_CODE = 'ROLE_CCA'</when>
+	                    <when test="searchWord == '물류관리자'">AND U.AUTH_CODE = 'ROLE_LOGISTICS'</when>
+	                </choose>
+	            </when>
+	            <otherwise>
+		            AND (
+	                    U.USER_NAME LIKE '%' || #{searchWord} || '%' OR
+	                    U.USER_EMAIL LIKE '%' || #{searchWord} || '%' OR
+	                    U.USER_TEL LIKE '%' || #{searchWord} || '%' OR
+	                    (CASE
+	                        WHEN U.AUTH_CODE = 'ROLE_CCA' THEN C.CCA_NAME
+	                        WHEN U.AUTH_CODE = 'ROLE_CONSIGNOR' THEN CO.CONSIGNOR_NAME
+	                        WHEN U.AUTH_CODE = 'ROLE_LOGISTICS' THEN LM.LOGIST_MNG_NAME
+	                        ELSE NULL
+	                    END) LIKE '%' || #{searchWord} || '%'
+	                )
+	            </otherwise>
+	        </choose>
+	    </if>
+	</sql>
+	
+	<!-- 공무원 계정 관리 -->
+	<sql id="servantMngSearch">
+	    <if test="searchWord != null and searchWord != ''">
+	        <choose>
+	            <when test="searchType == 'userName'">
+	                AND U.USER_NAME LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'deptName'">
+	                AND (D.DEPT_NAME LIKE '%' || #{searchWord} || '%' OR JG.JOB_GRADE_NAME LIKE '%' || #{searchWord} || '%')
+	            </when>
+	            <when test="searchType == 'userEmail'">
+	                AND U.USER_EMAIL LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <when test="searchType == 'userTel'">
+	                AND U.USER_TEL LIKE '%' || #{searchWord} || '%'
+	            </when>
+	            <otherwise>
+	                AND (
+	                    U.USER_NAME LIKE '%' || #{searchWord} || '%'
+	                    OR D.DEPT_NAME LIKE '%' || #{searchWord} || '%'
+	                    OR JG.JOB_GRADE_NAME LIKE '%' || #{searchWord} || '%'
+	                    OR U.USER_EMAIL LIKE '%' || #{searchWord} || '%'
+	                    OR U.USER_TEL LIKE '%' || #{searchWord} || '%'
+	                )
+	            </otherwise>
+	        </choose>
+	    </if>
+	</sql>
+	
+	<select id="selectWorkCount" parameterType="String" resultType="int">
+		SELECT COUNT(DECL_RECEPT_NO)
+		  FROM DECL
+		 WHERE BONDED_TRANSPORT_NO = #{userId}
+		   AND (DECL_REAL_DATE IS NULL OR DECL_REAL_DATE = "")
+	</select>
+	<select id="selectALLWorkCount" parameterType="String" resultType="int">
+		SELECT COUNT(DECL_RECEPT_NO)
+		  FROM DECL
+		 WHERE BONDED_TRANSPORT_NO = #{userId}
+	</select>
+	<select id="selectWorkList" parameterType="String" resultType="DeclVO">
+		SELECT DECL_RECEPT_NO
+	           , SERVANT_NO
+	           , DECL_RECEPT_DATE
+	           , DECL_ANTC_DATE
+	           , DECL_REAL_DATE
+	           , DECL_YN
+	           , DECL_TYPE
+         FROM DECL
+        WHERE SERVANT_NO = #{userId}
+        ORDER BY DECL_RECEPT_NO DESC
+	</select>
+	
+	<select id="login" parameterType="String" resultType="DeclVO">
+		select
+			USER_NO
+			, AUTH_CODE
+			, USER_ID
+			, USER_PW
+		from USER_TB
+		where USER_ID = #{userId}
+	</select>
+	
+	<resultMap type="kr.or.ddit.vo.BwhVO" id="bwhMap">
+		<id property="bwhNo" column="bwh_no"/>
+		<result property="bwhNo" column="BWH_NO"/>
+		<result property="bwhCd" column="BWH_CD"/>
+		<result property="bwhSize" column="BWH_SIZE"/>
+		<result property="bwhDispYn" column="BWH_DISP_YN"/>
+		<result property="bwhType" column="BWH_TYPE"/>
+		<collection property="whSectionList" resultMap="whsectionMap"></collection>
+	</resultMap>
+	
+	<resultMap type="kr.or.ddit.vo.WhSetionVO" id="whsectionMap">
+		<result property="whSectionNo" column="WH_SECTION_NO"/>
+		<result property="bwhNo" column="BWH_NO"/>
+		<result property="whSectionYn" column="WH_SECTION_YN"/>
+	</resultMap>
+	
+	<select id="bwhList" resultMap="bwhMap">
+		  	SELECT 
+		  		a.BWH_NO
+		  		, BWH_CD
+		  		, BWH_SIZE
+		  		, BWH_DISP_YN
+		  		, BWH_TYPE
+		  		, WH_SECTION_NO
+		  		, WH_SECTION_YN
+			FROM BWH a 
+			LEFT OUTER JOIN WH_SECTION b 
+			ON a.BWH_NO = b.BWH_NO
+	</select>
+	
+	<select id="bwList" parameterType="kr.or.ddit.vo.BwVO" >
+			
+			(SELECT *
+			 FROM BWH a 
+			 INNER JOIN WH_SECTION b 
+			 ON a.BWH_NO = b.BWH_NO)
+	</select>
+	
+	<select id="contractList" resultType="kr.or.ddit.vo.DeclVO">
+		select *
+		from decl
+	</select>
+
+	
+	<select id="whSection" parameterType="int" resultType="kr.or.ddit.vo.WhSetionVO">
+		select *
+		from wh_section
+		where bwh_no = #{bwhNo}
+	</select>
+	
+	<select id="whSectionHistory" parameterType="int" resultType="kr.or.ddit.vo.BwVO">
+		SELECT
+		    bw_no,
+		    wh_section_no,
+		  	export_carrier,
+		  	import_carrier,
+		    servant_no,
+		    bw_arrival_date,
+		    bw_departure_date,
+		    bw_storage_duration,
+		    decl_no
+		FROM
+		    bw
+		WHERE
+		    wh_section_no = #{whSectionNo} 
+	</select>
+
+	
+	<resultMap id="bwResultMap" type="kr.or.ddit.vo.BwVO"> 
+		<id property="bwNo" column="bw_no"/>
+        <result property="bwTransportNo" column="bw_transport_no"/> 
+        <result property="whSectionNo" column="wh_section_no"/>
+        <result property="exportCarrier" column="export_carrier"/>
+        <result property="importCarrier" column="import_carrier"/>
+        <result property="servantNo" column="servant_no"/>
+        <result property="bwArrivalDate" column="BW_ARRIVAL_DATE"/>
+        <result property="bwDepartureDate" column="BW_DEPARTURE_DATE"/>
+        <result property="bwSporageDuration" column="bw_storage_duration"/> 
+        
+        <association property="bwhVO" javaType="kr.or.ddit.vo.BwhVO">    
+            <id property="bwhNo" column="bwh_no"/>
+            <result property="bwhCd" column="bwh_cd"/>
+            <result property="bwhSize" column="bwh_size"/>
+            <result property="bwhDispYn" column="bwh_disp_yn"/>
+            <result property="bwhType" column="bwh_type"/>
+        </association>
+
+        <association property="whSectionVO" javaType="kr.or.ddit.vo.WhSetionVO">
+            <id property="whSectionNo" column="wh_section_no"/>
+            <result property="whSectionYn" column="wh_section_yn"/>
+        </association>
+
+        <association property="declVO" javaType="kr.or.ddit.vo.DeclVO">
+            <id property="declNo" column="decl_no"/>
+            <id property="declDate" column="decl_date"/>
+            </association>
+
+        <association property="cdVO" javaType="kr.or.ddit.vo.CDVO">
+            <id property="cdNo" column="cd_no"/>
+            <id property="cdDate" column="cd_date"/>
+            </association>
+
+        <association property="contractVO" javaType="kr.or.ddit.vo.ContractVO">
+            <id property="contractNo" column="contract_no"/>
+            <result property="ccaNo" column="cca_no"/>
+            <result property="lastStatusCode" column="last_status_code"/>
+        </association>
+
+        <association property="productVO" javaType="kr.or.ddit.vo.ProductVO">
+            <id property="productNo" column="product_no"/>
+            <result property="productName" column="product_name"/>
+            <result property="productQty" column="product_qty"/>
+            <result property="productVolume" column="product_volume"/>
+            <result property="productWeight" column="product_weight"/>
+            <result property="productPrice" column="product_price"/>
+        </association>
+
+        </resultMap>
+        
+        
+        <select id="AllTotalRecode" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+		select COUNT(*)
+		from  (
+	   			SELECT
+	   				a.bwh_no
+				  , a.bwh_cd
+				  , a.bwh_size
+				  , a.bwh_disp_yn
+				  , a.bwh_type
+				  , b.wh_section_no
+				  , b.wh_section_yn
+				  , c.bw_no
+				  , c.export_carrier
+				  , c.import_carrier
+				  , c.servant_no
+				  , c.BW_ARRIVAL_DATE
+				  , c.BW_DEPARTURE_DATE
+				  , c.bw_storage_duration
+				  , d.decl_no
+				  , e.cd_no
+				  , g.contract_no
+				  , g.cca_no
+				  , g.last_status_code
+				  , h.product_no
+				  , h.product_name
+				  , h.product_qty
+				  , h.product_volume
+				  , h.product_weight
+				  , h.product_price
+				FROM
+				    bwh        a
+				    join wh_section b on b.bwh_no = a.bwh_no
+				    left join bw c on c.wh_section_no = b.wh_section_no
+				    left join decl d on d.decl_no = c.decl_no
+				    join cd e on e.decl_no = d.decl_no
+				    left join decl_d f on f.decl_d_no = d.decl_d_no
+				    left join contract g on g.contract_no = f.contract_no
+				    left join product h on h.product_no = g.product_no
+				where 1=1
+				<include refid="bwSearch"/>
+				
+			) 
+	</select>
+	
+		<select id="bwAwaiteAll" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultMap="bwResultMap">
+		select *
+		from(
+			select TB.*, rownum rn
+	   		from  (
+	   			SELECT
+	   				a.bwh_no
+				  , a.bwh_cd
+				  , a.bwh_size
+				  , a.bwh_disp_yn
+				  , a.bwh_type
+				  , b.wh_section_no
+				  , b.wh_section_yn
+				  , c.bw_no
+				  , c.export_carrier
+				  , c.import_carrier
+				  , c.servant_no
+				  , c.BW_ARRIVAL_DATE
+				  , c.BW_DEPARTURE_DATE
+				  , c.bw_storage_duration
+				  , d.decl_no
+				  , e.cd_no
+				  , g.contract_no
+				  , g.cca_no
+				  , g.last_status_code
+				  , h.product_no
+				  , h.product_name
+				  , h.product_qty
+				  , h.product_volume
+				  , h.product_weight
+				  , h.product_price
+				FROM
+				    bwh        a
+				    join wh_section b on b.bwh_no = a.bwh_no
+				    left join bw c on c.wh_section_no = b.wh_section_no
+				    left join decl d on d.decl_no = c.decl_no
+				    join cd e on e.decl_no = d.decl_no
+				    left join decl_d f on f.decl_d_no = d.decl_d_no
+				    left join contract g on g.contract_no = f.contract_no
+				    left join product h on h.product_no = g.product_no
+				where 1=1
+				<include refid="bwSearch"/>
+				<choose>
+					<when test="sortColumn != null and sortColumn != '' ">
+						ORDER BY ${sortColumn} ${sortDirection}
+					</when>
+					<otherwise>
+						order by BW_ARRIVAL_DATE desc
+					</otherwise>
+				</choose>
+				) TB
+		) where rn BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+
+	<select id="shipmentTotalRecode" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+		select COUNT(*)
+		from  (
+	   			SELECT
+	   				a.bwh_no
+				  , a.bwh_cd
+				  , a.bwh_size
+				  , a.bwh_disp_yn
+				  , a.bwh_type
+				  , b.wh_section_no
+				  , b.wh_section_yn
+				  , c.bw_no
+				  , c.export_carrier
+				  , c.import_carrier
+				  , c.servant_no
+				  , c.BW_ARRIVAL_DATE
+				  , c.BW_DEPARTURE_DATE
+				  , c.bw_storage_duration
+				  , d.decl_no
+				  , e.cd_no
+				  , e.cd_date
+				  , g.contract_no
+				  , g.cca_no
+				  , g.last_status_code
+				  , h.product_no
+				  , h.product_name
+				  , h.product_qty
+				  , h.product_volume
+				  , h.product_weight
+				  , h.product_price
+				FROM
+				    bwh        a
+				    join wh_section b on b.bwh_no = a.bwh_no
+				    left join bw c on c.wh_section_no = b.wh_section_no
+				    left join decl d on d.decl_no = c.decl_no
+				    join cd e on e.decl_no = d.decl_no
+				    left join decl_d f on f.decl_d_no = d.decl_d_no
+				    left join contract g on g.contract_no = f.contract_no
+				    left join product h on h.product_no = g.product_no
+				where 1=1
+				<include refid="bwSearch"/>
+				
+			) 
+	</select>
+
+	<!-- 반출 대기 물품 리스트 -->
+	<select id="bwAwaitshipment" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultMap="bwResultMap">
+		select *
+		from(
+			select TB.*, rownum rn
+	   		from  (
+	   			SELECT
+	   				a.bwh_no
+				  , a.bwh_cd
+				  , a.bwh_size
+				  , a.bwh_disp_yn
+				  , a.bwh_type
+				  , b.wh_section_no
+				  , b.wh_section_yn
+				  , c.bw_no
+				  , c.export_carrier
+				  , c.import_carrier
+				  , c.servant_no
+				  , c.BW_ARRIVAL_DATE
+				  , c.BW_DEPARTURE_DATE
+				  , c.bw_storage_duration
+				  , d.decl_no
+				  , e.cd_no
+				  , e.cd_date
+				  , g.contract_no
+				  , g.cca_no
+				  , g.last_status_code
+				  , h.product_no
+				  , h.product_name
+				  , h.product_qty
+				  , h.product_volume
+				  , h.product_weight
+				  , h.product_price
+				FROM
+				    bwh        a
+				    join wh_section b on b.bwh_no = a.bwh_no
+				    left join bw c on c.wh_section_no = b.wh_section_no
+				    left join decl d on d.decl_no = c.decl_no
+				    join cd e on e.decl_no = d.decl_no
+				    left join decl_d f on f.decl_d_no = d.decl_d_no
+				    left join contract g on g.contract_no = f.contract_no
+				    left join product h on h.product_no = g.product_no
+				where 1=1
+				<include refid="bwSearch"/>
+				<choose>
+					<when test="sortColumn != null and sortColumn != '' ">
+						ORDER BY ${sortColumn} ${sortDirection}
+					</when>
+					<otherwise>
+						order by cd_date desc
+					</otherwise>
+				</choose>
+				) TB
+		) where rn BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+
+	<sql id="bwSearch" >
+		<if test="searchWord != null and searchWord != '' ">
+			<choose>
+				<when test="searchType == 'bwhCd'">
+					and a.bwh_cd LIKE '%' || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'bwhSize'">
+					and a.bwh_size LIKE '%' || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'bwhType'">
+					and a.bwh_type LIKE '%'  || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'whSectionNo'">
+					and b.wh_section_no LIKE '%'  || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'exportCarrier'">
+					and c.export_carrier LIKE '%'  || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'importCarrier'">
+					and c.import_carrier LIKE '%'  || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'bwArrivalDate'">
+					and c.bw_arrival_date LIKE '%'  || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'bwDepartureDate'">
+					and c.bw_departure_date LIKE '%'  || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'bwStorageDuration'">
+					and c.bw_storage_duration LIKE '%'  || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'cdNo'">
+					and e.cd_no LIKE '%' || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'cdDate'">
+					and e.cd_date LIKE '%' || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'contractNo'">
+					and g.contract_no LIKE  '%' || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'productName'">
+					and h.product_name LIKE '%'  || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'productQty'">
+					and h.product_qty LIKE '%'  || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'productVolume'">
+					and h.product_volume LIKE '%'  || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'productWeight'">
+					and h.product_wegith LIKE '%'  || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'productPrice'">
+					and h.product_price LIKE '%'  || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'userName'">
+					and i.user_name LIKE '%'  || #{searchWord} || '%'
+				</when>
+				<when test="searchType == 'declRealDate'">
+					and d.decl_real_date LIKE '%'  || #{searchWord} || '%'
+				</when>
+				
+			</choose>
+		</if>
+	</sql>
+	
+	
+	<select id="AllwhSection" resultType="kr.or.ddit.vo.WhSetionVO">
+		select *
+		from wh_section
+	</select>
+	
+	<insert id="InsertBw" parameterType="kr.or.ddit.vo.BwVO" useGeneratedKeys="true" >
+		<selectKey keyProperty="bwNo" resultType="int" order="BEFORE">
+			select seq_bw_no.nextval from dual
+		</selectKey>
+		insert into bw(bw_no, import_carrier, wh_section_no, servant_no, bw_arrival_date, decl_no, bwh_no)
+		values(#{bwNo}, #{importCarrier}, #{whSectionNo},  #{servantNo}, #{bwArrivalDate}, #{declNo}, #{bwhNo})
+	</insert>
+	
+	<delete id="deleteBw" parameterType="int" >
+		delete from bw
+		where bw_no = #{bwNo} 
+	</delete>
+	
+	<resultMap id="declResultMap" type="kr.or.ddit.vo.DeclVO">
+	    <id property="declNo" column="decl_no"/>
+	    <result property="declReceptDate" column="decl_recept_date"/>
+	    
+	    <association property="contractVO" javaType="ContractVO">
+	        <result property="contractNo" column="contract_no"/>
+	        <result property="ccaNo" column="cca_no"/>
+	        <result property="lastStatusCode" column="last_status_code"/>
+	    </association>
+	
+	    <association property="productVO" javaType="ProductVO">
+	        <result property="productNo" column="product_no"/>
+	        <result property="productName" column="product_name"/>
+	        <result property="productQty" column="product_qty"/>
+	        <result property="productVolume" column="product_volume"/>
+	        <result property="productWeight" column="product_weight"/>
+	        <result property="productPrice" column="product_price"/>
+	    </association>
+	
+	    <association property="userVO" javaType="UserVO">
+	        <result property="userName" column="user_name"/>
+	        <result property="userId" column="user_id"/>
+	    </association>
+
+    </resultMap>
+    
+    <select id="ReceiveTotalRecode" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+    	select COUNT(*)
+	   		from  (
+	   			SELECT
+	   			 d.decl_no
+				  , d.decl_recept_date
+				  , g.contract_no
+				  , g.cca_no
+				  , g.last_status_code
+				  , h.product_no
+				  , h.product_name
+				  , h.product_qty
+				  , h.product_volume
+				  , h.product_weight
+				  , h.product_price
+				  , i.user_name
+				FROM
+				    decl d
+				    left join decl_d f on f.decl_d_no = d.decl_d_no
+				    left join contract g on g.contract_no = f.contract_no
+				    left join product h on h.product_no = g.product_no
+				    left join user_tb i on i.user_no = d.servant_no
+				where g.last_status_code = 12 OR
+				      g.last_status_code = 33
+			<include refid="bwSearch"/>
+			)  TB
+    </select>
+	
+	<select id="bwAwaitReceive" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultMap="declResultMap">
+   		select *
+		from(
+			select TB.*, rownum rn
+	   		from  (
+	   			SELECT
+	   			 d.decl_no
+				  , d.decl_recept_date
+				  , g.contract_no
+				  , g.cca_no
+				  , g.last_status_code
+				  , h.product_no
+				  , h.product_name
+				  , h.product_qty
+				  , h.product_volume
+				  , h.product_weight
+				  , h.product_price
+				  , i.user_name
+				FROM
+				    decl d
+				    left join decl_d f on f.decl_d_no = d.decl_d_no
+				    left join contract g on g.contract_no = f.contract_no
+				    left join product h on h.product_no = g.product_no
+				    left join user_tb i on i.user_no = d.servant_no
+				where g.last_status_code = 12 OR
+				      g.last_status_code = 33
+			<include refid="bwSearch"/>
+			<choose>
+				<when test="sortColumn != null and sortColumn != '' ">
+					ORDER BY ${sortColumn} ${sortDirection}
+				</when>
+				<otherwise>
+					order by decl_real_date desc
+				</otherwise>
+			</choose>
+			)  TB
+		)where rn BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<insert id="conRecordIst" parameterType="java.util.HashMap" useGeneratedKeys="true">
+		<selectKey keyProperty="contractRecordNo" resultType="int" order="BEFORE">
+			select seq_contract_record_no.nextval from dual
+		</selectKey>
+		insert into contract_record(contract_record_no, contract_no, contract_status_code, contract_record_reg_date)
+		values(#{contractRecordNo}, #{contractNo}, #{contractStatusCode} , sysdate)
+	</insert>
+	
+	<update id="conLastStatCodeUpd" parameterType="java.util.HashMap">
+		update contract
+		set last_status_code = #{lastStatusCode}
+		where contract_no = #{contractNo}
+	</update>
+
+	<select id="getUserId" parameterType="String" resultType="int">
+		select USER_NO
+		  from USER_TB
+		 WHERE USER_ID = #{userId}
+	</select>
+	
+	<!--  -->
+	<select id="selectCustomsCount" parameterType="PaginationInfoVO" resultType="int">
+	    SELECT
+	    	COUNT(*)
+	      FROM 
+	    	CUSTOMSLIST_VIEW
+	     WHERE svtNo = #{userNo}
+	       AND MEDIUMCATEGORYCODE NOT IN ('1','7','8','9')	/* 관세대리업무(1), 필증 발행 완료건(7), 물품 반출 접수-반출(8), 컨테이너 적재(9) 단계 제외 */
+	       AND statusCodeName NOT IN ('반려')			/* 반려된 업무 제외 */
+	    <include refid="customsSearch"/>
+	</select>
+	
+	<select id="selectCustomsAllCount" parameterType="PaginationInfoVO" resultType="int">
+	    SELECT
+	    	COUNT(*)
+	      FROM 
+	    	CUSTOMSLIST_VIEW
+	     WHERE MEDIUMCATEGORYCODE NOT IN ('1','7','8','9')	/* 관세대리업무(1), 필증 발행 완료건(7), 물품 반출 접수-반출(8), 컨테이너 적재(9) 단계 제외 */
+	       AND statusCodeName NOT IN ('반려')		/* 반려된 업무 제외 */
+	    <include refid="customsSearch"/>
+	</select>
+	
+	<select id="selectCustomsHistoryCount" parameterType="PaginationInfoVO" resultType="int">
+	    SELECT
+	    	COUNT(*)
+	      FROM 
+	    	CUSTOMSLIST_VIEW
+	     WHERE MEDIUMCATEGORYCODE IN ('7')	/* 행정절차가 종료된 필증발행완료(7), 물품 반출 접수-반출(8), 컨테이너 적재(9) 단계 */
+	       OR statusCodeName = '반려'
+	    <include refid="customsSearch"/>
+	</select>
+	
+	<select id="selectCustomsList" parameterType="PaginationInfoVO" resultType="Map">
+		select *
+          from (select 
+          			CST.*, rownum rn
+	       		  from (SELECT contractType		/* 수출입 구분 */
+					   	     , decldNo        	/* 접수번호 */
+						     , consignorName	/* 신청인 */
+						     , ccaName       	/* 대리인 */
+						     , svtName	        /* 담당 공무원 */
+						     , svtNo         	/* 담당 공무원 */
+						     , mediumCategory	/* 진행중인 업무 명 */
+						     , statusCodeName 	/* 진행중인 업무 상태 */
+						     , statusCode     	/* 절차 번호 */
+						     , declReceptDate 	/* 접수일시 */
+						     , declAntcDate   	/* 마감기간 */
+						     , declRealDate   	/* 실제 완료일시 */
+						     , contractNo
+						     , consignorCompanyName
+				          FROM 
+				          	CUSTOMSLIST_VIEW
+				         WHERE svtNo = #{userNo}	
+				           AND MEDIUMCATEGORYCODE NOT IN ('1','7','8','9')	/* 관세대리업무(1), 필증 발행 완료건(7), 물품 반출 접수-반출(8), 컨테이너 적재(9) 단계 제외 */
+				           AND statusCodeName NOT IN ('반려')		/* 반려된 업무 제외 */
+				           	   <include refid="customsSearch"/>
+			           	   ORDER BY ${sortColumn} ${sortDirection}	
+						) CST
+				)
+		where RN BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<select id="selectCustomsAllList" parameterType="PaginationInfoVO" resultType="Map">
+       select *
+         from(select 
+          		CST.*, ROWNUM rn
+		        from(SELECT 
+			              contractType		/* 수출입 구분 */
+					    , decldNo        	/* 접수번호 */
+					    , consignorName		/* 신청인 */
+					    , ccaName       	/* 대리인 */
+					    , svtName	        /* 담당 공무원 */
+					    , svtNo         	/* 담당 공무원 */
+					    , mediumCategory	/* 진행중인 업무 명 */
+					    , statusCodeName 	/* 진행중인 업무 상태 */
+					    , statusCode     	/* 절차 번호 */
+					    , declReceptDate 	/* 접수일시 */
+					    , declAntcDate   	/* 마감기간 */
+					    , declRealDate   	/* 실제 완료일시 */
+					    , PS.EMP_NO AS svtEmpNo /* 담당 공무원의 사원번호 */
+					    , contractNo
+						, consignorCompanyName
+			          FROM 
+			          	CUSTOMSLIST_VIEW
+			          	join PUBLIC_SERVANT PS on svtNo = SERVANT_NO
+			         WHERE MEDIUMCATEGORYCODE NOT IN ('1','7','8','9')	/* 관세대리업무(1), 필증 발행 완료건(7), 물품 반출 접수-반출(8), 컨테이너 적재(9) 단계 제외 */
+			           AND statusCodeName NOT IN ('반려')			/* 반려된 업무 제외 */
+			        	   <include refid="customsSearch"/>			
+					 ORDER BY ${sortColumn} ${sortDirection}
+				 ) CST
+			 )
+		 where RN BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<select id="selectCustomsHistoryList" parameterType="PaginationInfoVO" resultType="Map">
+       select *
+       from(select 
+          		CST.*, rownum rn
+		       from(
+				SELECT 
+		              contractType		/* 수출입 구분 */
+				    , DECLDNO        	/* 접수번호 */
+				    , consignorName		/* 신청인 */
+				    , ccaName       	/* 대리인 */
+				    , svtName	        /* 담당 공무원 */
+				    , svtNo         	/* 담당 공무원 */
+				    , mediumCategory	/* 진행중인 업무 명 */
+				    , statusCodeName 	/* 진행중인 업무 상태 */
+				    , statusCode     	/* 절차 번호 */
+				    , declReceptDate 	/* 접수일시 */
+				    , declAntcDate   	/* 마감기간 */
+				    , declRealDate   	/* 실제 완료일시 */
+				    , PS.EMP_NO AS svtEmpNo /* 담당 공무원의 사원번호 */
+				    , contractNo
+					, consignorCompanyName
+		          FROM 
+		          	CUSTOMSLIST_VIEW
+		          	join PUBLIC_SERVANT PS on svtNo = SERVANT_NO
+		         WHERE (MEDIUMCATEGORYCODE IN ('7') 	/* 행정절차가 종료된 필증발행완료(7), 컨테이너 적재(9) 단계 */
+	      		    OR statusCodeName = '반려')				/* 반려되어 종류 */
+		        	<include refid="customsSearch"/>
+				 ORDER BY ${sortColumn} ${sortDirection}
+				 ) CST
+			 )
+		 where RN BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<select id="customsStatusCode" parameterType="String" resultType="int">
+		SELECT C.LAST_STATUS_CODE AS NOW_CONTRACT
+		  FROM DECL_D D
+		  JOIN CONTRACT C ON D.CONTRACT_NO = C.CONTRACT_NO 
+		 WHERE D.DECL_D_NO = #{declDNo}
+	</select>
+	
+	<select id="getDeclDToDecl" parameterType="String" resultType="String">
+		SELECT DECL_NO
+		  FROM DECL 
+		 WHERE DECL_D_NO = #{declDNo}
+	</select>
+	
+	<select id="customsExa" parameterType="String" resultType="Map">
+		SELECT 
+		      D.DECL_NO AS DECL_NO										/* 신고업무 번호 */
+		    , USERV.USER_NAME AS SERVANT_NAME							/* 신고업무 담당공무원 이름*/
+		    , C.PRODUCT_NO AS EXA_PRODUCT_NO							/* 신고 대상 물품 번호 */
+	    	, C.CONTRACT_NO AS EXA_CONTRACT_NO							/* 계약번호 */
+	    	, C.LAST_STATUS_CODE AS LAST_STATUS_CODE					/* 현재단계 */
+	    	
+	    	, D.DECL_RECEPT_DATE AS EXA_RECEPT_DATE						/* 접수일시 */
+		    , P.PRODUCT_NAME AS EXA_PRODUCT_NAME						/* 신고 대상 물품 이름 */
+		    , P.PRODUCT_WEIGHT AS EXA_PRODUCT_WEIGHT					/* 신고 대상 물품 중량 */
+		    , P.PRODUCT_QTY AS EXA_PRODUCT_QTY							/* 신고 대상 물품 수량 */
+		    , DD.CUSTOMS_VALUE AS EXA_CUSTOMS_VALUE						/* 물품 총 단가 */
+		    , DD.TOTAL_COST AS EXA_TOTAL_COST							/* 총 금액 */
+		    , DD.PORT_FROM AS EXA_PORT_FROM								/* 출발항 */
+		    , DD.PORT_TO AS EXA_PORT_TO									/* 도착항 */
+		    , CON.CONSIGNOR_NAME AS EXA_CONSIGNOR_NAME					/* 통관 신고 업체명 */
+		    , CON.CONSIGNOR_CUSTOMS_CODE AS EXA_CONSIGNOR_CUSTOMS_CODE 	/* 신고인 통관번호 */
+		    , CA.CCA_NAME AS EXA_CCA_NAME 								/* 관세사 회사명 */
+		    , CA.CCA_REGISTRATION_NUMBER AS EXA_CCA_REGISTRATION_NUMBER	/* 관세사 자격증번호 */
+		    , DD.DECL_D_NO AS EXA_DECL_D_NO 							/* 신고서 문서 번호 */
+		    
+		FROM DECL D
+		JOIN DECL_D DD ON D.DECL_D_NO = DD.DECL_D_NO
+		JOIN CONTRACT C ON DD.CONTRACT_NO = C.CONTRACT_NO
+		JOIN PRODUCT P ON C.PRODUCT_NO = P.PRODUCT_NO
+		LEFT JOIN CONSIGNOR CON ON C.CONSIGNOR_NO = CON.USER_NO
+		LEFT JOIN CCA CA ON C.CCA_NO = CA.USER_NO
+		LEFT JOIN USER_TB USERV ON D.SERVANT_NO = USERV.USER_NO
+		WHERE D.DECL_NO = #{declNo}
+	</select>
+	
+	<select id="customsInp" parameterType="String" resultType="Map">
+		SELECT 
+		      D.DECL_NO AS DECL_NO										/* 신고업무 번호 */
+		    , USERV.USER_NAME AS SERVANT_NAME							/* 신고업무 담당공무원 이름*/
+		    , UCON.USER_NAME AS INP_CONSIGNOR_NAME						/* 검사 대상 이름 */
+		    , CON.BUSINESS_NUMBER AS INP_BUSINESS_NUMBER				/* 사업자 등록 번호 */
+		    , INPN.INSPECTION_RECEPT_DATE AS INP_INSPECTION_RECEPT_DATE	/* 검사 접수일시 */
+		    , INPN.INSPECTION_REAL_DATE AS INP_INSPECTION_REAL_DATE		/* 검사 완료일시 */
+		    , INPN.INSPECTOR_NO AS INP_INSPECTOR_NO						/* 검사 번호 */
+			, INPN.INSPECTION_CLOSURE_YN AS INP_INSPECTION_CLOSURE_YN	/* 사업장 폐업여부 */
+			, INPN.INSPECTION_CRIME AS INP_INSPECTION_CRIME				/* 세급 채납여부 */
+			, INPN.INSPECTION_DOT AS INP_INSPECTION_DOT					/* 범죄 이력여부 */
+			, INPN.INSPECTION_YN AS INP_INSPECTION_YN					/* 합격여부 */
+		    , INPR.INSPECTOR_NAME AS INP_INSPECTOR_NAME					/* 검사 담당자 이름 */
+		    , INPR.INSPECTOR_TEL AS INP_INSPECTOR_TEL					/* 검사담당자 연락처  */
+		FROM DECL D
+		LEFT JOIN DECL_D DD ON D.DECL_D_NO = DD.DECL_D_NO
+		LEFT JOIN CONTRACT C ON DD.CONTRACT_NO = C.CONTRACT_NO
+		LEFT JOIN CONSIGNOR CON ON C.CONSIGNOR_NO = CON.USER_NO
+		LEFT JOIN USER_TB UCON ON C.CONSIGNOR_NO = UCON.USER_NO
+		LEFT JOIN USER_TB USERV ON D.SERVANT_NO = USERV.USER_NO
+		LEFT JOIN INSPECTION INPN ON D.DECL_NO = INPN.DECL_NO
+		LEFT JOIN INSPECTOR INPR ON INPN.INSPECTOR_NO = INPR.INSPECTOR_NO
+		WHERE D.DECL_NO = #{declNo}
+	</select>
+	
+	<select id="customsBwh" parameterType="String" resultType="Map">
+		SELECT 
+		      D.DECL_NO AS DECL_NO										/* 신고업무 번호 */
+		    , USERV.USER_NAME AS SERVANT_NAME							/* 신고업무 담당공무원 이름*/
+		    
+		    , P.PRODUCT_NAME AS BWH_PRODUCT_NAME
+		    , P.PRODUCT_WEIGHT AS BWH_PRODUCT_WEIGHT
+		    , P.PRODUCT_QTY AS BWH_PRODUCT_QTY
+		    , BWPRO.SERVANT_NO AS BWH_SERVANT_NO
+		    , BWPRO.IMPORT_CARRIER AS BWH_USER_NAME						/* 입고인 */
+		    , BWHH.BWH_CD AS BWH_BWH_CD
+		    , BWPRO.BW_ARRIVAL_DATE AS BWH_ARRIVAL_DATE
+		FROM DECL D
+		JOIN DECL_D DD ON D.DECL_D_NO = DD.DECL_D_NO
+		JOIN CONTRACT C ON DD.CONTRACT_NO = C.CONTRACT_NO
+		JOIN PRODUCT P ON C.PRODUCT_NO = P.PRODUCT_NO
+		LEFT JOIN USER_TB USERV ON D.SERVANT_NO = USERV.USER_NO
+		LEFT JOIN BW BWPRO ON D.DECL_NO = BWPRO.DECL_NO
+		LEFT JOIN WH_SECTION BWSEC ON BWPRO.WH_SECTION_NO = BWSEC.WH_SECTION_NO
+								  AND BWPRO.BWH_NO = BWSEC.BWH_NO
+		LEFT JOIN BWH BWHH ON BWSEC.BWH_NO = BWHH.BWH_NO
+		WHERE D.DECL_NO = #{declNo}
+	</select>
+	
+	<select id="customsQrn" parameterType="String" resultType="Map">
+		SELECT 
+		      D.DECL_NO AS DECL_NO										/* 신고업무 번호 */
+		    , USERV.USER_NAME AS SERVANT_NAME							/* 신고업무 담당공무원 이름*/
+		    , P.PRODUCT_NAME AS QRN_PRODUCT_NAME
+		    , P.PRODUCT_WEIGHT AS QRN_PRODUCT_WEIGHT
+		    , P.PRODUCT_QTY AS QRN_PRODUCT_QTY
+		    , BWHH.BWH_CD AS QRN_BWH_CD
+		    
+		    , QRUSER.USER_NAME AS QRN_SERVANT_NAME
+		    , HC.HC_NO AS QRN_HC_NO
+		    , DEP.DEPT_TEL AS QRN_DEPT_TEL
+		    , QR.QRNT_RECEPT_DATE AS QRN_QRNT_RECEPT_DATE
+		    , QR.QRNT_COMPLETION AS QRN_QRNT_COMPLETION
+		    , QR.QRNT_TYPE AS QRN_QRNT_TYPE
+		    , QR.QRNT_YN AS QRN_QRNT_YN
+		FROM DECL D
+		JOIN DECL_D DD ON D.DECL_D_NO = DD.DECL_D_NO
+		JOIN CONTRACT C ON DD.CONTRACT_NO = C.CONTRACT_NO
+		JOIN PRODUCT P ON C.PRODUCT_NO = P.PRODUCT_NO
+		LEFT JOIN USER_TB USERV ON D.SERVANT_NO = USERV.USER_NO
+		
+		LEFT JOIN BW BWPRO ON D.DECL_NO = BWPRO.DECL_NO
+		LEFT JOIN WH_SECTION BWSEC ON BWPRO.WH_SECTION_NO = BWSEC.WH_SECTION_NO
+								  AND BWPRO.BWH_NO = BWSEC.BWH_NO
+								  
+		LEFT JOIN BWH BWHH ON BWSEC.BWH_NO = BWHH.BWH_NO
+		
+		LEFT JOIN QRNT QR ON D.DECL_NO = QR.DECL_NO
+		
+		LEFT JOIN HC HC ON QR.DECL_NO = HC.DECL_NO
+		
+		LEFT JOIN USER_TB QRUSER ON QR.SERVANT_NO = QRUSER.USER_NO
+		LEFT JOIN PUBLIC_SERVANT QRSERV ON QRUSER.USER_NO = QRSERV.SERVANT_NO
+		LEFT JOIN DEPT DEP ON QRSERV.DEPT_CODE = DEP.DEPT_CODE
+		
+		WHERE D.DECL_NO = #{declNo}
+	</select>
+	
+	<select id="customsTax" parameterType="String" resultType="Map">
+		SELECT 
+		      D.DECL_NO AS DECL_NO										/* 신고업무 번호 */
+		    , USERV.USER_NAME AS SERVANT_NAME							/* 신고업무 담당공무원 이름*/
+		    
+		    , TX.TAX_NO AS TX_TAX_NO									/* 세금 납부번호 */
+		    , DD.CUSTOMS_AUTHORITY AS TX_CUSTOMS_AUTHORITY				/* 소관 */
+		    , CON.CONSIGNOR_NAME AS TX_CONSIGNOR_NAME					/* 납부자 */
+		    , CA.CCA_NAME AS TX_CCA_NAME 								/* 대납자 */
+		    , TX.TAX_DEST_DATE AS TX_TAX_DEST_DATE						/* 고지일시 */
+		    , TX.TAX_DEADLINE_DATE AS TX_TAX_DEADLINE_DATE				/* 납부기한 */
+		    , TX.TAX_AMOUNT AS TX_TAX_AMOUNT							/* 총 납부금액 */
+		    
+		    , TX.TAX_YN AS TX_TAX_YN									/* 납부여부 */
+		    , TX.TAX_REAL_DATE AS TX_TAX_REAL_DATE						/* 납부일시 */
+		    , TX.TAX_REAL_AMOUNT AS TX_TAX_REAL_AMOUNT					/* 실 납부금액 */
+		    
+		    , C.CONTRACT_NO AS CONTRACT_NO								/* 관세대리업무계약 번호 */
+		FROM DECL D
+		JOIN DECL_D DD ON D.DECL_D_NO = DD.DECL_D_NO
+		JOIN CONTRACT C ON DD.CONTRACT_NO = C.CONTRACT_NO
+		LEFT JOIN CONSIGNOR CON ON C.CONSIGNOR_NO = CON.USER_NO
+		LEFT JOIN CCA CA ON C.CCA_NO = CA.USER_NO
+		LEFT JOIN USER_TB USERV ON D.SERVANT_NO = USERV.USER_NO
+		LEFT JOIN TAX TX ON D.DECL_NO = TX.DECL_NO
+		WHERE D.DECL_NO = #{declNo}
+	</select>
+	
+	<insert id="exaSanct" parameterType="SanctionVO">
+		insert into SANCTION
+			( SANCTION_NO
+			, DECL_NO
+			, SANCTION_CODE
+			, SANCTION_DATE
+			, SERVANT_NO
+			)VALUES(
+			SEQ_SANCTION_NO.NEXTVAL
+			, #{declNo}
+			, #{sanctionCode}
+			, #{sanctionDate}
+			, #{servantNo}
+			)
+	</insert>
+	
+	<select id="selectInspectReviewCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+	    SELECT
+		    COUNT(*)
+		FROM
+		    QRNT Q
+		JOIN
+		    DECL D ON Q.DECL_NO = D.DECL_NO
+		JOIN
+			USER_TB U ON Q.SERVANT_NO = U.USER_NO
+		JOIN
+		    DECL_D DD ON D.DECL_D_NO = DD.DECL_D_NO
+		JOIN
+		    CONTRACT C ON DD.CONTRACT_NO = C.CONTRACT_NO
+		WHERE Q.SERVANT_NO = #{userNo} 
+		AND C.LAST_STATUS_CODE IN (14, 35)
+	    <include refid="inspectReviewSearch"/>
+	</select>
+	
+	<select id="selectInspectReviewAllCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+		SELECT
+		    COUNT(*)
+		FROM
+		    QRNT Q
+		JOIN
+		    DECL D ON Q.DECL_NO = D.DECL_NO
+		JOIN
+			USER_TB U ON Q.SERVANT_NO = U.USER_NO
+		JOIN
+		    DECL_D DD ON D.DECL_D_NO = DD.DECL_D_NO
+		JOIN
+		    CONTRACT C ON DD.CONTRACT_NO = C.CONTRACT_NO
+		WHERE C.LAST_STATUS_CODE IN (14, 35)
+        <include refid="inspectReviewSearch"/>
+	</select>
+	
+	<select id="selectInspectReviewList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="map">
+		SELECT *
+	    FROM (
+	        SELECT
+	            Q.DECL_NO
+	            , U.USER_NAME
+	            , P.EMP_NO
+	            , D.DECL_D_NO
+	            , C.CONTRACT_NO
+	            , Q.QRNT_RECEPT_DATE
+	            , Q.QRNT_ANTC
+	            , Q.QRNT_COMPLETION
+	            , Q.QRNT_STATUS_CODE
+	            , Q.QRNT_YN
+	            , Q.QRNT_TYPE
+	            , ROWNUM RN  
+	        FROM
+	            QRNT Q
+	        JOIN
+	            DECL D ON D.DECL_NO = Q.DECL_NO
+	        JOIN
+	            USER_TB U ON Q.SERVANT_NO = U.USER_NO
+	        JOIN
+	            DECL_D DD ON DD.DECL_D_NO = D.DECL_D_NO
+	        JOIN
+	            CONTRACT C ON C.CONTRACT_NO = DD.CONTRACT_NO
+	        JOIN 
+                PUBLIC_SERVANT P ON P.SERVANT_NO = U.USER_NO
+	        WHERE Q.SERVANT_NO = #{userNo}
+	        AND C.LAST_STATUS_CODE IN (14, 35)
+	        <include refid="inspectReviewSearch"/>
+	        ORDER BY
+	            <choose>
+	                <when test="sortColumn != null and sortColumn != ''">
+	                    ${sortColumn}
+	                </when>
+	                <otherwise>
+	                    Q.QRNT_ANTC
+	                </otherwise>
+	            </choose>
+	            <choose>
+	                <when test="sortDirection != null and sortDirection != ''">
+	                    ${sortDirection}
+	                </when>
+	                <otherwise>
+	                    DESC
+	                </otherwise>
+	            </choose>
+	        )  
+	    WHERE RN BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<select id="selectInspectReviewAllList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="Map">
+	    SELECT *
+	    FROM (
+	        SELECT
+	            Q.DECL_NO
+	            , U.USER_NAME
+	            , P.EMP_NO
+	            , D.DECL_D_NO
+	            , C.CONTRACT_NO
+	            , Q.QRNT_RECEPT_DATE
+	            , Q.QRNT_ANTC
+	            , Q.QRNT_COMPLETION
+	            , Q.QRNT_STATUS_CODE
+	            , Q.QRNT_YN
+	            , Q.QRNT_TYPE
+	            , ROWNUM RN  
+	        FROM
+	            QRNT Q
+	        JOIN
+	            DECL D ON D.DECL_NO = Q.DECL_NO
+	        JOIN
+	            USER_TB U ON Q.SERVANT_NO = U.USER_NO
+	        JOIN
+	            DECL_D DD ON DD.DECL_D_NO = D.DECL_D_NO
+	        JOIN
+	            CONTRACT C ON C.CONTRACT_NO = DD.CONTRACT_NO
+	        JOIN 
+                PUBLIC_SERVANT P ON P.SERVANT_NO = U.USER_NO
+	        WHERE C.LAST_STATUS_CODE IN (14, 35)
+	        <include refid="inspectReviewSearch"/>
+	        ORDER BY
+	            <choose>
+	                <when test="sortColumn != null and sortColumn != ''">
+	                    ${sortColumn}
+	                </when>
+	                <otherwise>
+	                    Q.QRNT_ANTC
+	                </otherwise>
+	            </choose>
+	            <choose>
+	                <when test="sortDirection != null and sortDirection != ''">
+	                    ${sortDirection}
+	                </when>
+	                <otherwise>
+	                    DESC
+	                </otherwise>
+	            </choose>
+	        )  
+	    WHERE RN BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+		<resultMap id="userDetailResultMap" type="kr.or.ddit.vo.UserVO">
+			<id property="userNo" column="U_USER_NO" />
+			    <result property="authCode" column="AUTH_CODE" />
+			    <result property="userId" column="USER_ID" />
+			    <result property="userPw" column="USER_PW" />
+			    <result property="userName" column="USER_NAME" />
+			    <result property="userTel" column="U_USER_TEL" />
+			    <result property="smsYn" column="U_SMS_YN" />
+			    <result property="userFax" column="U_USER_FAX" />
+			    <result property="userEmail" column="U_USER_EMAIL" />
+			    <result property="regDate" column="REG_DATE" />
+			    <result property="userStatus" column="U_USER_STATUS" />
+			    <result property="withdrawDate" column="WITHDRAW_DATE" />
+			    <result property="userEnable" column="CALCULATED_USER_ENABLE" />
+			    
+		    <association property="logistMngVO" javaType="kr.or.ddit.vo.LogistMngVO">
+		        <result property="logistMngNo" column="U_USER_NO" />
+		        <result property="businessNumber" column="LM_BUSINESS_NUMBER" />
+		        <result property="logistMngName" column="LOGIST_MNG_NAME" />
+		        <result property="logistMngPost" column="LOGIST_MNG_POST" />
+		        <result property="logistMngAddr" column="LOGIST_MNG_ADDR" />
+		        <result property="logistMngDetAddr" column="LOGIST_MNG_DET_ADDR" />
+		        <result property="logistMngTel" column="LM_LOGIST_MNG_TEL" />
+		        <result property="logistMngProfileImg" column="LOGIST_MNG_PROFILE_IMG" />
+		    </association>
+		
+		    <association property="consignorVO" javaType="kr.or.ddit.vo.ConsignorVO">
+		        <result property="userNo" column="U_USER_NO" />
+		        <result property="businessNumber" column="CO_BUSINESS_NUMBER" />
+		        <result property="consignorName" column="CONSIGNOR_NAME" />
+		        <result property="consignorPost" column="CONSIGNOR_POST" />
+		        <result property="consignorAddr" column="CONSIGNOR_ADDR" />
+		        <result property="consignorDetAddr" column="CONSIGNOR_DET_ADDR" />
+		        <result property="consignorTel" column="CO_CONSIGNOR_TEL" />
+		        <result property="consignorCustomsCode" column="CONSIGNOR_CUSTOMS_CODE" />
+		        <result property="consignorProfileImg" column="CONSIGNOR_PROFILE_IMG" />
+		    </association>
+		
+		    <association property="ccaVO" javaType="kr.or.ddit.vo.CCAVO">
+		        <result property="userNo" column="U_USER_NO" />
+		        <result property="ccaRegistrationNumber" column="CCA_REGISTRATION_NUMBER" />
+		        <result property="ccaName" column="CCA_NAME" />
+		        <result property="ccaPost" column="CCA_POST" />
+		        <result property="ccaAddr" column="CCA_ADDR" />
+		        <result property="ccaDetAddr" column="CCA_DET_ADDR" />
+		        <result property="ccaTel" column="C_CCA_TEL" />
+		        <result property="ccaProfileImg" column="CCA_PROFILE_IMG" />
+		        <result property="ccaSanctionScore" column="CCA_SANCTION_SCORE" />
+		        <collection property="specialty" resultMap="specialtyMap"></collection>
+		    </association>
+	</resultMap>
+	
+	<resultMap type="SpecialtyVO" id="specialtyMap">
+		<id property="specialtyNo" column="SPECIALTY_NO"/>
+		<result property="ccaNo" column="CCA_NO"/>
+		<collection property="specialtyCodeVO" resultMap="specialtyCodeMap"></collection>
+	</resultMap>
+
+	<resultMap type="kr.or.ddit.vo.SpecialtyCodeVO" id="specialtyCodeMap">
+			<id property="specialtyCode" column="SPECIALTY_CODE"/>
+			<result property="specialtyName" column="SPECIALTY_NAME"/>
+	</resultMap>
+	
+
+	<select id="userMngList" resultType="kr.or.ddit.vo.UserVO">
+    SELECT
+        U.USER_NO,
+        U.AUTH_CODE,
+        U.USER_ID,
+        U.USER_PW,
+        U.USER_NAME,
+        U.USER_TEL,
+        U.SMS_YN,
+        U.USER_FAX,
+        U.USER_EMAIL,
+        U.REG_DATE,
+        U.USER_STATUS,
+        U.WITHDRAW_DATE,
+        CASE
+            WHEN U.AUTH_CODE = 'ROLE_CCA' THEN C.CCA_NAME
+            WHEN U.AUTH_CODE = 'ROLE_CONSIGNOR' THEN CO.CONSIGNOR_NAME
+            WHEN U.AUTH_CODE = 'ROLE_LOGISTICS' THEN LM.LOGIST_MNG_NAME
+            ELSE NULL
+        END AS USER_ENABLE
+    FROM
+        USER_TB U
+    LEFT JOIN
+        CCA C ON U.USER_NO = C.USER_NO
+    LEFT JOIN
+        CONSIGNOR CO ON U.USER_NO = CO.USER_NO
+    LEFT JOIN
+        LOGIST_MNG LM ON U.USER_NO = LM.USER_NO
+        
+	WHERE 
+		AUTH_CODE NOT LIKE 'ROLE_SVT%'
+    ORDER BY 
+    	U.USER_NO DESC
+	</select>
+
+	<select id="userMngDetail" parameterType="int" resultMap="userDetailResultMap">
+		SELECT
+		
+		U.USER_NO AS U_USER_NO
+		, U.AUTH_CODE
+		, U.USER_ID
+		, U.USER_PW
+		, U.USER_NAME
+		, U.USER_TEL AS U_USER_TEL
+		, U.SMS_YN AS U_SMS_YN
+		, U.USER_FAX AS	U_USER_FAX
+		, U.USER_EMAIL AS U_USER_EMAIL
+		, U.REG_DATE
+		, U.USER_STATUS AS U_USER_STATUS
+		, U.WITHDRAW_DATE
+		
+		, CASE
+			WHEN U.AUTH_CODE = 'ROLE_LOGISTICS' THEN LM.LOGIST_MNG_NAME
+			WHEN U.AUTH_CODE = 'ROLE_CCA' THEN C.CCA_NAME
+			WHEN U.AUTH_CODE = 'ROLE_CONSIGNOR' THEN CO.CONSIGNOR_NAME
+		ELSE NULL
+		END AS CALCULATED_USER_ENABLE 
+		
+			, LM.BUSINESS_NUMBER AS LM_BUSINESS_NUMBER
+			, LM.LOGIST_MNG_NAME
+			, LM.LOGIST_MNG_POST
+			, LM.LOGIST_MNG_ADDR
+			, LM.LOGIST_MNG_DET_ADDR
+			, LM.LOGIST_MNG_TEL AS LM_LOGIST_MNG_TEL
+			, LM.LOGIST_MNG_PROFILE_IMG 
+			
+			, CO.BUSINESS_NUMBER AS CO_BUSINESS_NUMBER
+			, CO.CONSIGNOR_NAME
+			, CO.CONSIGNOR_POST
+			, CO.CONSIGNOR_ADDR
+			, CO.CONSIGNOR_DET_ADDR
+			, CO.CONSIGNOR_TEL AS CO_CONSIGNOR_TEL
+			, CO.CONSIGNOR_CUSTOMS_CODE
+			, CO.CONSIGNOR_PROFILE_IMG
+			
+			, C.CCA_REGISTRATION_NUMBER
+			, C.CCA_NAME
+			, C.CCA_POST
+			, C.CCA_ADDR
+			, C.CCA_DET_ADDR
+			, C.CCA_TEL AS C_CCA_TEL
+			, C.CCA_PROFILE_IMG
+			, C.CCA_SANCTION_SCORE
+			, SC.SPECIALTY_CODE
+			, SC.SPECIALTY_NAME
+			
+		FROM USER_TB U
+		
+		LEFT JOIN 
+			LOGIST_MNG LM ON U.USER_NO = LM.USER_NO 
+			
+		LEFT JOIN 
+			CONSIGNOR CO ON U.USER_NO = CO.USER_NO
+		
+		LEFT JOIN 
+			CCA C ON U.USER_NO = C.USER_NO 
+		
+		LEFT JOIN 
+			PUBLIC_SERVANT PS ON U.USER_NO = PS.SERVANT_NO
+		
+		LEFT JOIN
+			SPECIALTY S ON U.USER_NO = S.CCA_NO
+			
+		LEFT JOIN
+			SPECIALTY_CODE SC ON S.SPECIALTY_CODE = SC.SPECIALTY_CODE
+			
+		WHERE U.USER_NO = #{userNo}
+	</select>
+	
+	<select id="selectOneInprName" resultType="int">
+		SELECT INSPECTOR_NO
+		  FROM INSPECTOR
+		 ORDER BY DBMS_RANDOM.VALUE
+		 FETCH FIRST 1 ROWS ONLY
+	</select>
+	
+	<insert id="insertInpn" parameterType="Map">
+		INSERT INTO INSPECTION (
+			DECL_NO
+			, INSPECTOR_NO
+			, INSPECTION_RECEPT_DATE
+			, INSPECTION_ANTC_DATE
+			, INSPECTION_REAL_DATE
+			, INSPECTION_CLOSURE_YN
+			, INSPECTION_CRIME
+			, INSPECTION_DOT
+			, INSPECTION_YN
+	    ) VALUES (
+	    	#{declNo}
+	    	, #{inpNo}
+	    	, sysdate
+	    	, sysdate
+	    	, sysdate 
+	    	, #{inpClosure}
+	    	, #{inpCrime}
+	    	, #{inpDot}
+	    	, #{inpYn}
+	    )
+	</insert>
+	
+	<select id="getTarif" parameterType="int" resultType="int">
+		select
+			HS.HS_TARIFF_RATE
+		  from
+		  	PRODUCT p
+		  	LEFT JOIN HS_CODE HS ON P.HS_CODE = HS.HS_CODE
+		 where
+		 	PRODUCT_NO  = #{prodNo}
+	</select>
+	<insert id="insertTax" parameterType="TaxVO">
+		INSERT INTO TAX (
+		    TAX_NO,
+		    DECL_NO,
+		    TAX_AMOUNT,
+		    TAX_DEST_DATE,
+		    TAX_DEADLINE_DATE
+		) VALUES (
+		    TO_CHAR(SYSDATE, 'YYYY') || LPAD(SEQ_TAX_NO.NEXTVAL, 6, '0'),
+		    #{declNo},
+		    #{taxAmount},
+		    #{taxDestDate},
+		    #{taxDeadlineDate}
+		)
+	</insert>
+	<select id="selectBwhCount" parameterType="String" resultType="int">
+		select 
+			count(BW_ARRIVAL_DATE)
+		  from
+		  	BW
+		 where
+		 	DECL_NO =#{declNo}
+	</select>
+	<select id="selectQrntType" parameterType="String" resultType="String">
+			select
+			H.HS_CATEGORY
+		  from
+		  	CONTRACT C
+		  	join PRODUCT P on C.PRODUCT_NO = P.PRODUCT_NO
+            left join HS_CODE H on H.HS_CODE = P.HS_CODE
+		  where 
+		  	CONTRACT_NO = #{contractNo}
+	</select>
+	<insert id="insertQrnAppl" parameterType="QrntVO">
+		INSERT INTO QRNT (
+			DECL_NO
+			, SERVANT_NO
+			, QRNT_RECEPT_DATE
+			, QRNT_ANTC
+			, QRNT_STATUS_CODE
+			, QRNT_YN
+			, QRNT_TYPE
+			)VALUES (
+			#{declNo}
+			, #{servantNo}
+			, #{qrntReceptDate}
+			, #{qrntAntc}
+			, #{qrntStatusCode}
+			, #{qrntYn}
+			, #{qrntType}
+			)
+	</insert>
+	
+	<!-- 검사검역 신청 시 HC문서 생성 -->
+	<insert id="insertHcAppl" parameterType="kr.or.ddit.vo.QrntVO">
+		<selectKey keyProperty="hcNo" resultType="string" order="BEFORE">
+		SELECT
+            'HC-' || EXTRACT(YEAR FROM SYSDATE) || '-' ||
+            LPAD(TO_CHAR(COALESCE(MAX(TO_NUMBER(SUBSTR(HC_NO, -5))), 0) + 1), 5, '0')
+        FROM
+            HC
+        WHERE
+            HC_NO LIKE 'HC-' || EXTRACT(YEAR FROM SYSDATE) || '-%'
+		</selectKey>
+		INSERT INTO HC(
+			HC_NO
+			, DECL_NO
+		)VALUES (
+			#{hcNo}
+			, #{declNo}
+		)
+	</insert>
+	<!-- 통관의뢰 이력 추가 -->
+	<insert id="insertContractRecord" parameterType="Map">
+		INSERT INTO CONTRACT_RECORD (
+			CONTRACT_RECORD_NO
+			, CONTRACT_STATUS_CODE
+			, CONTRACT_NO
+			, CONTRACT_RECORD_REG_DATE
+	    ) VALUES (
+	    	SEQ_CONTRACT_RECORD_NO.NEXTVAL
+	    	, #{statusCode}
+	    	, #{contractNo}
+	    	, sysdate
+	    )
+	</insert>
+	
+	<update id="updateContract" parameterType="Map">
+		UPDATE CONTRACT
+		   SET LAST_STATUS_CODE = #{statusCode}
+		 WHERE CONTRACT_NO = #{contractNo}
+	</update>
+	<select id="selectInspectReviewDetail" parameterType="string" resultType="map">
+		SELECT
+		    Q.DECL_NO
+		    , C.CONTRACT_NO
+			, HC.HC_NO
+			, Q.QRNT_RECEPT_DATE
+			, U.USER_NAME AS CONSIGNOR_USER_NAME
+			, CO.CONSIGNOR_NAME
+			, CO.CONSIGNOR_ADDR
+			, CO.CONSIGNOR_DET_ADDR
+			, CO.CONSIGNOR_TEL
+			, P.PRODUCT_NAME
+			, P.HS_CODE
+			, H.HS_NCC_NAME
+			, H.HS_KR_NAME
+			, (P.PRODUCT_WEIGHT * P.PRODUCT_QTY) AS HC_WEIGHT
+			, P.PRODUCT_QTY
+			, H.HS_EN_NAME
+			, P.PRODUCT_ORIGIN
+			, Q.QRNT_TYPE
+			, QRU.USER_NAME AS SERVANT_NAME
+		FROM
+		    QRNT Q
+		JOIN
+			HC HC ON Q.DECL_NO = HC.DECL_NO
+		JOIN
+		    DECL D ON Q.DECL_NO = D.DECL_NO
+		JOIN
+		    DECL_D DD ON D.DECL_D_NO = DD.DECL_D_NO
+		JOIN
+		    CONTRACT C ON DD.CONTRACT_NO = C.CONTRACT_NO
+		JOIN
+		    CONSIGNOR CO ON C.CONSIGNOR_NO = CO.USER_NO
+		JOIN
+		    USER_TB U ON CO.USER_NO = U.USER_NO
+		JOIN
+		    PRODUCT P ON C.PRODUCT_NO = P.PRODUCT_NO
+		JOIN
+		    HS_CODE H ON P.HS_CODE = H.HS_CODE
+		JOIN
+			USER_TB QRU ON Q.SERVANT_NO = QRU.USER_NO
+		WHERE
+		    Q.DECL_NO = #{declNo}
+	</select>
+	
+	<select id="selectDiseaseListByHsCode" parameterType="string" resultType="map">
+		SELECT
+		    H.HS_CODE
+		    , H.HS_NCC
+		    , H.HS_KR_NAME
+		    , D.DISEASE_CODE
+		    , D.DISEASE_KR_NAME
+		    , D.DISEASE_LIVESTOCK
+		    , D.DISEASE_EN_NAME
+		FROM
+		    HS_CODE H
+		JOIN
+		    DISEASE D ON D.DISEASE_LIVESTOCK =
+		        CASE H.HS_NCC
+		            WHEN '11020201' THEN '소'
+		            WHEN '11020202' THEN '돼지'
+		            WHEN '11020203' THEN '닭'
+		        END
+		WHERE H.HS_NCC IN ('11020201', '11020202', '11020203')
+		AND H.HS_CODE = #{hsCode}
+	</select>
+	
+	<!-- 검사검역 결과페이지 -->
+	<update id="updateHcResult" parameterType="kr.or.ddit.vo.HCVO">
+		UPDATE HC
+		SET
+			HC_NAME = #{hcName}
+			, HC_ADDR = #{hcAddr}
+			, HC_COMMON_NAME = #{hcCommonName}
+			, HC_TEL = #{hcTel}
+			, HC_WEIGHT = #{hcWeight}
+			, HC_SN = #{hcSn}
+			, HC_QTY = #{hcQty}
+			, HC_ORIGIN = #{hcOrigin}
+			, HC_CONSIGNOR_NAME = #{hcConsignorName}
+			, HC_PRODUCT_NAME = #{hcProductName}
+			, HC_PACKAGING_CONDITION = #{hcPackagingCondition}
+			, HC_STORAGE_CONDITION = #{hcStorageCondition}
+			, HC_SENSORY_PROPERTIES = #{hcSensoryProperties}
+			, HC_SPOILAGE_CHECK = #{hcSpoilageCheck}
+			, HC_FOREIGN_SUBSTANCE_CHECK = #{hcForeignSubstanceCheck}
+			, HC_KR_NOTATION = #{hcKrNotation, jdbcType=BOOLEAN}
+			, HC_ETC = #{hcEtc}
+			, HC_YN = #{hcYn, jdbcType=BOOLEAN}
+			, DATE_OF_ISSUE = SYSDATE
+		WHERE 
+			HC_NO = #{hcNo}
+	</update>
+
+	<update id="updateQrntResult" parameterType="kr.or.ddit.vo.HCVO">
+		UPDATE QRNT
+		SET
+			QRNT_YN = #{hcYn, jdbcType=BOOLEAN}
+			, QRNT_COMPLETION = SYSDATE
+			, QRNT_STATUS_CODE = '검사 완료'
+		WHERE 
+			DECL_NO = #{declNo}
+	</update>
+	
+	<delete id="deleteHcDis" parameterType="string">
+		DELETE 
+		FROM 
+			HC_DIS 
+		WHERE 
+			HC_NO = #{hcNo}
+	</delete>
+	
+	<insert id="insertHcDis" parameterType="map">
+		INSERT INTO HC_DIS (
+			HC_NO
+			, DISEASE_CODE
+		)
+		<foreach collection="diseaseCodes" item="diseaseCode" separator=" UNION ALL ">
+			SELECT
+				#{hcNo}
+				, #{diseaseCode}
+			FROM DUAL
+		</foreach>
+	</insert>
+	
+	<!-- 검사검역 결과페이지에서 질병코드 보여주기 -->
+	<select id="selectDiseaseNamesByCodes" parameterType="java.util.List" resultType="map">
+		SELECT
+			DISEASE_CODE
+			, DISEASE_KR_NAME
+		FROM
+			DISEASE
+		WHERE
+			DISEASE_CODE IN
+			<foreach collection="list" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+	</select>
+	
+	<select id="selectInspectResult" parameterType="string" resultType="map">
+	    SELECT
+	        HC.HC_NO
+	        , U.USER_NAME AS CONSIGNOR_USER_NAME
+	        , CO.CONSIGNOR_NAME
+	        , CO.CONSIGNOR_ADDR
+	        , CO.CONSIGNOR_DET_ADDR
+	        , CO.CONSIGNOR_TEL
+	        , HC.HC_TEL
+	        , P.PRODUCT_NAME
+	        , HC.HC_WEIGHT
+	        , HC.HC_QTY
+	        , P.PRODUCT_ORIGIN
+	        , H.HS_NCC_NAME
+	        , H.HS_KR_NAME
+	        , H.HS_EN_NAME
+	        , HC.HC_PACKAGING_CONDITION
+	        , HC.HC_STORAGE_CONDITION
+	        , HC.HC_SENSORY_PROPERTIES
+	        , HC.HC_SPOILAGE_CHECK
+	        , HC.HC_FOREIGN_SUBSTANCE_CHECK
+	        , HC.HC_KR_NOTATION
+	        , HC.HC_ETC
+	        , HC.HC_YN
+	        , QRU.USER_NAME AS SERVANT_NAME
+	        , Q.QRNT_RECEPT_DATE
+	    FROM
+	        HC
+	    JOIN 
+	    	QRNT Q ON HC.DECL_NO = Q.DECL_NO
+	    JOIN 
+	    	USER_TB QRU ON Q.SERVANT_NO = QRU.USER_NO
+	    JOIN 
+	    	DECL D ON Q.DECL_NO = D.DECL_NO
+	    JOIN 
+	    	DECL_D DD ON D.DECL_D_NO = DD.DECL_D_NO
+	    JOIN 
+	    	CONTRACT C ON DD.CONTRACT_NO = C.CONTRACT_NO
+	    JOIN 
+	    	CONSIGNOR CO ON C.CONSIGNOR_NO = CO.USER_NO
+	    JOIN 
+	    	USER_TB U ON CO.USER_NO = U.USER_NO
+	    JOIN 
+	    	PRODUCT P ON C.PRODUCT_NO = P.PRODUCT_NO
+	    JOIN 
+	    	HS_CODE H ON P.HS_CODE = H.HS_CODE  
+	    WHERE
+	        HC.HC_NO = #{hcNo}
+	</select>
+	 
+	<select id="selectDiseaseNamesByHcNo" parameterType="string" resultType="map">
+		SELECT
+			D.DISEASE_KR_NAME
+		FROM
+			HC_DIS HCD
+		JOIN
+			DISEASE D ON HCD.DISEASE_CODE = D.DISEASE_CODE
+		WHERE
+			HCD.HC_NO = #{hcNo}
+	</select>
+	
+	<select id="selectContractNoByDeclNo" parameterType="string" resultType="string">
+		SELECT
+		    C.CONTRACT_NO
+		FROM
+		    CONTRACT C
+		JOIN
+		    DECL_D DD ON C.CONTRACT_NO = DD.CONTRACT_NO
+		JOIN
+		    DECL D ON DD.DECL_D_NO = D.DECL_D_NO
+		WHERE
+		    D.DECL_NO = #{declNo}
+	</select>
+	
+	<select id="selectLastStatusCode" parameterType="string" resultType="int">
+		SELECT
+			LAST_STATUS_CODE
+		FROM
+			CONTRACT
+		WHERE
+			CONTRACT_NO = #{contractNo}
+	</select>
+	
+	<update id="updateContractStatus" parameterType="map">
+		UPDATE CONTRACT
+		SET
+			LAST_STATUS_CODE = #{newStatusCode}
+		WHERE
+			CONTRACT_NO = #{contractNo}
+	</update>
+	
+	<insert id="insertContractStatusRecord" parameterType="map">
+		INSERT INTO CONTRACT_RECORD (
+			CONTRACT_RECORD_NO
+			, CONTRACT_NO
+			, CONTRACT_STATUS_CODE
+			, CONTRACT_RECORD_REG_DATE
+		) VALUES (
+			SEQ_CONTRACT_RECORD_NO.NEXTVAL
+			, #{contractNo}
+			, #{newStatusCode}
+			, SYSDATE
+		)
+	</insert>
+	
+	<select id="selectInspectHistoryCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+		SELECT
+		    COUNT(*)
+		FROM
+		    QRNT Q
+		JOIN
+		    DECL D ON Q.DECL_NO = D.DECL_NO
+		JOIN
+			USER_TB U ON Q.SERVANT_NO = U.USER_NO
+		JOIN
+		    DECL_D DD ON D.DECL_D_NO = DD.DECL_D_NO
+		JOIN
+		    CONTRACT C ON DD.CONTRACT_NO = C.CONTRACT_NO
+        JOIN
+            HC HC ON Q.DECL_NO = HC.DECL_NO
+		WHERE
+			(C.LAST_STATUS_CODE BETWEEN 15 AND 21
+            OR C.LAST_STATUS_CODE BETWEEN 36 AND 41)
+		AND HC.HC_NO IS NOT NULL
+        <include refid="inspectReviewSearch"/>
+	</select>
+	
+	<select id="selectInspectHistoryList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="Map">
+	    SELECT *
+	    FROM (
+	        SELECT
+	            ROW_NUMBER() OVER (
+	                ORDER BY
+	                <choose>
+	                    <when test="sortColumn != null and sortColumn != ''">${sortColumn}</when>
+	                    <otherwise>Q.QRNT_COMPLETION</otherwise>
+	                </choose>
+	                <choose>
+	                    <when test="sortDirection != null and sortDirection != ''">${sortDirection}</when>
+	                    <otherwise>DESC</otherwise>
+	                </choose>
+	            ) AS RNUM,
+	            Q.DECL_NO,
+	            D.DECL_D_NO,
+	            C.CONTRACT_NO,      -- 대리업무 번호
+	            U.USER_NAME,        -- 담당자 이름
+	            P.EMP_NO,           -- 담당자 사번
+	            Q.QRNT_TYPE,
+	            Q.QRNT_STATUS_CODE,
+	            Q.QRNT_YN,
+	            Q.QRNT_RECEPT_DATE,
+	            Q.QRNT_COMPLETION,
+	            HC.HC_NO
+	        FROM
+	            QRNT Q
+	        JOIN DECL D ON Q.DECL_NO = D.DECL_NO
+	        JOIN USER_TB U ON Q.SERVANT_NO = U.USER_NO
+	        JOIN HC ON Q.DECL_NO = HC.DECL_NO
+	        JOIN DECL_D DD ON D.DECL_D_NO = DD.DECL_D_NO
+	        JOIN CONTRACT C ON C.CONTRACT_NO = DD.CONTRACT_NO
+	        JOIN PUBLIC_SERVANT P ON P.SERVANT_NO = U.USER_NO
+	        WHERE
+	            (C.LAST_STATUS_CODE BETWEEN 15 AND 21 OR C.LAST_STATUS_CODE BETWEEN 36 AND 41)
+	        AND HC.HC_NO IS NOT NULL
+	        <include refid="inspectReviewSearch"/>
+	    )
+	    WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<insert id="insertCD" parameterType="kr.or.ddit.vo.CDVO" useGeneratedKeys="true">
+		<selectKey keyProperty="cdNo" resultType="string" order="BEFORE">
+	        SELECT
+	            CASE
+	                WHEN SUBSTR(#{contractNo}, 0, 3) = 'EXP' THEN
+	                    'EP-' || EXTRACT(YEAR FROM CURRENT_DATE) || '-' ||
+	                    (SELECT
+	                        LPAD( TO_CHAR(COALESCE(MAX(TO_NUMBER(SUBSTR(A.AA, -5))), 0) + 1), 5, '0' )
+	                    FROM
+	                        (SELECT SUBSTR(CD_NO,-5) as AA
+	                        FROM CD
+	                        WHERE CD_NO LIKE 'EP-'||EXTRACT(YEAR FROM CURRENT_DATE)||'-%') A)
+	                WHEN SUBSTR(#{contractNo}, 0, 3) = 'IMP' THEN
+	                    'IP-' || EXTRACT(YEAR FROM CURRENT_DATE) || '-' ||
+	                    (SELECT
+	                        LPAD( TO_CHAR(COALESCE(MAX(TO_NUMBER(SUBSTR(A.AA, -5))), 0) + 1), 5, '0' )
+	                    FROM
+	                        (SELECT SUBSTR(CD_NO,-5) as AA
+	                        FROM CD
+	                        WHERE CD_NO LIKE 'IP-'||EXTRACT(YEAR FROM CURRENT_DATE)||'-%') A)
+	                ELSE NULL
+	            END AS cd_no
+	        FROM DUAL
+	    </selectKey>
+	    INSERT INTO CD (
+	        CD_NO
+	        , DECL_NO
+	        , CD_DATE
+	        , CD_VALIDITY_YN
+	        , SEAL_NO
+	    ) VALUES (
+			#{cdNo}
+			, #{declNo }
+			, sysdate
+			, 1
+			, 1
+	    )
+	</insert>
+	<update id="updateEndDecl" parameterType="String">
+		UPDATE DECL
+		   SET DECL_YN = 1,
+			   DECL_REAL_DATE = SYSDATE
+		 WHERE EXISTS (
+			    SELECT 1
+			      FROM DECL_D DD
+			     WHERE DD.DECL_D_NO = DECL.DECL_D_NO
+			       AND DD.CONTRACT_NO = #{contractNo}
+		)
+	</update>
+
+	<select id="selectSanctionSAllCount" parameterType="PaginationInfoVO" resultType="int">
+		/** 검색조건과 정렬조건을 포함한 제재이력(제재건별) 전체 COUNT **/
+	    select 
+			COUNT(*)
+		from(
+			select 
+	    		a.SANCTION_DATE as "SANCTION_DATE"							/* 제재 발생일시 */
+	    		,a.SANCTION_NO as "SANCTION_NO"								/* 제재 번호 */
+	    		,b.SANCTION_NAME as "SANCTION_NAME"							/* 제재 사유 */
+	    		,b.SANCTION_SCORE as "SANCTION_SCORE"						/* 제재 점수 */
+	    		,c.DECL_D_NO as "DECL_D_NO"									/* 제재 발생업무번호 */
+			    ,d.USER_ID as "USER_ID"										/* 담당공무원 ID(사원번호) */
+			    ,d.USER_NAME as "USER_NAME"									/* 담당공무원 이름 */
+	    		,h.CCA_REGISTRATION_NUMBER as "CCA_REGISTRATION_NUMBERID"	/* 관세사 등록번호 */
+	    		,h.CCA_NAME as "CCA_NAME"									/* 관세사 사무소명 */
+	    		,h.USER_NO as "CCA_NO"										/* 관세사 사용자식별번호 */ 
+			from SANCTION a
+			join SANCTION_CODE b ON a.SANCTION_CODE = b.SANCTION_CODE
+			join DECL c ON a.DECL_NO = c.DECL_NO
+			join USER_TB d ON a.SERVANT_NO = d.USER_NO
+			join DECL_D e ON c.DECL_D_NO = e.DECL_D_NO
+			join CONTRACT f ON e.CONTRACT_NO = f.CONTRACT_NO
+			join CCA h ON f.CCA_NO = h.USER_NO
+			<include refid="sanctionSDynamic"/>
+		)
+	</select>
+	
+	<select id="selectSanctionSList" parameterType="PaginationInfoVO" resultType="Map">
+		/** 검색조건과 정렬조건을 포함한 제재이력(제재건별) 목록 조회 **/
+		select
+			*
+		from(
+			select 
+				SL.*, ROWNUM RN
+			from(
+				select 
+		    		a.SANCTION_DATE as "SANCTION_DATE"							/* 제재 발생일시 */
+		    		,a.SANCTION_NO as "SANCTION_NO"								/* 제재 번호 */
+		    		,b.SANCTION_NAME as "SANCTION_NAME"							/* 제재 사유 */
+		    		,b.SANCTION_SCORE as "SANCTION_SCORE"						/* 제재 점수 */
+		    		,c.DECL_D_NO as "DECL_D_NO"									/* 제재 발생업무번호 */
+				    ,d.USER_ID as "USER_ID"										/* 담당공무원 ID(사원번호) */
+				    ,d.USER_NAME as "USER_NAME"									/* 담당공무원 이름 */
+		    		,h.CCA_REGISTRATION_NUMBER as "CCA_REGISTRATION_NUMBERID"	/* 관세사 등록번호 */
+		    		,h.CCA_NAME as "CCA_NAME"									/* 관세사 사무소명 */
+				from SANCTION a
+				join SANCTION_CODE b ON a.SANCTION_CODE = b.SANCTION_CODE
+				join DECL c ON a.DECL_NO = c.DECL_NO
+				join USER_TB d ON a.SERVANT_NO = d.USER_NO
+				join DECL_D e ON c.DECL_D_NO = e.DECL_D_NO
+				join CONTRACT f ON e.CONTRACT_NO = f.CONTRACT_NO
+				join CCA h ON f.CCA_NO = h.USER_NO
+				<include refid="sanctionSDynamic"/>
+				order by SANCTION_DATE ${sortDirection}
+			) SL
+		)
+		where RN between #{startRow} and #{endRow}
+	</select>
+	
+	<select id="selectSanctionCAllCount" parameterType="PaginationInfoVO" resultType="int">
+		/** 검색조건과 정렬조건을 포함한 제재이력(관세사별) 전체 COUNT **/
+	    select 
+			COUNT(*)
+		from(
+			select
+				USER_NO								/* 관세사 사용자식별번호 */
+		    	, CCA_REGISTRATION_NUMBER			/* 관세사 등록번호 */
+		    	, CCA_NAME							/* 관세사 사무소명 */
+		    	, CCA_SANCTION_SCORE				/* 관세사 누적오류점수 */
+				, CCA_SANCTION_COUNT				/* 관세사 오류발생건수 */
+				, CCA_DECL_COUNT					/* 관세사 전체업무건수 */
+			from CCA
+			<include refid="sanctionCDynamic"/>
+		)
+	</select>
+	
+	<select id="selectSanctionCList" parameterType="PaginationInfoVO" resultType="Map">
+		/** 검색조건과 정렬조건을 포함한 제재이력(관세사별) 목록 조회 **/
+		select
+			*
+		from(
+			select 
+				SL.*, ROWNUM RN
+			from(
+				select
+					USER_NO								/* 관세사 사용자식별번호 */
+		    		, CCA_REGISTRATION_NUMBER			/* 관세사 등록번호 */
+		    		, CCA_NAME							/* 관세사 사무소명 */
+		    		, CCA_SANCTION_SCORE				/* 관세사 누적오류점수 */
+					, CCA_SANCTION_COUNT				/* 관세사 오류발생건수 */
+					, CCA_DECL_COUNT					/* 관세사 전체업무건수 */
+				from CCA
+				<include refid="sanctionCDynamic"/>
+				order by
+					<if test="sortColumn == 'ccaName'">
+						CCA_NAME
+					</if>
+					<if test="sortColumn == 'ccaSanctionScore'">
+						CCA_SANCTION_SCORE
+					</if>
+					<if test="sortColumn == 'ccaSanctionCount'">
+						CCA_SANCTION_COUNT
+					</if>
+					<if test="sortColumn == 'ccaDeclCount'">
+						CCA_DECL_COUNT
+					</if>
+					 ${sortDirection}
+			) SL
+		)
+		where RN between #{startRow} and #{endRow}
+	</select>
+	
+	<select id="selectSanctionDetailCount" parameterType="PaginationInfoVO" resultType="int">
+		/** 제재이력(관세사별) 상세 조회 count **/
+		SELECT
+		    COUNT(*)
+		FROM CONTRACT c
+		JOIN CONTRACT_RECORD r ON c.CONTRACT_NO = r.CONTRACT_NO
+		JOIN STATUS_CODE s ON c.LAST_STATUS_CODE = s.STATUS_CODE
+		JOIN DECL_D dd ON c.CONTRACT_NO = dd.CONTRACT_NO
+		JOIN DECL d ON dd.DECL_D_NO = d.DECL_D_NO
+		JOIN SANCTION st ON d.DECL_NO = st.DECL_NO
+		JOIN SANCTION_CODE sc ON st.SANCTION_CODE = sc.SANCTION_CODE
+		JOIN PUBLIC_SERVANT ps ON st.SERVANT_NO = ps.SERVANT_NO
+		JOIN DEPT dt ON ps.DEPT_CODE = dt.DEPT_CODE
+		JOIN JOB_GRADE j ON ps.JOB_GRADE_CODE = j.JOB_GRADE_CODE
+		JOIN USER_TB u ON st.SERVANT_NO = u.USER_NO
+		WHERE c.CCA_NO = #{searchWord}
+		order by st.SANCTION_DATE DESC
+	</select>
+	
+	<select id="selectSanctionDetail" parameterType="PaginationInfoVO" resultType="Map">
+		/** 제재이력(관세사별) 상세 조회 **/
+		select
+			*
+		from(
+			select 
+				SL.*, ROWNUM RN
+			from(
+				SELECT
+				    c.CONTRACT_NO
+				    , dd.DECL_D_NO
+				    , d.DECL_NO
+				    , s.STATUS_CODE_MEDIUM_CATEGORY_NAME
+				    , sc.SANCTION_NAME
+				    , sc.SANCTION_SCORE
+				    , st.SANCTION_DATE
+				    , st.SERVANT_NO
+				    , ps.EMP_NO
+				    , j.JOB_GRADE_NAME
+				    , dt.DEPT_NAME
+				    , dt.DEPT_TEL
+				    , u.USER_NAME
+				FROM CONTRACT c
+				JOIN CONTRACT_RECORD r ON c.CONTRACT_NO = r.CONTRACT_NO
+				JOIN STATUS_CODE s ON c.LAST_STATUS_CODE = s.STATUS_CODE
+				JOIN DECL_D dd ON c.CONTRACT_NO = dd.CONTRACT_NO
+				JOIN DECL d ON dd.DECL_D_NO = d.DECL_D_NO
+				JOIN SANCTION st ON d.DECL_NO = st.DECL_NO
+				JOIN SANCTION_CODE sc ON st.SANCTION_CODE = sc.SANCTION_CODE
+				JOIN PUBLIC_SERVANT ps ON st.SERVANT_NO = ps.SERVANT_NO
+				JOIN DEPT dt ON ps.DEPT_CODE = dt.DEPT_CODE
+				JOIN JOB_GRADE j ON ps.JOB_GRADE_CODE = j.JOB_GRADE_CODE
+				JOIN USER_TB u ON st.SERVANT_NO = u.USER_NO
+				WHERE c.CCA_NO = #{searchWord}
+				order by st.SANCTION_DATE DESC
+			) SL
+		)
+		where RN between #{startRow} and #{endRow}
+	</select>
+	
+	<!-- 사용자 계정 검색 COUNT -->
+	<select id="selectUserMngCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+	    SELECT
+	        COUNT(*)
+	    FROM
+	        USER_TB U
+	    LEFT JOIN
+	        CCA C ON U.USER_NO = C.USER_NO
+	    LEFT JOIN
+	        CONSIGNOR CO ON U.USER_NO = CO.USER_NO
+	    LEFT JOIN
+	        LOGIST_MNG LM ON U.USER_NO = LM.USER_NO
+	    WHERE
+	        AUTH_CODE NOT LIKE 'ROLE_SVT%'
+	    <include refid="userMngSearch"/>
+	</select>
+	
+	<!-- 사용자 계정 리스트 -->
+	<select id="selectUserMngList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="kr.or.ddit.vo.UserVO">
+	    SELECT *
+	    FROM (
+	        SELECT
+	            T.*,
+	            ROWNUM RN
+	        FROM (
+	            SELECT
+	                U.USER_NO
+	                , U.AUTH_CODE
+	                , U.USER_ID
+	                , U.USER_PW
+	                , U.USER_NAME
+	                , U.USER_TEL
+	                , U.SMS_YN
+	                , U.USER_FAX
+	                , U.USER_EMAIL
+	                , U.REG_DATE
+	                , U.USER_STATUS
+	                , U.WITHDRAW_DATE
+	                , CASE
+	                    WHEN U.AUTH_CODE = 'ROLE_CCA' THEN C.CCA_NAME
+	                    WHEN U.AUTH_CODE = 'ROLE_CONSIGNOR' THEN CO.CONSIGNOR_NAME
+	                    WHEN U.AUTH_CODE = 'ROLE_LOGISTICS' THEN LM.LOGIST_MNG_NAME
+	                    ELSE NULL
+	                END AS USER_ENABLE
+	            FROM
+	                USER_TB U
+	            LEFT JOIN
+	                CCA C ON U.USER_NO = C.USER_NO
+	            LEFT JOIN
+	                CONSIGNOR CO ON U.USER_NO = CO.USER_NO
+	            LEFT JOIN
+	                LOGIST_MNG LM ON U.USER_NO = LM.USER_NO
+	            WHERE
+	                AUTH_CODE NOT LIKE 'ROLE_SVT%'
+	            <include refid="userMngSearch"/>
+	            ORDER BY
+	                <choose>
+	                    <when test="sortColumn == 'USER_NO'"> U.USER_NO </when>
+	                    <when test="sortColumn == 'AUTH_CODE'"> U.AUTH_CODE </when>
+	                    <when test="sortColumn == 'USER_ID'"> U.USER_ID </when>
+	                    <when test="sortColumn == 'USER_NAME'"> U.USER_NAME </when>
+	                    <when test="sortColumn == 'USER_TEL'"> U.USER_TEL </when>
+	                    <when test="sortColumn == 'USER_EMAIL'"> U.USER_EMAIL </when>
+	                    <when test="sortColumn == 'REG_DATE'"> U.REG_DATE </when>
+	                    <when test="sortColumn == 'USER_STATUS'"> U.USER_STATUS </when>
+	                    <when test="sortColumn == 'WITHDRAW_DATE'"> U.WITHDRAW_DATE </when>
+	                    <otherwise> U.REG_DATE </otherwise>
+	                </choose>
+	                <choose>
+	                    <when test="sortDirection != null and sortDirection != ''">
+	                        ${sortDirection}
+	                    </when>
+	                    <otherwise>
+	                        DESC
+	                    </otherwise>
+	                </choose>
+	                , U.REG_DATE DESC ) T
+	    )
+	    WHERE RN BETWEEN #{startRow} AND #{endRow}
+	</select>
+	<select id="selectContractToCCA" parameterType="String">
+		select 
+			CCA_NO
+		FROM
+			CONTRACT
+		WHERE 
+			CONTRACT_NO = #{contractNo}
+	</select>
+	<update id="imposeSanctCCA">
+		update
+			CCA
+		SET
+			CCA_SANCTION_SCORE = CCA_SANCTION_SCORE + #{ccaSanctionScore}
+			, CCA_SANCTION_COUNT = CCA_SANCTION_COUNT + 1
+			, CCA_DECL_COUNT = CCA_DECL_COUNT + 1
+		WHERE
+			USER_NO = #{userNo}
+	</update>
+	<update id="updateRealDate">
+		update
+			DECL
+		SET
+			DECL_REAL_DATE = sysdate
+		WHERE
+			DECL_NO = #{declNo}
+	</update>
+	
+	<select id="qrntServantNo" parameterType="String" resultType="int">
+		SELECT 
+			SERVANT_NO
+	    FROM 
+	    	QRNT
+	    WHERE DECL_NO = #{declNo}
+	</select>
+	
+	<insert id="exaSanct2" parameterType="SanctionVO">
+		insert into SANCTION
+			( SANCTION_NO
+			, DECL_NO
+			, SANCTION_CODE
+			, SANCTION_DATE
+			, SERVANT_NO
+			)VALUES(
+			SEQ_SANCTION_NO.NEXTVAL
+			, #{declNo}
+			, #{sanctionCode}
+			, SYSDATE
+			, #{servantNo}
+			)
+	</insert>
+	
+	<!-- 사용자 회원 정보 수정 -->
+	<update id="updateUserMng" parameterType="UserVO">
+		UPDATE
+			USER_TB
+		SET
+	        USER_TEL = #{userTel}
+			, USER_FAX = #{userFax}
+			, USER_EMAIL = #{userEmail}
+			, SMS_YN = #{smsYn, jdbcType=BOOLEAN}
+			, EMAIL_YN = #{emailYn, jdbcType=BOOLEAN}
+			, USER_STATUS = #{userStatus, jdbcType=BOOLEAN}
+	        <if test="userStatus == true">
+	            , WITHDRAW_DATE = SYSDATE
+	        </if>
+	        <if test="userStatus == false">
+	            , WITHDRAW_DATE = NULL
+	        </if>
+	    WHERE USER_NO = #{userNo}
+	</update>
+	
+	<update id="updateCcaDetail" parameterType="CCAVO">
+		UPDATE 
+			CCA
+	    SET
+	        CCA_REGISTRATION_NUMBER = #{ccaRegistrationNumber}
+			, CCA_NAME = #{ccaName}
+			, CCA_TEL = #{ccaTel}
+			, CCA_ADDR = #{ccaAddr}
+			, CCA_DET_ADDR = #{ccaDetAddr}
+			, CCA_POST = #{ccaPost}
+	        <if test="ccaProfileImg != null and ccaProfileImg != ''">
+	            , CCA_PROFILE_IMG = #{ccaProfileImg}
+	        </if>
+	    WHERE USER_NO = #{userNo}
+	</update>
+	
+	<update id="updateConsignorDetail" parameterType="ConsignorVO">
+		UPDATE 
+			CONSIGNOR
+	    SET
+	        BUSINESS_NUMBER = #{businessNumber}
+			, CONSIGNOR_NAME = #{consignorName}
+			, CONSIGNOR_CUSTOMS_CODE = #{consignorCustomsCode}
+			, CONSIGNOR_TEL = #{consignorTel}
+			, CONSIGNOR_ADDR = #{consignorAddr}
+			, CONSIGNOR_DET_ADDR = #{consignorDetAddr}
+			, CONSIGNOR_POST = #{consignorPost}
+	        <if test="consignorProfileImg != null and consignorProfileImg != ''">
+	            , CONSIGNOR_PROFILE_IMG = #{consignorProfileImg}
+	        </if>
+	    WHERE USER_NO = #{userNo}
+	</update>
+	
+	<update id="updateLogistMngDetail" parameterType="LogistMngVO">
+		UPDATE 
+			LOGIST_MNG
+	    SET
+	        BUSINESS_NUMBER = #{businessNumber}
+			, LOGIST_MNG_NAME = #{logistMngName}
+			, LOGIST_MNG_TEL = #{logistMngTel}
+			, LOGIST_MNG_ADDR = #{logistMngAddr}
+			, LOGIST_MNG_DET_ADDR = #{logistMngDetAddr}
+			, LOGIST_MNG_POST = #{logistMngPost}
+	        <if test="logistMngProfileImg != null and logistMngProfileImg != ''">
+	            , LOGIST_MNG_PROFILE_IMG = #{logistMngProfileImg}
+	        </if>
+	    WHERE USER_NO = #{logistMngNo}
+	</update>
+	
+	<delete id="deleteCcaSpecialty" parameterType="int">
+        DELETE 
+        	FROM SPECIALTY
+        WHERE CCA_NO = #{userNo}
+    </delete>
+
+    <insert id="insertCcaSpecialty" parameterType="map">
+        INSERT INTO SPECIALTY (
+            SPECIALTY_NO
+            , CCA_NO
+            , SPECIALTY_CODE
+        ) VALUES (
+            SEQ_SPECIALTY_NO.NEXTVAL
+            , #{userNo}
+            , #{specialtyCode}
+        )
+    </insert>
+    
+    <select id="selectServantMngCount" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="int">
+        SELECT
+            COUNT(*)
+        FROM
+            USER_TB U
+		JOIN 
+			PUBLIC_SERVANT PS ON U.USER_NO = PS.SERVANT_NO
+		JOIN 
+			DEPT D ON PS.DEPT_CODE = D.DEPT_CODE
+		JOIN 
+			JOB_GRADE JG ON PS.JOB_GRADE_CODE = JG.JOB_GRADE_CODE
+        WHERE
+            U.AUTH_CODE LIKE 'ROLE_SVT%'
+        <include refid="servantMngSearch"/>
+    </select>
+
+	<select id="selectServantMngList" parameterType="kr.or.ddit.vo.PaginationInfoVO" resultType="kr.or.ddit.vo.UserVO">
+        SELECT
+            A.*
+        FROM (
+            SELECT
+                ROW_NUMBER() OVER (ORDER BY 
+                    <choose>
+                        <when test="sortColumn == 'USER_NAME'">U.USER_NAME</when>
+                        <when test="sortColumn == 'DEPT_NAME'">D.DEPT_NAME</when>
+                        <when test="sortColumn == 'USER_STATUS'">U.USER_STATUS</when>
+                        <otherwise>U.REG_DATE</otherwise>
+                    </choose>
+                    <choose>
+                        <when test="sortDirection == 'ASC'">ASC</when>
+                        <otherwise>DESC</otherwise>
+                    </choose>
+                ) AS RNUM
+				, U.USER_NO
+				, U.USER_NAME
+				, U.USER_EMAIL
+				, U.USER_TEL
+				, U.USER_STATUS
+				, U.REG_DATE
+				, D.DEPT_NAME
+				, JG.JOB_GRADE_NAME
+            FROM
+                USER_TB U
+			JOIN 
+				PUBLIC_SERVANT PS ON U.USER_NO = PS.SERVANT_NO
+			JOIN 
+				DEPT D ON PS.DEPT_CODE = D.DEPT_CODE
+			JOIN 
+				JOB_GRADE JG ON PS.JOB_GRADE_CODE = JG.JOB_GRADE_CODE
+            WHERE
+                U.AUTH_CODE LIKE 'ROLE_SVT%'
+            <include refid="servantMngSearch"/>
+        ) A
+        WHERE A.RNUM BETWEEN #{startRow} AND #{endRow}
+    </select>
+    
+    <resultMap id="servantDetailMap" type="kr.or.ddit.vo.UserVO">
+	    <id property="userNo" column="USER_NO"/>
+	    <result property="authCode" column="AUTH_CODE"/>
+	    <result property="userId" column="USER_ID"/>
+	    <result property="userName" column="USER_NAME"/>
+	    <result property="userTel" column="USER_TEL"/>
+	    <result property="userFax" column="USER_FAX"/>
+	    <result property="userEmail" column="USER_EMAIL"/>
+	    <result property="regDate" column="REG_DATE"/>
+	    <result property="userStatus" column="USER_STATUS"/>
+	    <result property="withdrawDate" column="WITHDRAW_DATE"/>
+	    <association property="servantVO" javaType="kr.or.ddit.vo.ServantVO">
+	        <id property="userNo" column="USER_NO"/>
+	        <result property="empNo" column="EMP_NO"/>
+	        <result property="jobGradeName" column="JOB_GRADE_NAME"/>
+	        <association property="deptVO" javaType="kr.or.ddit.vo.DeptVO">
+	            <id property="deptCode" column="DEPT_CODE"/>
+	            <result property="deptName" column="DEPT_NAME"/>
+	            <result property="deptTel" column="DEPT_TEL"/>
+	        </association>
+	    </association>
+	</resultMap>
+	
+	<select id="selectServantMngDetail" parameterType="int" resultMap="servantDetailMap">
+	    SELECT
+	        U.USER_NO, U.AUTH_CODE, U.USER_ID, U.USER_NAME, U.USER_TEL, U.USER_FAX, U.USER_EMAIL,
+	        U.REG_DATE, U.USER_STATUS, U.WITHDRAW_DATE,
+	        PS.EMP_NO,
+	        D.DEPT_CODE, D.DEPT_NAME, D.DEPT_TEL,
+	        JG.JOB_GRADE_NAME
+	    FROM
+	        USER_TB U
+	    JOIN
+	        PUBLIC_SERVANT PS ON U.USER_NO = PS.SERVANT_NO
+	    JOIN
+	        DEPT D ON PS.DEPT_CODE = D.DEPT_CODE
+	    JOIN
+	        JOB_GRADE JG ON PS.JOB_GRADE_CODE = JG.JOB_GRADE_CODE
+	    WHERE
+	        U.USER_NO = #{userNo}
+	</select>
+	
+	<update id="updateServantMng" parameterType="kr.or.ddit.vo.UserVO">
+	    UPDATE 
+	    	USER_TB
+	    SET
+	        USER_TEL = #{userTel}
+			, USER_EMAIL = #{userEmail}
+			, USER_FAX = #{userFax}
+			, USER_STATUS = 
+	            <choose>
+	                <when test="userStatus == true">1</when>
+	                <otherwise>0</otherwise>
+	            </choose>,
+	        WITHDRAW_DATE = 
+	            <choose>
+	                <when test="userStatus == true">SYSDATE</when>
+	                <otherwise>NULL</otherwise>
+	            </choose>
+	    WHERE
+	        USER_NO = #{userNo}
+	</update>
+	<select id="txWriteCheck" parameterType="String">
+		select
+			count(*)
+		  from
+		  	TAX
+		  where
+		  	DECL_NO = #{declNo}
+	</select>
+	
+	<select id="selectDeclNo" parameterType="String">
+		select
+			DECL_NO
+		  from
+		  	DECL
+		  where
+		  	DECL_D_NO = #{declDNo}
+	</select>
+	
+	<select id="selectCDDate" parameterType="int">
+		select
+			CD_DATE
+		  from
+		  	CD
+		  where
+		  	DECL_NO = #{declNo}
+	</select>
+</mapper>

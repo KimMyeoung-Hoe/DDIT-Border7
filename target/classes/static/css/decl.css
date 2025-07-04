@@ -1,0 +1,301 @@
+/* .container {
+	width: 800px;
+	background-color: #fff;
+	border: 1px solid #ddd;
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); 그림자 미세 조정
+	margin: 30px 0;
+	padding: 20px 25px; 좌우 패딩 미세 조정
+	box-sizing: border-box;
+} */
+
+.header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid #eee;
+	padding-bottom: 15px;
+	margin-bottom: 20px;
+	font-size: 14px;
+}
+
+.header h1 {
+	font-size: 24px;
+	color: #333;
+	margin: 0;
+	font-weight: bold;
+}
+
+.header-icons {
+	display: flex;
+	gap: 15px;
+	color: #666;
+}
+
+.header-icons span {
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+}
+
+.header-icons .icon-placeholder {
+	display: inline-block;
+	width: 16px; /* 아이콘 자리 */
+	height: 16px; /* 아이콘 자리 */
+	margin-right: 5px;
+	background-color: transparent; /* 아이콘 배경색 제거 */
+	border: 1px solid transparent; /* 아이콘 테두리 제거 */
+	vertical-align: middle;
+}
+
+.document-title {
+	text-align: center;
+	margin-bottom: 20px;
+	position: relative;
+	padding: 10px 0; /* 제목 섹션 상하 패딩 추가 */
+}
+
+.document-title .remark {
+	position: absolute;
+	top: 0;
+	right: 0;
+	font-size: 12px;
+	color: #888;
+	font-weight: normal;
+}
+
+.document-title h2 {
+	font-size: 26px;
+	font-weight: bold;
+	margin: 0;
+	color: #333;
+}
+
+.document-title .uni-pass-logo {
+	position: absolute;
+	left: 20px;
+	top: 50%;
+	transform: translateY(-50%);
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.document-title .logo-placeholder {
+	display: inline-block;
+	width: 30px; /* 로고 자리 */
+	height: 30px; /* 로고 자리 */
+	background-color: transparent; /* 로고 배경색 제거 */
+}
+
+.document-title .uni-pass-logo span {
+	font-size: 28px;
+	font-weight: bold;
+	color: #2a73d8;
+}
+
+.seal {
+	position: absolute;
+	right: 20px;
+	top: 50%;
+	transform: translateY(-50%);
+	padding: 5px 10px;
+	border: 1px solid #ccc;
+	font-size: 14px;
+	color: #555;
+	cursor: pointer;
+	background-color: #fcfcfc; /* 이미지와 유사한 배경색 */
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-bottom: 20px;
+}
+
+table th, table td {
+	border: 1px solid #ccc;
+	padding: 8px 10px;
+	text-align: left;
+	font-size: 13px;
+	vertical-align: middle; /* 텍스트 세로 중앙 정렬 */
+	height: 30px; /* 셀 높이 지정 (이미지 유사하게) */
+	box-sizing: border-box;
+}
+
+table th {
+	background-color: #f7f7f7; /* 이미지와 유사한 배경색 */
+	font-weight: normal;
+	color: #555;
+	width: 100px; /* 기본 너비 조정 */
+}
+
+table td {
+	background-color: #fff;
+	color: #333;
+}
+
+/* Specific column widths for info-table */
+table.info-table th:nth-child(odd) {
+	width: 100px;
+}
+
+table.info-table td:nth-child(odd) {
+	width: 250px;
+}
+
+table.info-table th:nth-child(even) {
+	width: 100px;
+}
+
+table.info-table td:nth-child(even) {
+	width: 250px;
+}
+
+.item-section {
+	margin-bottom: 0; /* 다음 섹션과의 마진 조절 */
+}
+
+.item-section h3 {
+	background-color: #eef2f8; /* 이미지와 유사한 밝은 파란색 계열 배경 */
+	padding: 8px 10px;
+	margin-top: 20px;
+	margin-bottom: 0;
+	font-size: 15px;
+	font-weight: bold;
+	border: 1px solid #ccc;
+	border-bottom: none;
+	color: #333;
+}
+
+.item-section table th {
+	background-color: #f7f7f7;
+}
+
+.item-section .sub-table th {
+	width: 100px; /* 품목 테이블의 th 너비 */
+}
+
+.item-section .sub-table td {
+	width: auto;
+}
+
+.item-section .amount-cell {
+	text-align: right;
+	background-color: #fcfcfc; /* 이미지와 유사한 배경색 */
+	font-weight: normal; /* 숫자는 기본 폰트 */
+}
+
+.item-section .red-text {
+	color: red;
+	font-weight: bold;
+}
+
+.total-amount-section {
+	display: flex;
+	border: 1px solid #ccc;
+	margin-bottom: 20px;
+}
+
+.total-amount-section .label {
+	flex: 0 0 120px; /* '총송장금액' 레이블 너비 고정 */
+	padding: 8px 10px;
+	background-color: #f7f7f7;
+	font-size: 13px;
+	color: #555;
+	border-right: 1px solid #ccc;
+	display: flex;
+	align-items: center; /* 텍스트 세로 중앙 정렬 */
+}
+
+.total-amount-section .value {
+	flex: 0 0 250px; /* '총송장금액' 값 너비 고정 */
+	padding: 8px 10px;
+	text-align: right;
+	font-weight: bold;
+	font-size: 14px;
+	background-color: #fcfcfc; /* 이미지와 유사한 배경색 */
+	border-right: 1px solid #ccc;
+	display: flex;
+	align-items: center;
+	justify-content: flex-end; /* 텍스트 오른쪽 정렬 */
+	color: #333;
+}
+
+.total-amount-section .note-label {
+	flex: 0 0 80px; /* '비고' 레이블 너비 고정 */
+	padding: 8px 10px;
+	background-color: #f7f7f7;
+	font-size: 13px;
+	color: #555;
+	border-right: 1px solid #ccc;
+	display: flex;
+	align-items: center;
+}
+
+.total-amount-section .note-value {
+	flex-grow: 1; /* 나머지 공간 차지 */
+	padding: 8px 10px;
+	background-color: #fff;
+	display: flex;
+	align-items: center;
+}
+
+.footer {
+	margin-top: 20px;
+	position: relative;
+	padding-bottom: 80px; /* 도장 공간 확보 */
+}
+
+.contact-info {
+	border: 1px solid #ccc;
+	padding: 10px;
+	font-size: 13px;
+	line-height: 1.5;
+	color: #333;
+	background-color: #fcfcfc; /* 이미지와 유사한 배경색 */
+}
+
+.contact-info span {
+	font-weight: bold;
+}
+
+.korea-seal {
+	position: absolute;
+	bottom: 0px;
+	right: 0px;
+	width: 100px;
+	height: 100px;
+	border: 2px solid #ff0000; /* 빨간색 테두리 */
+	border-radius: 50%;
+	display: flex;
+	flex-direction: column; /* 텍스트 세로 정렬 */
+	justify-content: center;
+	align-items: center;
+	font-size: 12px;
+	font-weight: bold;
+	color: #ff0000; /* 빨간색 텍스트 */
+	text-align: center;
+	line-height: 1.2;
+	padding: 5px;
+	box-sizing: border-box;
+	opacity: 0.7; /* 투명도 조절 */
+	transform: rotate(-15deg);
+	background-color: transparent; /* 배경색 투명 */
+}
+
+.korea-seal span {
+	display: block;
+	margin: 0;
+	padding: 0;
+}
+
+.disclaimer {
+	margin-top: 20px;
+	font-size: 12px;
+	color: #666;
+	line-height: 1.6;
+}
+
+.disclaimer strong {
+	color: #333;
+}

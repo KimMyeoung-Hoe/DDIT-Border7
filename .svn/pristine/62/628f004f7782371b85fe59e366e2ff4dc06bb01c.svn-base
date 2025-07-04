@@ -1,0 +1,128 @@
+package kr.or.ddit.controller;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import jakarta.servlet.http.HttpSession;
+import kr.or.ddit.service.IMyCalendarService;
+import kr.or.ddit.user.service.IUserService;
+import kr.or.ddit.vo.MyCalendarVO;
+import kr.or.ddit.vo.UserVO;
+
+@Controller
+@RequestMapping("/myPage")
+public class MyCalendarController {
+
+	@Autowired
+	private IMyCalendarService myCalendarService;
+	
+	@Autowired
+	private IUserService userService;
+	
+	/** 내 일정 화면 요청
+	 * @return "myPage/myCalendar"
+	 */
+	@GetMapping(value = "/myCalendar.do")
+	public String myCalendar() {
+		return "myPage/myCalendar";
+	}
+	
+	/** 본인 일정 조회 기능
+	 * @param session 세션에 저장된 로그인사용자 정보 가져오기 위함
+	 * @return vo 로그인사용자의 전체 일정VO
+	 * @throws Exception
+	 */
+	@RequestMapping("/calendarList")
+	@ResponseBody
+	public List<MyCalendarVO> CalendarList(HttpSession session) throws Exception {
+		// session에 저장된 로그인사용자ID를 통해 유저식별번호를 가져옴
+		String userId = (String)session.getAttribute("userId");
+		int userNo = userService.selectUserNo(userId);
+		
+		// userNo를 서비스로 넘겨서 해당 userNo에 해당하는 일정만 List로 받아옴
+		List<MyCalendarVO> vo = myCalendarService.calendarList(userNo);
+		return vo;
+	}
+	
+	/** 일정 추가 기능
+	 * @param map 로그인사용자가 입력한 일정 항목 값
+	 * @return vo 
+	 * @throws Exception
+	 */
+	@PostMapping("/calendarInsert")
+	@ResponseBody
+	public MyCalendarVO CalendarInsert(HttpSession session, @RequestBody Map<String, Object> map) throws Exception {
+		String userId = (String)session.getAttribute("userId");
+		UserVO userVO = userService.userInfo(userId);
+		int userNo = userVO.getUserNo();
+		
+		MyCalendarVO vo = new MyCalendarVO();
+		vo.setUserNo(userNo);
+		vo.setCalendarTitle((String) map.get("title"));
+		vo.setCalendarStrDate((String) map.get("start"));
+		vo.setCalendarEndDate((String) map.get("end"));
+		vo.setCalendarAllYn((Boolean) map.get("allYn"));
+		vo.setCalendarType((String) map.get("type"));
+		vo.setCalendarColor((String) map.get("color"));
+		
+		myCalendarService.calendarInsert(vo);
+
+		return vo;
+	}
+	
+	/** 일정 수정 기능
+	 * @param no
+	 * @param map
+	 * @return
+	 */
+	@PutMapping("/calendarUpdate/{no}")
+	@ResponseBody
+	public String CalendarUpdate(@PathVariable String no, @RequestBody Map<String, Object> map) {
+		MyCalendarVO vo = new MyCalendarVO();
+		vo.setCalendarNo(Integer.valueOf(no));
+		vo.setCalendarTitle((String) map.get("title"));
+		vo.setCalendarStrDate((String) map.get("start"));
+		vo.setCalendarEndDate((String) map.get("end"));
+		vo.setCalendarAllYn((Boolean) map.get("allYn"));
+		vo.setCalendarType((String) map.get("type"));
+		vo.setCalendarColor((String) map.get("color"));
+		
+		try {
+			myCalendarService.calendarUpdate(vo);
+			return "success";
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "fail";
+		}
+	}
+	
+	/** 일정 삭제 기능
+	 * @param no
+	 * @return
+	 * @throws Exception
+	 */
+	@DeleteMapping("/calendarDelete")
+	@ResponseBody
+	public String CalendarDelete(@RequestParam int no) throws Exception {
+		try {
+			myCalendarService.calendarDelete(no);
+			return "success";
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "fail";
+		}
+	}
+
+}

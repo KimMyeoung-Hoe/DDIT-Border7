@@ -1,0 +1,586 @@
+<%@page import="kr.or.ddit.vo.UserVO"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.fmt" prefix="fmt" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec" %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>물류창고 상세 페이지</title>
+<%@ include file="../modules/header.jsp" %>
+<%@ include file="../modules/sidebar.jsp" %>
+<%@ include file="../modules/modal.jsp" %>
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<sec:authentication property="principal" var="princ"/>
+<c:set value="${princ.user }" var="userVO"></c:set>
+<style type="text/css">
+.pagination .page-link {
+  border-radius: 999px !important;
+}
+
+</style>
+</head>
+<body>
+	<div class="app-container">
+		<main class="main-content-area p-3">
+			   <!-- 브레드크럼 엘리먼트 -->
+				<div class="content-header">
+				   <div class="breadcrumb-warp">
+				      <div class="col-sm-12">
+				         <ol class="breadcrumb">
+				            <li class="breadcrumb-item"><a href="/">Home</a></li>
+				            <c:if test="${param.from == 'list'}">
+				            	<li class="breadcrumb-item"><a href="/logistics/myWarehouse.do?userId=${userVO.userId }">내 물류창고 관리</a></li>
+				            </c:if>
+				            <c:if test="${param.from != 'list'}">
+				            	<li class="breadcrumb-item"><a href="/logistics/myOrder.do">내 적재신청 관리</a></li>
+				            </c:if>
+				            <li class="breadcrumb-item"><a href="/logistics/warehouseDetail.do?whNo=${whNo }">물류창고 상세</a></li>
+				         </ol>
+				      </div>
+				   </div>
+				 <div class="content-title">내 물류창고 상세페이지</div>
+				   <p class="desc">창고의 기본정보와 적재된 물품의 상세사항을 볼수있습니다</p>
+				</div>
+				<!-- 브레드크럼 엘리먼트 끝 -->
+			<div class="section">
+                    <div class="info-Section" id="warehouseBasicInfo">
+  							<div class="info-card">
+	                            <div class="info-row">
+									<span class="card-title"><i class="fas fa-warehouse"></i> 창고 기본 정보</span>
+								</div>
+							
+								<div class="info-row">
+									<span class="info-label">창고 이름</span> 
+									<span class="info-value">${warehouseVO.whName }</span>
+								</div>
+								
+								<div class="info-row">
+									<span class="info-label">창고 주소</span> 
+									<span class="info-value">${warehouseVO.whAddr} ${warehouseVO.whDetailAddr}</span>
+								</div>
+								
+								<div class="info-row">
+									<span class="info-label">창고 종류</span> 
+									<span class="info-value">${warehouseVO.whType}</span>
+								</div>
+								
+								<div class="info-row">
+									<span class="info-label">창고 크기 (CBM)</span> 
+									<span class="info-value">${warehouseVO.whVolume} CBM</span>
+								</div>
+								
+								<div class="info-row">
+									<span class="info-label">창고 사용 가능 여부</span>
+									  	<c:if test="${warehouseVO.whUseYn}">
+	                                        <span class="info-value">사용 가능</span>
+	                                	</c:if>	
+	                                	<c:if test="${!warehouseVO.whUseYn }">
+	                                        <span class="info-value">사용 불가능</span>
+	                                    </c:if>   
+								</div>
+	                        	
+	                        	<div class="info-row">
+									<span class="info-label">창고 이용금액(1CBM 당)</span> 
+									<span class="info-value"><fmt:formatNumber pattern="#,##0" value="${warehouseVO.whPrice}"/> 원/ 1개월</span>
+								</div>
+	   
+                            </div>
+                            <c:if test="${param.from == 'list'}">
+			                    <div class="d-flex justify-content-end">
+									<button type="button" class="btn btn-info me-2" id="openModifyModalBtn">수정</button>
+									<button type="button" class="btn btn-danger" id="deleteBtn">삭제</button>
+								</div>
+							</c:if>
+                        </div>
+                    </div>
+                <br/>
+
+                <div class="section">
+	                <h3><i class="fas fa-box-open"></i> 적재 물품 상세</h3>
+	                <p class="text-muted" style="font-size: small;">현재상태관리 가능(입고<->출고)</p>
+	                <div class="search-filter-section">
+	                	<div class="filter-group">
+	                		<select class="form-select" id="searchType" >
+					     	 <option>
+					     		검색 타입선택
+					         </option>
+					         <option value="PRODUCT_NAME" <c:if test="${searchType == 'PRODUCT_NAME'}">selected</c:if>>
+					         	제품명
+					         </option>
+					         <option value="STOWAGE_DATE" <c:if test="${searchType == 'STOWAGE_DATE'}">selected</c:if>>
+					        	입고일
+					         </option>
+					         <option value="WH_DETAIL_STATUS_CODE" <c:if test="${searchType == 'WH_DETAIL_STATUS_CODE'}">selected</c:if>>
+					        	물품 상태
+					         </option>
+					      </select>
+	                	</div>
+					   <div class="search-input-wrapper">
+					      <div class="search-input-icon"></div>
+					      <input type="text" value="${searchWord }" class="form-input search-input" placeholder="제품명, 입고일, 물품 상태(입고완료,출고완료) 검색">
+					   </div>
+					   <div class="filter-group">
+					      <select class="form-select" id="sortColumn1">
+					         <option>
+					     		정렬 목록
+					         </option>
+					         <option value="a.WH_LOADING_DATE" <c:if test="${fn:startsWith(sortColumn,'a.WH_LOADING_DATE')}">selected</c:if>>
+					         	
+					         	적재일자
+					         </option>
+					         <option value="f.PRODUCT_QTY" <c:if test="${fn:startsWith(sortColumn,'f.PRODUCT_QTY')}">selected</c:if>>
+					         	물품 수량
+					         </option>
+					         <option value="f.PRODUCT_VOLUME" <c:if test="${fn:startsWith(sortColumn,'f.PRODUCT_VOLUME')}">selected</c:if>>
+					         	총부피
+					         </option>
+					      </select>
+					      <select class="form-select" id="sortColumn2">
+					         <option>
+					     		정렬 방향
+					         </option>
+					         <option value="ASC" <c:if test="${fn:endsWith(sortColumn,'ASC')}">selected</c:if>>
+					         	오름차순 정렬
+					         </option>
+					         <option value="DESC"<c:if test="${fn:endsWith(sortColumn,'DESC')}">selected</c:if>>
+					         	내림차순 정렬
+					         </option>
+					      </select>
+					      <button class="btn btn-primary" id="searchBtn">검색</button>
+					   </div>
+					</div>
+					
+					<div class="table-section">
+  						<table class="data-table">
+  							<tbody>
+  								<tr>
+  									<th>적재 신청 번호</th>
+  									<th>관세대리업무 계약번호</th>
+  									<th>제품명</th>
+  									<th>수량</th>
+  									<th>총 부피</th>
+  									<th>물품 가격</th>
+  									<th>입고일</th>
+  									<th>현재 상태</th>
+  									<th>필증 유효 여부</th>
+  								</tr>
+								<c:forEach var="whDetail" items="${whDetList }" varStatus="whDetailStatus">
+									<tr class="updateStatus" >
+										<td>${whDetail.stowageVO.stowageNo }</td>
+										<td>${whDetail.stowageVO.contractNo }</td>
+										<td>${whDetail.productVO.productName }</td>
+										<td>${whDetail.productVO.productQty } 개</td> 
+										<td><fmt:formatNumber pattern="#0.00" value="${whDetail.productVO.productVolume * whDetail.productVO.productQty}"/> CBM</td>
+										<td><fmt:formatNumber pattern="#,##0" value="${whDetail.productVO.productPrice *whDetail.productVO.productQty }" />  원</td>
+										<td>${whDetail.whLoadingDate }</td>
+										<td data-wh-detail-no="${whDetail.whDetailNo}">
+										    <select class="status-select form-select">
+										    	<option value="입고대기" ${whDetail.whDetailStatusCode eq '입고대기' ? 'selected' : ''}>입고대기</option>
+										        <option value="입고완료" ${whDetail.whDetailStatusCode eq '입고완료' ? 'selected' : ''}>입고완료</option>
+										        <option value="출고완료" ${whDetail.whDetailStatusCode eq '출고완료' ? 'selected' : ''}>출고완료</option>
+										    </select>
+										</td>
+										<c:choose>
+											<c:when test="${whDetail.cdVO.cdValidityYn}">
+												<td>필증유효</td>
+											</c:when>
+											<c:otherwise>
+												<td>필증이 유효하지않습니다</td>
+											</c:otherwise>
+										</c:choose>
+									</tr>
+								</c:forEach>
+							</tbody>
+						</table>
+						<c:if test="${empty whDetList}">
+                           	<p class="text-muted" style="text-align: center; ">이 창고에 적재된 물품이 없습니다.</p>
+                       	</c:if>
+					</div>
+					<!-- footer -->
+					<div class="table-footer">
+						<div class="d-flex justify-content-center mt-4">
+						    <ul class="pagination">
+						        <c:if test="${paginationInfo.startPage > 1}">
+						            <li class="page-item">
+						                <a class="page-link page-link-text" href="#" data-page="${paginationInfo.startPage - paginationInfo.blockSize}">이전</a>
+						            </li>
+						        </c:if>
+						
+						        <c:forEach var="i" begin="${paginationInfo.startPage}" end="${paginationInfo.endPage < paginationInfo.totalPage ? paginationInfo.endPage : paginationInfo.totalPage}">
+						            <li class="page-item ${i == paginationInfo.currentPage ? 'active' : ''}">
+						                <a class="page-link" href="#" data-page="${i}">${i}</a>
+						            </li>
+						        </c:forEach>
+						
+						        <c:if test="${paginationInfo.endPage < paginationInfo.totalPage}">
+						            <li class="page-item">
+						                <a class="page-link page-link-text" href="#" data-page="${paginationInfo.endPage + 1}">다음</a>
+						            </li>
+						        </c:if>
+						    </ul>
+						</div>
+				    </div>
+				    <!-- footer 끝 -->	
+			</div>
+		</main>
+	</div>
+<!-- 수정모달 -->	
+<div class="modal fade" id="warehouseModifyModal" tabindex="-1" aria-labelledby="whModifyModalLabel">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="whModifyModalLabel">컨테이너 정보 수정</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="whModifyForm">
+          <input type="hidden" id="modifyWhNo" name="whNo"> 
+          <div class="mb-3">
+            <label for="modifyWhName" class="form-label">물류창고 이름</label> 
+            <input type="text" class="form-control" id="modifyWhName" name="whName" required>
+          </div>
+          <div class="mb-3">
+            <label for="modifyWhType" class="form-label">물류창고 타입</label> 
+            <input type="text" class="form-control" id="modifyWhType" name="whType" value="${warehouseVO.whType }"  required >
+          </div>
+          <div class="mb-3">
+            <label for="modifyWhVolume" class="form-label">물류창고 크기(CBM)</label> 
+            <input type="text" class="form-control" id="modifyWhVolume" name="whVolume" value="${warehouseVO.whVolume }" required>
+          </div>
+          
+          <div class="mb-3">
+   			<label for="modifyWhPrice" class="form-label">창고사용 금액</label>
+   			<input type="number" class="form-control" id="modifyWhPrice" name="whPrice" required="required" value="${warehouseVO.whPrice }">
+          </div>
+          <div class="mb-3 form-check">
+          	<input type="hidden" name="WhUseYn" value="false"> <%-- name 속성 변경 --%>
+          	<input type="checkbox" class="form-check-input" id="modifyWhUseYn" name="whUseYn" value="${warehouseVO.whUseYn }" checked> 
+            <label class="form-check-label" for="modifyWhUseYn">사용 상태 (체크 시 사용, 미체크시 사용불가)</label> 
+          </div>
+      	  <div class="mb-3">
+      		<input type="hidden" name="whNo" value="${warehouseVO.whNo }"> 
+            나머지 기본 정보는 수정불가능합니다
+      	  </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary" id="submitModifyWhBtn">수정</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>	
+<!-- 상태변경 모달 -->		
+<div class="modal fade" id="carrierSelectModal" tabindex="-1" aria-labelledby="carrierSelectModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="carrierSelectModalLabel">입고 차량 운전자 선택</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th style="text-align: center;">소속</th>
+              <th>운전자명</th>
+              <th>연락처</th>
+              <th style="text-align: center;">선택</th>
+            </tr>
+          </thead>
+          <tbody>
+            <c:forEach var="driver" items="${userVO.carrier}">
+              <tr>
+              	<td style="text-align: center;">${driver.affiliation }</td>
+                <td>${driver.name}</td>
+                <td>${driver.phone}</td>
+                <td style="text-align: center;">
+                  <button type="button" class="btn btn-sm btn-primary select-carrier-btn"
+                          data-name="${driver.name}" data-phone="${driver.phone}">선택</button>
+                </td>
+              </tr>
+            </c:forEach>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+$(function() {
+	
+// ------------------------------------------------------------
+    // 상세항목의 물품 상태 변경 적용 버튼 클릭 이벤트 (AJAX 요청)
+	$('.status-select').on('change', function () {
+		const whDetailNo = $(this).closest("td").data("whDetailNo");
+	    const newStatus = $(this).val();
+	    let carrier = null;
+	
+	    if (!newStatus) {
+	    	alertify.error("변경할 상태를 선택해주세요.");
+	        return;
+	    }
+	
+	    // 입고완료 상태일 경우 모달로 운전자 선택 먼저
+        if (newStatus === "입고완료") {
+            $('#carrierSelectModal').modal('show');
+
+            // 모달 내에서 운전자 선택 후 상태 변경 진행
+            $(document).off('click.selectCarrier').on('click.selectCarrier', '.select-carrier-btn', function () {
+                carrier = $(this).data('name');
+                $('#carrierSelectModal').modal('hide');
+                confirmAndSend(whDetailNo, newStatus, carrier);
+            });
+
+        } else {
+            // 다른 상태는 운전자 선택 없이 바로 상태 변경
+            confirmAndSend(whDetailNo, newStatus, carrier);
+        }
+    });
+
+    // 상태 변경 확인 → Ajax 전송 함수
+    function confirmAndSend(whDetailNo, newStatus, carrier) {
+        $.confirm({
+            title: '상태 변경 확인',
+            content: `물품의 상태를 '<strong>\${newStatus}</strong>' (으)로 변경하시겠습니까?`,
+            buttons: {
+                확인: {
+                    btnClass: 'btn-primary',
+                    action: function () {
+                        $.ajax({
+                            url: "<%=request.getContextPath()%>/logistics/updateWhDetailStatus.do",
+                            type: "POST",
+                            contentType: "application/json",
+                            data: JSON.stringify({
+                            	whDetailNo: whDetailNo,
+                                whDetailStatusCode: newStatus,
+                                carrier: carrier
+                            }),
+                            dataType: "text",
+                            success: function (cnt) {
+                                if (cnt > 0) {
+                                    $.alert({
+                                        title: '완료',
+                                        content: '업데이트 완료!',
+                                        onClose: function () {
+                                            location.reload();
+                                        }
+                                    });
+                                } else {
+                                    $.alert("상태 변경 실패: " + cnt);
+                                }
+                            },
+                            error: function () {
+                                $.alert("상태 변경 중 오류가 발생했습니다.");
+                            }
+                        });
+                    }
+                },
+                취소: {
+                    btnClass: 'btn-red',
+                    action: function () {}
+                }
+            }
+        });
+    }
+
+
+//-----------------------------------------------------------    
+    // 수정 버튼 이벤트
+    $("#openModifyModalBtn").on('click',()=>{
+    	
+    	var whNo = `${warehouseVO.whNo}`;
+    	var whType = `${warehouseVO.whType}`;
+    	var whName = `${warehouseVO.whName}`;
+    	var whVolume = `${warehouseVO.whVolume}`;
+    	var whUseYn = `${warehouseVO.whUseYn}`;
+    	
+    	$('#modifyWhNo').val(whNo);
+        $('#modifyWhName').val(whName);
+        // select 태그의 경우, .val()로 값을 설정한 후 .prop('selected', true)로 해당 옵션을 선택 상태로 만듭니다.
+        $('#modifyWhType').val(whType); // Bootstrap 5 select는 이 방식으로도 잘 작동합니다.
+        $('#modifyWhVolume').val(whVolume);
+        
+        
+        if (!whUseYn) { 
+            $('#modifyClosureYn').prop('checked', true);
+        } else {
+            $('#modifyClosureYn').prop('checked', false);
+        }
+		
+        $('#warehouseModifyModal').modal('show');
+        
+    });
+    // 수정 완료 버튼 이벤트
+    $('#submitModifyWhBtn').on('click', function(){
+    	
+    	if (!$("#modifyWhName").val()) { alertify.error("창고이름를 입력해주세요!"); $('#modifyWhName').focus(); return; }
+		if (!$("#modifyWhType").val()) { alertify.error("창고 종류를 입력해 주세요."); $('#modifyWhType').focus(); return; }
+		if (!$("#modifyWhVolume").val()) { alertify.error("창고 크기을 입력해 주세요."); $('#modifyWhVolume').focus(); return; }
+		if (!$("#modifyWhPrice").val()) { alertify.error("창고 이용금액을 입력해 주세요."); $('#modifyWhPrice').focus(); return; }
+		
+		$("#modifyWhUseYn").change(function(){
+			  $("input[name='whUseYn'][type='hidden']").val(this.checked ? true : false);
+		});
+		
+    	
+    	const formElement = document.querySelector('#whModifyForm');
+    	console.log(formElement);
+		const formData = new FormData(formElement);
+	  	console.log(formData);	
+		
+	  	$.ajax({
+	  		url : "<%= request.getContextPath()%>/logistics/updateWh.do",
+	  		type : "POST", 
+	  		processData: false, 
+	        contentType: false,
+	  		data : formData,
+	  		dataType : "JSON",
+			success : function(response){
+				console.log(response)
+				alertify.success("창고 기본 정보가 성공적으로 업데이트 되었습니다!")
+				$('#warehouseModifyModal').modal('hide');
+				location.reload();
+			},
+			error: function(xhr, status, error) {
+                console.error("AJAX 오류:", error);
+                alertify.error("업데이트 중 오류가 발생했습니다.");
+            }
+	  	});
+    });
+//--------------------------------------------------------
+// 삭제버튼이벤트
+  $('#deleteBtn').on('click', function () {
+    var whNo = `${mainWarehouse.whNo}`;
+    var userId = `${userVO.userId}`;
+
+    $.confirm({
+        title: '삭제 확인',
+        content: '정말 삭제하시겠습니까?',
+        buttons: {
+            확인: {
+                btnClass: 'btn-primary',
+                action: function () {
+                    $.ajax({
+                        url: "<%= request.getContextPath()%>/logistics/deleteWh.do",
+                        type: "POST",
+                        contentType: "application/json",
+                        data: JSON.stringify({
+                            closureYn: true,
+                            whNo: whNo
+                        }),
+                        dataType: "json",
+                        success: function (response) {
+                            $.alert({
+                                title: '알림',
+                                content: response.msg,
+                                onClose: function () {
+                                    if (response.result === 1) {
+                                        window.location.href = "<%=request.getContextPath()%>/logistics/myWarehouse.do?userId=" + userId;
+                                    }
+                                }
+                            });
+                        },
+                        error: function () {
+                            $.alert('삭제 중 오류가 발생했습니다.');
+                        }
+                    });
+                }
+            },
+            취소: {
+            	btnClass: 'btn-red',
+            	action: function () {}
+
+            }
+        }
+    });
+});
+
+
+//------------------------------------------------------------------------------------
+	// 검색 이벤트
+	$('#searchBtn').on('click',function(){
+		
+		var contextPath = "<%=request.getContextPath()%>"; 
+	    var searchParams = new URLSearchParams();
+	    var whNo = "${whNo}";
+		
+		var searchWord = $(".search-input").val();
+        var searchType = $("#searchType").val();
+        var sortColumn1 = $("#sortColumn1").val();
+		var sortColumn2 = $("#sortColumn2").val();
+		
+		var sortColumn = sortColumn1+" "+sortColumn2;
+        
+		// 검색어와 검색 타입 유효성 검사
+        if (searchWord) {
+            if (!searchType || searchType === "검색 타입선택") {
+            	alertify.error("검색 타입을 선택해주세요.");
+                return;
+            }
+            searchParams.set("searchWord", searchWord);
+            searchParams.set("searchType", searchType);
+        } else if (searchType && searchType !== "검색 타입선택") {
+        	alertify.error("검색어를 입력해주세요.");
+            return;
+        }
+     
+		if(sortColumn2 && sortColumn2 !== "정렬 방향"){
+			if(!sortColumn1 || sortColumn1 === "순서 정렬"){
+				alertify.error("정렬 종류를 선택해주세요");
+				return
+			}
+		}  
+
+     // 정렬 조건 유효성 검사
+        if (sortColumn1 && sortColumn1 !== "정렬") {
+            if (!sortColumn2 || sortColumn2 === "정렬 방향") {
+            	alertify.error("정렬 방향을 선택해주세요.");
+                return;
+            } else {
+                const sortColumn = sortColumn1 + " " + sortColumn2;
+                searchParams.set("sortColumn", sortColumn);
+            }
+        } else {
+            // 정렬 컬럼 자체가 선택되지 않았으면 아무것도 안 함
+            searchParams.delete("sortColumn");
+        }
+
+
+        // 새로운 검색 조건 추가
+        window.location.href = contextPath + "/logistics/warehouseDetail.do?whNo="+ whNo + "&" + searchParams.toString();
+    });
+//----------------------------------------------------------------------------------------------------
+	// 페이지 이동 이벤트
+	$(".pagination .page-link").click(function (e) {
+	    e.preventDefault();
+
+	    var currentPage = $(this).attr("data-page");
+	    var contextPath = "<%=request.getContextPath()%>";
+	    var url = new URL(window.location.href);
+
+	    // 기존 currentPage 파라미터 제거
+	    url.searchParams.delete("currentPage");
+
+	    // 새로운 currentPage 파라미터 추가
+	    url.searchParams.append("currentPage", currentPage);
+
+	    window.location.href = contextPath + "/logistics/warehouseDetail.do" + url.search;
+	});
+
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,510 @@
+<%@page import="kr.or.ddit.vo.UserVO"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.fmt" prefix="fmt" %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<jsp:include page="/WEB-INF/views/modules/header.jsp"/>
+<jsp:include page="/WEB-INF/views/modules/sidebar.jsp"/>
+<jsp:include page="../modules/modal.jsp" />
+<link rel="stylesheet" href="/css/main.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>    
+
+<style type="text/css">
+.section  {
+    margin-bottom: 15px;
+}
+
+.section.off  {
+	background: #7A7A7A;
+}
+.section.now  {
+	 border: 1px solid #007bff;
+}
+.card-header {
+    margin-bottom: 15px;
+}
+
+.card-main {
+    display: flex;
+    justify-content: space-between;
+}
+
+.card-left, .card-right {
+    width: 48%; 				/* 각각 절반의 크기, 약간의 여유 공간 추가 */
+}
+.h4-margin{
+    padding-bottom: 36.8px; 	/* h4의 폰트크기 : 28.8px + bottom magin : 8px*/
+}
+.label-magin{
+    padding-bottom: 32px; 		/* label의 폰트크기 : 24px + bottom magin : 8px*/
+}
+.btn-magin{
+    padding-bottom: 48px; 		/* 버튼컨테이너의 폰트크기 : 48px*/
+}
+.elem-show{
+	display: inline;
+}
+.elem-hidden{
+	display: none;
+}
+.progress-section{
+	margin: 0px;
+	padding: 0px;
+}
+.progress-bar-container{
+	margin: 0px;
+	padding: 0px;
+}
+.dis-flex-jce{
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap:10px;
+}
+.scroll-margin{
+	padding-bottom: 132.46px;
+}
+.fixed {
+  position: fixed;
+  top: 60px;
+  left: 265px;
+  right: 0;
+  z-index: 1000;
+  width: calc(100% - 370px);
+  height: 117.46px;
+}
+</style>
+
+</head>
+
+<body>
+
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec" %>
+
+<sec:authentication property="principal" var="princ"/>
+
+
+
+
+
+	<div class="app-container">
+		<main class="main-content-area">
+			<!-- 브레드크럼 엘리먼트 -->
+			<div class="content-header">
+			   <div class="breadcrumb-warp">
+			      <div class="col-sm-12">
+			         <ol class="breadcrumb">
+			            <li class="breadcrumb-item"><a href="/">Home</a></li>
+			            <li class="breadcrumb-item"><a href="/">내 메뉴</a></li>
+			            <li class="breadcrumb-item"><a href="/">내 물류창고 관리</a></li>
+			         </ol>
+			      </div>
+			   </div>
+			   <div class="content-title">적재 신청</div>
+			   <p class="desc" style="font-size: small;">물류관리자의 물류창고 관리페이지입니다 <br/> 각 창고부분을 클릭하면 상세페이지로 이동합니다</p>
+			</div>
+			<!-- 브레드크럼 엘리먼트 끝 -->
+			
+			
+			
+			
+			
+			
+			<div class="section">
+			
+			
+			
+			
+			
+			
+			
+			
+	        <div class="card-header">
+				<h2>신고검토</h2>  <p class="desc">기본 신고정보를 확인하고 신고를 수리/반려 합니다.</p>
+			</div>
+			<div class="card-main">
+			    <div class="card-left">
+			        <h4>물품 정보</h4>
+			        <label>품명 : </label> 
+			        <span id="EXA_PRODUCT_NAME">
+			       		${customsDetailInfo.EXA_PRODUCT_NAME}
+			        </span><br />
+			        
+			        <label>중량 : </label> 
+			        <span id="EXA_PRODUCT_WEIGHT">
+			        	${customsDetailInfo.EXA_PRODUCT_WEIGHT} kg
+			        </span><br />
+			        
+			        <label>수량 : </label> 
+			        <span id="EXA_PRODUCT_QTY">
+			       		${customsDetailInfo.EXA_PRODUCT_QTY} 개
+			        </span><br />
+			        
+			        <label>단가(총) : </label> 
+			        <span id="EXA_CUSTOMS_VALUE">
+			        	<fmt:formatNumber value="${customsDetailInfo.EXA_CUSTOMS_VALUE}" type="number" groupingUsed="true" /> 원
+			        </span><br />
+			        
+			        <label>총금액 : </label> 
+			        <span id="EXA_TOTAL_COST">
+			        	<fmt:formatNumber value="${customsDetailInfo.EXA_TOTAL_COST}" type="number" groupingUsed="true" /> 원
+			        </span><br />
+			        
+			        <label>출발항 : </label> 
+			        <span id="EXA_PORT_FROM">
+			        	${customsDetailInfo.EXA_PORT_FROM}
+			        </span><br />
+			        
+			        <label>도착항 : </label>
+			        <span id="EXA_PORT_TO">
+			        	${customsDetailInfo.EXA_PORT_TO}
+			        </span><br />
+			        
+			    </div>
+					
+					
+					</c:forEach>
+	                <div class="submit-button-container">
+	                    <input type="button" id="submitBtn" value="등록" class="submit-button"/>
+	                </div>
+	                
+	            </form>
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			<div class="myContractList">
+			<table class="data-table" id="select">
+				<tbody>
+					<tr>
+						<th hidden>물류창고 번호</th>
+						<th>수출입 구분</th>
+						<th>관세대리업무 일련번호</th>
+						<th>물품 명칭</th>
+						<th>HS 코드 </th>
+						<th>물품 수량</th>
+						<th>물품 부피</th>
+						<th>화주 이름</th>
+						<th>화주 이메일</th>
+					</tr>
+					<!-- 전체 물류창고 목록 조회 > 나중에 세션에서 유저정보가져와서 유저id랑 맞는거만 출력  -->
+					<c:if test="${not empty contractVO}"> 
+ 						<c:forEach var="contract" items="${contractVO }" >				
+								<tr onclick="myContract(event)" data-contract-no="${contract.contractNo}" id="contract">
+									<td>${contract.contractType}</td>
+									<td>${contract.contractNo}</td>
+									<td>${contract.productName}</td>
+									<td>${contract.hsCode }</td>
+									<td>${contract.productQty }</td>
+									<td>${contract.productVolume}</td>
+									<td>${contract.userName }</td>
+									<td>${contract.userEmail }</td> 
+									<!-- <td><button class="btn btn-primary modalBtn" id="openRegistModalBtn">등록</button></td> -->
+								</tr>		
+						</c:forEach>
+					</c:if>
+					<c:if test="${empty warehouseList}">
+					    <tr><td colspan="7" class="text-center">등록된 물류창고가 없습니다.</td></tr>
+					</c:if>
+				</tbody>	
+				</table>
+			</div>
+			
+			
+			<div class="myContractDetail">
+			
+			</div id="selected">
+				
+					<div>선택된 물류 화주 내요 ㅇ~~~~~</div>
+		
+			</div>
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			<div class="section">
+				
+				
+				<div class="search-filter-section">
+				   <div class="search-input-wrapper">
+				      <div class="search-input-icon"></div>
+				      <input type="text" class="form-input search-input" placeholder="주소,창고 종류, 창고 이름,창고사용여부(사용가능/사용불가능) 검색">
+				   </div>
+				   <div class="filter-group">
+				      <%-- <select class="form-select" id="searchType" >
+				     	 <option>
+				     		검색 타입선택
+				         </option>
+				         <option value="WH_TYPE">
+				         	<c:if test="${paginationInfo.sortColumn == 'WH_TYPE'}">selected</c:if>
+				         	창고 종류
+				         </option>
+				         <option value="WH_ADDR">
+				        	<c:if test="${paginationInfo.sortColumn == 'WH_ADDR'}">selected</c:if>
+				        	기본 주소
+				         </option>
+				         <option value="WH_NAME">
+				         	<c:if test="${paginationInfo.sortColumn == 'WH_NAME'}">selected</c:if>
+				         	창고 이름
+				         </option>
+				         <option value="WH_USE_YN">
+				         	<c:if test="${paginationInfo.sortColumn == 'WH_USE_YN'}">selected</c:if>
+				         	창고 사용가능 여부
+				         </option>
+				      </select> --%>
+				      <select class="form-select" id="sortColumn">
+				       <%--   <option>
+				     		순서 정렬
+				         </option>
+				         <option value="WH_REG_DATE DESC">
+				         	<c:if test="${paginationInfo.sortColumn == 'WH_REG_DATE'}"></c:if>
+				         	물류창고 등록일자 최신순 정렬
+				         </option>
+				         <option value="WH_VOLUME DESC">
+				         	<c:if test="${paginationInfo.sortColumn == 'WH_VOLUME'}"></c:if>
+				         	물류창고 크기 순 정렬
+				         </option>
+				         <option value="WH_PRICE">
+				         	<c:if test="${paginationInfo.sortColumn == 'WH_PRICE'}"></c:if>
+				         	물류창고 이용금액 순 정렬
+				         </option> --%>
+				      </select>
+				      <button class="btn btn-primary" id="searchBtn">검색</button>
+				   </div>
+				</div>
+				
+			
+				
+				
+				<form action="/cca/stowateRegister.do" method="post"  id="formSubmit" >
+					
+				</form>
+				
+				
+				<div class="table-footer">
+					<div class="d-flex justify-content-center mt-4">
+					    <%-- <ul class="pagination">
+					        <c:if test="${paginationInfo.startPage > 1}">
+					            <li class="page-item">
+					                <a class="page-link page-link-text" href="#" data-page="${paginationInfo.startPage - paginationInfo.blockSize}">이전</a>
+					            </li>
+					        </c:if>
+					
+					        <c:forEach var="i" begin="${paginationInfo.startPage}" end="${paginationInfo.endPage < paginationInfo.totalPage ? paginationInfo.endPage : paginationInfo.totalPage}">
+					            <li class="page-item ${i == paginationInfo.currentPage ? 'active' : ''}">
+					                <a class="page-link" href="#" data-page="${i}">${i}</a>
+					            </li>
+					        </c:forEach>
+					
+					        <c:if test="${paginationInfo.endPage < paginationInfo.totalPage}">
+					            <li class="page-item">
+					                <a class="page-link page-link-text" href="#" data-page="${paginationInfo.endPage + 1}">다음</a>
+					            </li>
+					        </c:if>
+					    </ul> --%>
+					</div>
+			        <div class="footer-buttons">
+			           
+			        </div>
+			    </div>
+			</div>
+		</div>
+		</main>
+	</div>
+	
+
+	
+<script type="text/javascript">
+
+$(document).ready(function() {
+	$("#container").hide();
+	$("#warehouse").show();
+	
+	$(".importBtn").on("click", function () {
+		
+	  if ($(this).prop('disabled')) {
+            console.log("수입 버튼이 비활성화");
+            return false;
+        }
+		  
+		$("#container").hide();
+		$("#warehouse").show();
+		
+		
+	})
+	
+	$(".exportBtn").on("click", function () {
+		  if ($(this).prop('disabled')) {
+            console.log("수입 버튼이 비활성화");
+            return false; 
+        }
+		
+		$("#warehouse").hide();
+		$("#container").show();
+		
+	})
+	
+	/** 적재신청할 물품 선택 하기 전*/
+	$("#select").show(); 
+	$("#selected").hide();
+
+})
+
+let data =[];
+let productQty = 0;
+let productVolume = 0;
+let contractType ="";
+
+	/**적재신청 할 건 선택 했을 시 */
+	function myContract(e){
+	let contractNo = e.currentTarget.dataset.contractNo
+		$("#select").hide();
+		$("#selected").show();
+		console.log(contractNo)
+		let html = "";
+		
+		$.ajax({
+			url : "/cca/contractSelect.do",
+			method : "post",
+			contentType: "application/json", 
+		    data: contractNo, 
+			success : function(resp){
+				data = resp;	
+				console.log(data);
+				productQty = data.productVO.productQty;
+				productVolume = data.productVO.productVolume;
+				contractType = data.contractType;
+				
+				
+				$(".importBtn").prop('disabled', true);
+	            $(".exportBtn").prop('disabled', true);
+
+				if(contractType =="수출"){
+					$("#warehouse").hide();
+					$("#container").show();
+					
+				}else{ 
+					$("#container").hide();
+					$("#warehouse").show();
+					
+				}
+			}
+		})  
+	}
+
+	let containerNo =0;
+	let whNo =0;
+	
+	
+	/** 수입시 물류창고 
+		필요 정보 : 물류창고 일련번호, 관세대리업무계약 일련번호
+	*/
+
+	$
+	
+	let selectWhNo = 0;
+	let selectContainerNo = 0;
+    let selectedItemIds = [];
+    let totalResidualVolume = 0; 
+	
+	 $(".WhRegisterBtn").on('click', function(){
+		 let html = "";
+		 $('input.selectWhNo:checked').each(function() {
+	            // value를 가져오는 대신 data-* 속성에서 직접 가져오도록 수정 (선택된 체크박스 자체의 data 속성)
+	            let selectWhNo = $(this).data("whNo"); // 또는 $(this).data("containerNo");
+	            selectedItemIds.push(selectWhNo);
+	            // 해당 컨테이너의 행에서 data-residual-volume 값을 가져와 총 잔여 공간에 더함
+	            totalResidualVolume += parseFloat($(this).data("residualVolume") || 0);
+	            console.log(totalResidualVolume)
+		 		html += `<input type="hidden" name="whNo" value = "\${selectWhNo}" />`
+		 })
+		 
+		 if(totalResidualVolume < productVolume * productQty ){
+			 
+			console.log(totalResidualVolume)
+			console.log(productVolume * productQty)
+         	alert("선택하신 창고 부피가 물품의 부피보다 작습니다. 다시 선택해주세요")
+         	// 초기화
+         	totalResidualVolume =0 ;
+         	selectedItemIds =[]
+         
+         	return
+         }else{
+        	 html += `<input type="hidden" name="contractNo" id="contractNo" value="\${data.contractNo}" /> `
+        	 $("#formSubmit").append(html);
+        	 $("#formSubmit").submit();
+         }		 
+		 
+
+	  });
+	
+
+		
+		/** 수출 시 컨테이너
+			필요 정보 : 컨테이너 일련번호, 관세대리업무계약 일련번호
+		*/
+		
+	 
+ 	 $(".ContainerRegisterBtn").on('click', function(){
+ 		 html ="";
+ 		 $('input.selectContainerNo:checked').each(function() {
+	            // value를 가져오는 대신 data-* 속성에서 직접 가져오도록 수정 (선택된 체크박스 자체의 data 속성)
+	            let selectContainerNo = $(this).data("containerNo"); // 또는 $(this).data("containerNo");
+	            selectedItemIds.push(selectContainerNo);
+	            // 해당 컨테이너의 행에서 data-residual-volume 값을 가져와 총 잔여 공간에 더함
+	            totalResidualVolume += $(this).data("residualVolume")
+	            console.log(totalResidualVolume)
+	            html += `<input type="hidden" name="containerNo" value = "\${selectContainerNo}" />`
+		 })
+		 
+		 if(totalResidualVolume < productVolume * productQty ){
+		      	alert("선택하신 창고 부피가 물품의 부피보다 작습니다. 다시 선택해주세요")
+		      	// 초기화
+		      	totalResidualVolume =0 ;
+		      	selectedItemIds =[]
+		      
+		      	return
+		      }else{
+		    	  html += `<input type="hidden" name="contractNo" id="contractNo" value="\${data.contractNo}" /> `
+		        	 $("#formSubmit").append(html);
+		      }		 	 
+		 
+		  
+ 	 });
+
+
+
+	 
+
+</script>
+</body>
+</html>

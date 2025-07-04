@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.NationMapper">
+
+
+	<select id="getCurrencyCode"  parameterType="int" resultType="String">
+		select currency_code
+		from currency
+		where nation_no = #{nationNo}
+	</select>
+	
+
+	<select id="getCurrencyCodeList"   resultType="String">
+		select currency_code
+		from currency
+	</select>
+	
+	<insert id="insertRate" parameterType="kr.or.ddit.vo.ExRateVO" useGeneratedKeys="true">
+		<selectKey keyProperty="exRateNo" resultType="int" order="BEFORE">
+			select seq_rate_no.nextval from dual
+		</selectKey>
+		insert into ex_rate(ex_rate_no, currency_code, exch_rate, ref_dt)
+		values(#{exRateNo}, #{target}, #{value}, TO_DATE(#{date},'YYYY-MM-DD HH') )
+	</insert>
+	
+	<select id="getCurrencyList" resultType="kr.or.ddit.vo.CurrencyVO">
+		select *
+		from currency a inner join (nation b) on a.nation_no = b.nation_no
+	</select>
+	
+	<select id="selectnationNo" parameterType="String" resultType="int" >
+		select nation_no
+		from currency
+		where currency_code = #{currencyCode}
+	</select>
+	
+	
+	<select id="getCurrencyNm" parameterType="String" resultType="String">
+		select currency_name
+		from currency
+		where currency_code = #{currencyCode} 
+	</select>
+	
+	<select id="getNationtNm" parameterType="int" resultType="String">
+		select nation_kr_name
+		from nation
+		where nation_no = #{nationNo}
+	</select>
+	
+	
+	<select id="nationSearch" parameterType="hashMap" resultType="kr.or.ddit.vo.NationVO">
+		SELECT 
+		    NATION_NO
+		    , NATION_KR_NAME
+		    , NATION_EN_NAME
+		    , NATION_CODE
+		    , CURRENCY_CODE
+		    , NATION_NO
+		    , CURRENCY_NAME
+		    , CURRENCY_SYMBOL
+		    , EX_RATE_NO
+		    , CURRENCY_CODE
+		    , EXCH_RATE
+		    , REF_DT
+		FROM (
+		    SELECT
+		        n.NATION_NO
+		        , n.NATION_KR_NAME
+		        , n.NATION_EN_NAME
+		        , n.NATION_CODE
+		        , CRC.CURRENCY_CODE
+		        , CRC.CURRENCY_NAME
+		        , CRC.CURRENCY_SYMBOL
+		        , ER.EX_RATE_NO
+		        , ER.EXCH_RATE
+		        , ER.REF_DT
+		    FROM
+		        nation N
+		    LEFT OUTER JOIN CURRENCY CRC ON (N.NATION_NO = CRC.NATION_NO)
+		    LEFT OUTER JOIN EX_RATE ER ON (CRC.CURRENCY_CODE = ER.CURRENCY_CODE)
+		    WHERE
+		        N.NATION_KR_NAME LIKE '%' || #{searchWord} || '%'
+		        <![CDATA[
+		        AND ER.REF_DT >= TRUNC(ADD_MONTHS(SYSDATE, -1), 'MM') 
+		        AND ER.REF_DT < TRUNC(SYSDATE) + 1
+		        ]]>
+		    ORDER BY
+		        ER.REF_DT DESC
+		)
+		WHERE ROWNUM = 1
+	</select>
+	
+	
+</mapper>
