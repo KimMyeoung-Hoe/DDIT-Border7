@@ -313,7 +313,7 @@ max-width: none;
                        <div id="windy" style=" width: 100%; height: 400px;"></div>
 						<script type="text/javascript">
 							const options = {
-								    key:"Se3DHbwv2JTKrpLVl9A4vyvwTl3Sicfd", // REPLACE WITH YOUR KEY !!!
+								    key:"xxx", // REPLACE WITH YOUR KEY !!!
 								  	//key:"C2lokrIOuwWiHeyIgte87pfeEd9UAziE", // subKey 
 								    verbose: true,
 								    lat: 37.5666103,
