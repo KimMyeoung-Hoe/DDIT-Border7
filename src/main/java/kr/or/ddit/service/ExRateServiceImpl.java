@@ -133,13 +133,12 @@ public class ExRateServiceImpl implements IExRateService{
 	}
 
 
-//https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON?authkey=4qY5viu9U8mr4lp0oOSVm0gu0gq2CXfC&searchdate=20250701&data=AP01
 	@Override
 	public List<AllExchangeRateVO> allExchangeRate(String date) {
 		/* restTemplate. */
 		String uri = UriComponentsBuilder
 				.fromHttpUrl("https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON")
-				.queryParam("authkey", "4qY5viu9U8mr4lp0oOSVm0gu0gq2CXfC")
+				.queryParam("authkey", "xxx")
 				.queryParam("searchdate", date)
 				.queryParam("data", "AP01")
 				.build()
