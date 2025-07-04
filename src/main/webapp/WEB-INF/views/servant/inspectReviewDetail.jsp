@@ -558,7 +558,7 @@ const qrScannerModal = new bootstrap.Modal(document.getElementById('qrScannerMod
 					
 	                // 2.QRCode가 생성되면, 해당 이미지 URL을 문자로 발송
 					// SendMessageController의 sendMessage 호출
-					let receiver = "01028665619";
+					let receiver = "xxx";
 					// WebConfig에서 설정한 경로와 서버 주소를 URL로 만듬
 					//let qrCodeUrl = "쫌가라ㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏ";
 					//let qrCodeUrl = "http://QR이미지가 저장된 컴퓨터 ip:8080/qrcode-images/" + response.fileName;
